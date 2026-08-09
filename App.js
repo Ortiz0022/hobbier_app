@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
@@ -25,7 +26,7 @@ const MainApp = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#386756" />
         <Text style={styles.loadingText}>Cargando Hobbier...</Text>
       </View>
     );
@@ -61,88 +62,47 @@ const MainApp = () => {
     }
   };
 
+  const navItems = [
+    { key: 'recommendations', label: 'Sugerencia', icon: 'target' },
+    { key: 'feed', label: 'Feed', icon: 'rss' },
+    { key: 'my_activities', label: 'Actividad', icon: 'compass' },
+    { key: 'friends', label: 'Amigos', icon: 'users' },
+    { key: 'profile', label: 'Perfil', icon: 'user' },
+  ];
+
+  if (isAdmin) {
+    navItems.push({ key: 'admin', label: 'Admin', icon: 'shield' });
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* VISTA PRINCIPAL SEGÚN PESTAÑA SELECCIONADA */}
       <View style={styles.mainContent}>{renderScreen()}</View>
 
-      {/* BARRA DE NAVEGACIÓN INFERIOR */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setCurrentScreen('recommendations')}
-        >
-          <Text style={[styles.navIcon, currentScreen === 'recommendations' && styles.navIconActive]}>
-            🎯
-          </Text>
-          <Text style={[styles.navLabel, currentScreen === 'recommendations' && styles.navLabelActive]}>
-            Sugerida
-          </Text>
-        </TouchableOpacity>
+      {/* BARRA DE NAVEGACIÓN INFERIOR DE ESTILO MINIMALISTA */}
+      <View style={styles.bottomNavContainer}>
+        <View style={styles.bottomNav}>
+          {navItems.map((item) => {
+            const isActive = currentScreen === item.key;
+            const iconColor = isActive ? '#1b3b2b' : '#334155';
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setCurrentScreen('my_activities')}
-        >
-          <Text style={[styles.navIcon, currentScreen === 'my_activities' && styles.navIconActive]}>
-            ⏳
-          </Text>
-          <Text style={[styles.navLabel, currentScreen === 'my_activities' && styles.navLabelActive]}>
-            Tareas
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setCurrentScreen('feed')}
-        >
-          <Text style={[styles.navIcon, currentScreen === 'feed' && styles.navIconActive]}>
-            📰
-          </Text>
-          <Text style={[styles.navLabel, currentScreen === 'feed' && styles.navLabelActive]}>
-            Feed
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setCurrentScreen('friends')}
-        >
-          <Text style={[styles.navIcon, currentScreen === 'friends' && styles.navIconActive]}>
-            👥
-          </Text>
-          <Text style={[styles.navLabel, currentScreen === 'friends' && styles.navLabelActive]}>
-            Amigos
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setCurrentScreen('profile')}
-        >
-          <Text style={[styles.navIcon, currentScreen === 'profile' && styles.navIconActive]}>
-            👤
-          </Text>
-          <Text style={[styles.navLabel, currentScreen === 'profile' && styles.navLabelActive]}>
-            Perfil
-          </Text>
-        </TouchableOpacity>
-
-        {isAdmin && (
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('admin')}
-          >
-            <Text style={[styles.navIcon, currentScreen === 'admin' && styles.navIconActive]}>
-              🛡️
-            </Text>
-            <Text style={[styles.navLabel, currentScreen === 'admin' && styles.navLabelActive]}>
-              Admin
-            </Text>
-          </TouchableOpacity>
-        )}
+            return (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.navItem, isActive && styles.navItemActive]}
+                onPress={() => setCurrentScreen(item.key)}
+                activeOpacity={0.8}
+              >
+                <Feather name={item.icon} size={20} color={iconColor} />
+                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -159,52 +119,58 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94a3b8',
+    color: '#64748b',
     marginTop: 12,
     fontSize: 14,
   },
   mainContent: {
     flex: 1,
   },
+  bottomNavContainer: {
+    backgroundColor: '#ffffff',
+  },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     justifyContent: 'space-around',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   navItem: {
     alignItems: 'center',
-    flex: 1,
-    paddingVertical: 4,
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
   },
-  navIcon: {
-    fontSize: 20,
-    opacity: 0.6,
-  },
-  navIconActive: {
-    opacity: 1,
-    transform: [{ scale: 1.1 }],
+  navItemActive: {
+    backgroundColor: '#bbf7d0',
   },
   navLabel: {
-    fontSize: 10,
-    color: '#94a3b8',
+    fontSize: 11,
+    color: '#334155',
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 3,
   },
   navLabelActive: {
-    color: '#818cf8',
-    fontWeight: '800',
+    color: '#1b3b2b',
+    fontWeight: '700',
   },
 });
