@@ -8,7 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@expo/vector-icons/Feather';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
@@ -21,7 +21,7 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 
 const MainApp = () => {
   const { user, loading, isAdmin } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState('recommendations'); // 'recommendations', 'my_activities', 'feed', 'friends', 'profile', 'preferences', 'admin'
+  const [currentScreen, setCurrentScreen] = useState('recommendations');
 
   if (loading) {
     return (
@@ -43,6 +43,8 @@ const MainApp = () => {
           <RecommendationScreen
             onActivityAccepted={() => setCurrentScreen('my_activities')}
             onGoToPreferences={() => setCurrentScreen('preferences')}
+            onNavigateToFeed={() => setCurrentScreen('feed')}
+            onNavigateToActivities={() => setCurrentScreen('my_activities')}
           />
         );
       case 'my_activities':
