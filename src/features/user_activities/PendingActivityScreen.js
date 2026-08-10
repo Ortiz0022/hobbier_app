@@ -3,15 +3,15 @@ import {
   StyleSheet,
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
-  Image,
+  TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
   Alert,
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import {
   getUserActivities,
@@ -19,31 +19,41 @@ import {
   completeActivityRPC,
 } from '../../services/activityService';
 
-export const PendingActivityScreen = ({ onActivityCompleted }) => {
-  const { user, refreshProfile } = useAuth();
+import { ActivitiesHeader } from './components/ActivitiesHeader';
+import { ActivityCard } from './components/ActivityCard';
+
+export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }) => {
+  const { user, profile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [pendingActivities, setPendingActivities] = useState([]);
   const [completedActivities, setCompletedActivities] = useState([]);
-  
-  const [selectedActivity, setSelectedActivity] = useState(null);
+
+  // Secciones colapsables con flechita de abrir/cerrar
+  const [showPending, setShowPending] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  const [expandedActivityId, setExpandedActivityId] = useState(initialExpandedId || null);
   const [imageUri, setImageUri] = useState(null);
 
   useEffect(() => {
     loadUserActivities();
-  }, []);
+  }, [user?.id, initialExpandedId]);
 
   const loadUserActivities = async () => {
     if (!user?.id) return;
     setLoading(true);
     const { activities, error } = await getUserActivities(user.id);
     if (!error) {
-      const pending = activities.filter((a) => a.status === 'PENDING');
-      const completed = activities.filter((a) => a.status === 'COMPLETED');
+      const pending = (activities || []).filter((a) => a.status === 'PENDING');
+      const completed = (activities || []).filter((a) => a.status === 'COMPLETED');
       setPendingActivities(pending);
       setCompletedActivities(completed);
-      if (pending.length > 0 && !selectedActivity) {
-        setSelectedActivity(pending[0]);
+
+      if (initialExpandedId && pending.some((a) => a.id === initialExpandedId)) {
+        setExpandedActivityId(initialExpandedId);
+      } else if (pending.length > 0 && !expandedActivityId) {
+        setExpandedActivityId(pending[0].id);
       }
     }
     setLoading(false);
@@ -74,10 +84,10 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
     }
   };
 
-  const handleComplete = async () => {
-    if (!selectedActivity) return;
+  const handleCompleteActivity = async (targetActivity) => {
+    if (!targetActivity) return;
     if (!imageUri) {
-      const msg = 'Por favor selecciona o toma una fotografía como evidencia.';
+      const msg = 'Por favor selecciona o toma una fotografía de tu creación.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Evidencia requerida', msg);
       return;
@@ -85,10 +95,9 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
 
     setCompleting(true);
     try {
-      // 1. Subir fotografía a Supabase Storage
       const { publicUrl, error: uploadErr } = await uploadEvidenceImage(
         user.id,
-        selectedActivity.activity_id,
+        targetActivity.activity_id,
         imageUri
       );
 
@@ -96,9 +105,8 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
         throw new Error(uploadErr?.message || 'Error al subir la fotografía.');
       }
 
-      // 2. Ejecutar RPC transaccional complete_activity en Supabase
       const { result, error: rpcErr } = await completeActivityRPC(
-        selectedActivity.id,
+        targetActivity.id,
         publicUrl
       );
 
@@ -106,15 +114,14 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
         throw new Error(rpcErr?.message || 'Error al completar la actividad.');
       }
 
-      // 3. Actualizar puntos del perfil en AuthContext
       await refreshProfile();
 
-      const msg = `¡Felicidades! Completaste la actividad y ganaste ${result.points_awarded} puntos. Tu publicación ya está disponible para tus amigos.`;
+      const msg = `¡Felicidades! Completaste la actividad y ganaste ${result.points_awarded} puntos.`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('¡Puntos Otorgados!', msg);
 
       setImageUri(null);
-      setSelectedActivity(null);
+      setExpandedActivityId(null);
       await loadUserActivities();
       if (onActivityCompleted) onActivityCompleted();
     } catch (err) {
@@ -129,7 +136,7 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#386756" />
         <Text style={styles.loadingText}>Cargando mis actividades...</Text>
       </View>
     );
@@ -138,95 +145,83 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Mis Actividades</Text>
-        <Text style={styles.subtitle}>
-          Completa tus tareas pendientes, sube una foto como evidencia y gana puntos.
-        </Text>
+        <ActivitiesHeader profile={profile} />
 
-        {/* SECCIÓN DE ACTIVIDADES PENDIENTES */}
-        <Text style={styles.sectionTitle}>⏳ Pendientes ({pendingActivities.length})</Text>
+        {/* SECCIÓN 1: PENDIENTES COLAPSABLE */}
+        <TouchableOpacity
+          style={styles.sectionHeaderBtn}
+          onPress={() => setShowPending(!showPending)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.sectionTitle}>
+            PENDIENTES ({pendingActivities.length})
+          </Text>
+          <Feather
+            name={showPending ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color="#386756"
+          />
+        </TouchableOpacity>
 
-        {pendingActivities.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>🎉</Text>
-            <Text style={styles.emptyText}>No tienes actividades pendientes por completar.</Text>
-          </View>
-        ) : (
-          <View style={styles.pendingList}>
-            {pendingActivities.map((item) => {
-              const isSelected = selectedActivity?.id === item.id;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.activityItemCard, isSelected && styles.activityItemCardSelected]}
-                  onPress={() => {
-                    setSelectedActivity(item);
-                    setImageUri(null);
-                  }}
-                >
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{item.activity?.title || 'Actividad'}</Text>
-                    <View style={styles.badgePoints}>
-                      <Text style={styles.badgePointsText}>+{item.activity?.points_awarded || 10} pts</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.itemDescription}>{item.activity?.description}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* FORMULARIO DE EVIDENCIA Y COMPLETADO */}
-        {selectedActivity && (
-          <View style={styles.completionBox}>
-            <Text style={styles.completionTitle}>
-              Completar: {selectedActivity.activity?.title}
-            </Text>
-            <Text style={styles.completionSubtitle}>
-              Sube una fotografía real como evidencia de tu actividad realizada.
-            </Text>
-
-            <TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
-              {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
-              ) : (
-                <View style={styles.imagePickerPlaceholder}>
-                  <Text style={styles.cameraEmoji}>📸</Text>
-                  <Text style={styles.imagePickerText}>Toca para seleccionar foto de evidencia</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={handleComplete}
-              disabled={completing}
-            >
-              {completing ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.completeButtonText}>Completar y Ganar Puntos</Text>
-              )}
-            </TouchableOpacity>
+        {showPending && (
+          <View style={styles.listContainer}>
+            {pendingActivities.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No tienes actividades pendientes.</Text>
+              </View>
+            ) : (
+              pendingActivities.map((item) => {
+                const isExpanded = expandedActivityId === item.id;
+                return (
+                  <ActivityCard
+                    key={item.id}
+                    item={item}
+                    isPending={true}
+                    isExpanded={isExpanded}
+                    onToggleExpand={() => {
+                      setExpandedActivityId(isExpanded ? null : item.id);
+                      setImageUri(null);
+                    }}
+                    imageUri={isExpanded ? imageUri : null}
+                    completing={completing}
+                    onPickImage={handlePickImage}
+                    onComplete={() => handleCompleteActivity(item)}
+                  />
+                );
+              })
+            )}
           </View>
         )}
 
-        {/* SECCIÓN DE HISTORIAL COMPLETADO */}
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>
-          ✅ Completadas ({completedActivities.length})
-        </Text>
-        {completedActivities.map((item) => (
-          <View key={item.id} style={styles.completedItemCard}>
-            <View style={styles.itemHeader}>
-              <Text style={styles.completedTitle}>{item.activity?.title}</Text>
-              <Text style={styles.completedPoints}>+{item.points_awarded} pts</Text>
-            </View>
-            <Text style={styles.completedDate}>
-              Completado el {new Date(item.completed_at).toLocaleDateString()}
-            </Text>
+        {/* SECCIÓN 2: COMPLETADAS COLAPSABLE */}
+        <TouchableOpacity
+          style={[styles.sectionHeaderBtn, { marginTop: 18 }]}
+          onPress={() => setShowCompleted(!showCompleted)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.sectionTitle}>
+            COMPLETADAS ({completedActivities.length})
+          </Text>
+          <Feather
+            name={showCompleted ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color="#386756"
+          />
+        </TouchableOpacity>
+
+        {showCompleted && (
+          <View style={styles.listContainer}>
+            {completedActivities.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No has completado actividades aún.</Text>
+              </View>
+            ) : (
+              completedActivities.map((item) => (
+                <ActivityCard key={item.id} item={item} isPending={false} />
+              ))
+            )}
           </View>
-        ))}
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -235,181 +230,51 @@ export const PendingActivityScreen = ({ onActivityCompleted }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FDFBF7',
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FDFBF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94a3b8',
+    color: '#8A908B',
     marginTop: 12,
+    fontSize: 14,
   },
   scrollContent: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#f8fafc',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#cbd5e1',
-    marginBottom: 14,
-  },
-  emptyCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  emptyEmoji: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-  emptyText: {
-    color: '#94a3b8',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  pendingList: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  activityItemCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  activityItemCardSelected: {
-    borderColor: '#6366f1',
-    backgroundColor: '#1e1b4b',
-  },
-  itemHeader: {
+  sectionHeaderBtn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f8fafc',
-    flex: 1,
-    marginRight: 10,
-  },
-  badgePoints: {
-    backgroundColor: '#065f46',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badgePointsText: {
-    color: '#34d399',
-    fontWeight: '800',
-    fontSize: 12,
-  },
-  itemDescription: {
-    color: '#94a3b8',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  completionBox: {
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    padding: 20,
-    borderColor: '#4f46e5',
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  completionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f8fafc',
-    marginBottom: 4,
-  },
-  completionSubtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-    marginBottom: 16,
-  },
-  imagePickerButton: {
-    height: 180,
-    backgroundColor: '#0f172a',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-    marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePickerPlaceholder: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  cameraEmoji: {
-    fontSize: 40,
+    paddingVertical: 10,
     marginBottom: 8,
   },
-  imagePickerText: {
-    color: '#818cf8',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  completeButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  completeButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  completedItemCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  completedTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#e2e8f0',
-  },
-  completedPoints: {
-    color: '#10b981',
-    fontWeight: '700',
+  sectionTitle: {
     fontSize: 13,
+    fontWeight: '800',
+    color: '#5C615D',
+    letterSpacing: 0.8,
   },
-  completedDate: {
-    color: '#64748b',
-    fontSize: 12,
-    marginTop: 4,
+  listContainer: {
+    marginBottom: 10,
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EAE8E4',
+    marginBottom: 10,
+  },
+  emptyText: {
+    color: '#8A908B',
+    fontSize: 13,
   },
 });

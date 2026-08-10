@@ -22,6 +22,7 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 const MainApp = () => {
   const { user, loading, isAdmin } = useAuth();
   const [currentScreen, setCurrentScreen] = useState('recommendations');
+  const [autoExpandId, setAutoExpandId] = useState(null);
 
   if (loading) {
     return (
@@ -41,14 +42,27 @@ const MainApp = () => {
       case 'recommendations':
         return (
           <RecommendationScreen
-            onActivityAccepted={() => setCurrentScreen('my_activities')}
+            onActivityAccepted={(userActivity) => {
+              if (userActivity?.id) {
+                setAutoExpandId(userActivity.id);
+              }
+              setCurrentScreen('my_activities');
+            }}
             onGoToPreferences={() => setCurrentScreen('preferences')}
             onNavigateToFeed={() => setCurrentScreen('feed')}
             onNavigateToActivities={() => setCurrentScreen('my_activities')}
           />
         );
       case 'my_activities':
-        return <PendingActivityScreen onActivityCompleted={() => setCurrentScreen('feed')} />;
+        return (
+          <PendingActivityScreen
+            initialExpandedId={autoExpandId}
+            onActivityCompleted={() => {
+              setAutoExpandId(null);
+              setCurrentScreen('feed');
+            }}
+          />
+        );
       case 'feed':
         return <FeedScreen />;
       case 'friends':

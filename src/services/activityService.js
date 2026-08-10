@@ -57,7 +57,13 @@ export const getUserActivities = async (userId) => {
       .from('user_activities')
       .select(`
         *,
-        activity:activities(title, description, points_awarded, category_id)
+        activity:activities(
+          title, 
+          description, 
+          points_awarded, 
+          category_id,
+          category:activity_categories(name, icon)
+        )
       `)
       .eq('user_id', userId)
       .order('assigned_at', { ascending: false });
