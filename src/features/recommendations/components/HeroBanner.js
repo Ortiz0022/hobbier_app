@@ -81,7 +81,7 @@ export const HeroBanner = ({ onPress }) => {
   }, [blobScaleX, blobScaleY]);
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.cardContainer}>
 
         {/* FONDO BLOB ANIMADO - Volando sin recuadro blanco */}
@@ -117,13 +117,15 @@ export const HeroBanner = ({ onPress }) => {
         <Sparkle size={18} style={{ position: 'absolute', top: '65%', left: '48%' }} delay={1200} color="#355342" />
         <Sparkle size={10} style={{ position: 'absolute', top: '73%', left: '55%' }} delay={200} />
 
-        {/* TEXTO SUPERPUESTO (Centrado perfectamente) */}
-        <View style={styles.textContent}>
-          <Text style={styles.heroTitle}>Sorpréndeme</Text>
-          <Text style={styles.heroSubtitle}>Descubre un nuevo hobby hoy</Text>
-        </View>
+        {/* ÁREA CLIQUEABLE RESTRINGIDA AL CONTENEDOR CENTRAL */}
+        <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10 }]}>
+          <View style={styles.textContent}>
+            <Text style={styles.heroTitle}>Sorpréndeme</Text>
+            <Text style={styles.heroSubtitle}>Descubre un nuevo hobby hoy</Text>
+          </View>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
