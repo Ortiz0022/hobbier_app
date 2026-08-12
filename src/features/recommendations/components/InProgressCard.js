@@ -35,10 +35,7 @@ export const InProgressCard = ({ pendingActivity, onPress }) => {
 
           <View style={styles.progressBarRow}>
             <Text style={styles.progressLabel}>Estado</Text>
-            <Text style={styles.progressPercent}>Pendiente (40%)</Text>
-          </View>
-          <View style={styles.progressBarTrack}>
-            <View style={[styles.progressBarFill, { width: '40%' }]} />
+            <Text style={styles.progressPercent}>Pendiente</Text>
           </View>
         </TouchableOpacity>
       ) : (
@@ -63,7 +60,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#5C615D',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -95,7 +92,7 @@ const styles = StyleSheet.create({
   categoryPillText: {
     color: '#8A4234',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   progressIconCircle: {
     width: 36,
@@ -106,8 +103,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#1C201D',
     marginBottom: 4,
   },
@@ -124,12 +121,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 12,
     color: '#666C67',
-    fontWeight: '600',
+    fontWeight: '400',
   },
   progressPercent: {
     fontSize: 12,
     color: '#1C201D',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   progressBarTrack: {
     height: 8,
@@ -155,7 +152,7 @@ const styles = StyleSheet.create({
   },
   emptyProgressTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1C201D',
     marginBottom: 4,
     textAlign: 'center',

@@ -78,14 +78,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#5C615D',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   verTodoLink: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2A6347',
   },
   emptyFriendsCard: {
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   friendAvatarInitial: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   friendTextCol: {
     flex: 1,
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
     color: '#434744',
   },
   friendName: {
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#1C201D',
   },
   activityName: {
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2A6347',
   },
   friendTimeAgo: {

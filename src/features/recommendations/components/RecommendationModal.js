@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   modalCategoryText: {
     color: '#8A4234',
-    fontWeight: '700',
+    fontWeight: '500',
     fontSize: 12,
   },
   modalPointsBadge: {
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
   },
   modalPointsText: {
     color: '#2A6347',
-    fontWeight: '800',
+    fontWeight: '600',
     fontSize: 13,
   },
   modalActivityTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '600',
     color: '#1C201D',
     marginBottom: 8,
   },
@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
   },
   modalAcceptBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
   modalReloadBtn: {
     backgroundColor: '#EFEFEA',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   modalReloadBtnText: {
     color: '#434744',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modalCloseBtn: {
     alignItems: 'center',
@@ -192,6 +192,6 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#8A908B',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '400',
   },
 });

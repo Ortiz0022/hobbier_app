@@ -74,15 +74,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 19,
-    fontWeight: '900',
+    fontSize: 20, // Incrementé el tamaño porque las fuentes script suelen ser más pequeñas visualmente
     color: '#1C3A30',
-    letterSpacing: -0.4,
+    fontFamily: 'AnotherShabby',
+    marginBottom: -8, // Compensa el enorme padding inferior de la tipografía
+    marginTop: 4,
   },
   userSubtext: {
     fontSize: 12,
     color: '#666C67',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   rightActions: {
     flexDirection: 'row',
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
   },
   pointsValue: {
     color: '#2A6347',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 12,
   },
   bellBtn: {

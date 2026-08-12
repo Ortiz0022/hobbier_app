@@ -48,15 +48,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#1C201D',
     letterSpacing: -0.4,
   },
   userHandleText: {
     fontSize: 13,
     color: '#8A908B',
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
   actionsRow: {
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   pointsText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#865046',
   },
   iconBtn: {

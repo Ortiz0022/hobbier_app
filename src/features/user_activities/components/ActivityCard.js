@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   timeText: {
     fontSize: 12,
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   titleText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#1C201D',
     flex: 1,
   },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   pointsText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#865046',
   },
   descText: {

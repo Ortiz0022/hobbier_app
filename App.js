@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { useFonts } from 'expo-font';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
@@ -125,6 +126,18 @@ const MainApp = () => {
 };
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'AnotherShabby': require('./assets/fonts/AnotherShabby.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#386756" />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <MainApp />

@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
   },
   uploadText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: '#386756',
     textAlign: 'center',
   },
   uploadTextSub: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: '#386756',
     textAlign: 'center',
   },
@@ -165,6 +165,6 @@ const styles = StyleSheet.create({
   completeBtnText: {
     color: '#2A5243',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });
