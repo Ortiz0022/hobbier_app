@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   logoTitle: {
     fontSize: 24, // DynaPuff es más robusta
-    color: '#1C3A30',
+    color: '#121B22',
     fontFamily: 'DynaPuff',
     marginBottom: 0, // Restaurando márgenes naturales
     textAlign: 'center',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: '#121B22',
     marginBottom: 6,
   },
   emptySubtitle: {
@@ -393,11 +393,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     marginBottom: 20,
     width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F3F5',
   },
   postHeader: {
     paddingHorizontal: 18,
@@ -413,16 +410,20 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#F0F3F5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#00DBFF',
   },
   authorAvatarImage: {
     width: 44,
     height: 44,
     borderRadius: 22,
     marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#00DBFF',
   },
   authorInitial: {
     color: '#334155',
@@ -435,7 +436,7 @@ const styles = StyleSheet.create({
   authorHandle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#121B22',
   },
   authorAction: {
     fontSize: 13,
@@ -448,7 +449,7 @@ const styles = StyleSheet.create({
   optionsIcon: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#333333',
+    color: '#121B22',
     letterSpacing: -1,
   },
   activityPill: {
@@ -476,13 +477,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   pointsPill: {
-    backgroundColor: '#e9efe9',
+    backgroundColor: '#F0F3F5',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
   pointsPillText: {
-    color: '#386641',
+    color: '#00DBFF',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#F0F3F5',
   },
   loadMoreBtnText: {
     color: '#334155',

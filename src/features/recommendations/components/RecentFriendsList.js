@@ -28,18 +28,20 @@ export const RecentFriendsList = ({ recentFriendPosts, onNavigateToFeed }) => {
               onPress={onNavigateToFeed}
               activeOpacity={0.9}
             >
-              {post.author?.avatar_url ? (
-                <Image
-                  source={{ uri: post.author.avatar_url }}
-                  style={styles.friendAvatarImage}
-                />
-              ) : (
-                <View style={styles.friendAvatarPlaceholder}>
-                  <Text style={styles.friendAvatarInitial}>
-                    {(post.author?.full_name || 'C')[0].toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.avatarRing}>
+                {post.author?.avatar_url ? (
+                  <Image
+                    source={{ uri: post.author.avatar_url }}
+                    style={styles.friendAvatarImage}
+                  />
+                ) : (
+                  <View style={styles.friendAvatarPlaceholder}>
+                    <Text style={styles.friendAvatarInitial}>
+                      {(post.author?.full_name || 'C')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               <View style={styles.friendTextCol}>
                 <Text style={styles.friendSentence}>
@@ -57,7 +59,7 @@ export const RecentFriendsList = ({ recentFriendPosts, onNavigateToFeed }) => {
                 </Text>
               </View>
 
-              <Feather name="check-circle" size={20} color="#2A6347" style={styles.actionIcon} />
+              <Feather name="check-circle" size={20} color="#A94403" style={styles.actionIcon} />
             </TouchableOpacity>
           ))}
         </View>
@@ -79,14 +81,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#5C615D',
+    color: '#121B22',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   verTodoLink: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2A6347',
+    color: '#00DBFF',
   },
   emptyFriendsCard: {
     backgroundColor: '#FFFFFF',
@@ -94,7 +96,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EBEBE5',
+    borderColor: '#F0F3F5',
   },
   emptyFriendsIcon: {
     marginBottom: 6,
@@ -114,22 +116,34 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#EBEBE5',
+    borderColor: '#F0F3F5',
   },
-  friendAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
-  },
-  friendAvatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#DF9C8E',
+  avatarRing: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#00DBFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  friendAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  friendAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0C8AA6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   friendAvatarInitial: {
     color: '#FFFFFF',
@@ -145,7 +159,7 @@ const styles = StyleSheet.create({
   },
   friendName: {
     fontWeight: '600',
-    color: '#1C201D',
+    color: '#121B22',
   },
   activityName: {
     fontWeight: '600',

@@ -230,11 +230,11 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDFBF7',
+    backgroundColor: '#FFFFFF',
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#FDFBF7',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#5C615D',
+    color: '#121B22',
     letterSpacing: 0.8,
   },
   listContainer: {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EAE8E4',
+    borderColor: '#F0F3F5',
     marginBottom: 10,
   },
   emptyText: {

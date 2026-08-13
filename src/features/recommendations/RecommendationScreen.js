@@ -121,7 +121,7 @@ export const RecommendationScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F5',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 20,

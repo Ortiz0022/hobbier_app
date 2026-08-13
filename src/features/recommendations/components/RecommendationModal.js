@@ -33,12 +33,21 @@ export const RecommendationModal = ({
             <View>
               <View style={styles.modalHeaderRow}>
                 <View style={styles.modalCategoryBadge}>
-                  <Feather name="star" size={12} color="#8A4234" />
+                  <Feather name="star" size={12} color="#0C8AA6" />
                   <Text style={styles.modalCategoryText}>Recomendación</Text>
                 </View>
                 <View style={styles.modalPointsBadge}>
+                  <Feather name="star" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
                   <Text style={styles.modalPointsText}>+{recommended.points_awarded} pts</Text>
                 </View>
+              </View>
+
+              <View style={styles.centralIconWrapper}>
+                <Feather
+                  name={recommended.title?.toLowerCase().includes('café') ? 'coffee' : recommended.title?.toLowerCase().includes('deporte') || recommended.title?.toLowerCase().includes('ejercicio') ? 'activity' : 'zap'}
+                  size={64}
+                  color="#00DBFF"
+                />
               </View>
 
               <Text style={styles.modalActivityTitle}>{recommended.title}</Text>
@@ -63,7 +72,7 @@ export const RecommendationModal = ({
                   disabled={accepting}
                 >
                   <View style={styles.reloadBtnContent}>
-                    <Feather name="refresh-cw" size={14} color="#434744" />
+                    <Feather name="refresh-cw" size={14} color="#0C8AA6" />
                     <Text style={styles.modalReloadBtnText}>Otra Opción</Text>
                   </View>
                 </TouchableOpacity>
@@ -98,8 +107,13 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 36,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalLoadingBox: {
     padding: 20,
@@ -108,7 +122,7 @@ const styles = StyleSheet.create({
   modalLoadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#5C615D',
+    color: '#121B22',
     textAlign: 'center',
   },
   modalHeaderRow: {
@@ -120,37 +134,45 @@ const styles = StyleSheet.create({
   modalCategoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5DCD5',
+    backgroundColor: '#F0F8FA',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
     gap: 4,
   },
   modalCategoryText: {
-    color: '#8A4234',
-    fontWeight: '500',
+    color: '#0C8AA6',
+    fontWeight: '600',
     fontSize: 12,
   },
   modalPointsBadge: {
-    backgroundColor: '#ECF4EE',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF8F21',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   modalPointsText: {
-    color: '#2A6347',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 13,
+  },
+  centralIconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    marginTop: 10,
   },
   modalActivityTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#1C201D',
+    fontWeight: '700',
+    color: '#121B22',
     marginBottom: 8,
   },
   modalActivityDesc: {
     fontSize: 14,
-    color: '#5C615D',
+    color: '#121B22',
     lineHeight: 20,
     marginBottom: 24,
   },
@@ -159,8 +181,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalAcceptBtn: {
-    backgroundColor: '#1C3A30',
-    borderRadius: 14,
+    backgroundColor: '#FF8F21',
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -170,7 +192,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalReloadBtn: {
-    backgroundColor: '#EFEFEA',
+    backgroundColor: '#F0F3F5',
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
@@ -181,17 +203,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   modalReloadBtnText: {
-    color: '#434744',
+    color: '#0C8AA6',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   modalCloseBtn: {
     alignItems: 'center',
     paddingVertical: 8,
   },
   modalCloseText: {
-    color: '#8A908B',
+    color: '#121B22',
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: '600',
   },
 });

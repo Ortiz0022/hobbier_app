@@ -89,9 +89,9 @@ export const HeroBanner = ({ onPress }) => {
           <Svg width="200%" height="220%" viewBox="0 0 200 200" style={styles.svgBlob}>
             <Defs>
               <LinearGradient id="blobGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor="#FBF7E7" />
-                <Stop offset="0.4" stopColor="#E0F0DE" />
-                <Stop offset="1" stopColor="#ADD2BE" />
+                <Stop offset="0" stopColor="#FFAA55" />
+                <Stop offset="0.4" stopColor="#FF8F21" />
+                <Stop offset="1" stopColor="#E67A15" />
               </LinearGradient>
             </Defs>
             {/* Blob orgánico horizontal (menos alto de arriba y más extendido a los lados) */}
@@ -110,12 +110,12 @@ export const HeroBanner = ({ onPress }) => {
         </View>
 
         {/* ESTRELLAS ANIMADAS */}
-        <Sparkle size={18} style={{ position: 'absolute', top: 15, left: 35 }} delay={0} />
-        <Sparkle size={12} style={{ position: 'absolute', top: 55, left: 15 }} delay={500} />
-        <Sparkle size={14} style={{ position: 'absolute', bottom: 20, right: 35 }} delay={800} color="#355342" />
-        <Sparkle size={10} style={{ position: 'absolute', bottom: 10, right: 60 }} delay={300} />
-        <Sparkle size={18} style={{ position: 'absolute', top: '65%', left: '48%' }} delay={1200} color="#355342" />
-        <Sparkle size={10} style={{ position: 'absolute', top: '73%', left: '55%' }} delay={200} />
+        <Sparkle size={18} style={{ position: 'absolute', top: 15, left: 35 }} delay={0} color="#FF8F21" />
+        <Sparkle size={12} style={{ position: 'absolute', top: 55, left: 15 }} delay={500} color="#FFAA55" />
+        <Sparkle size={14} style={{ position: 'absolute', bottom: 20, right: 35 }} delay={800} color="#E67A15" />
+        <Sparkle size={10} style={{ position: 'absolute', bottom: 10, right: 60 }} delay={300} color="#FF8F21" />
+        <Sparkle size={18} style={{ position: 'absolute', top: '65%', left: '48%' }} delay={1200} color="#FFFFFF" />
+        <Sparkle size={10} style={{ position: 'absolute', top: '73%', left: '55%' }} delay={200} color="#FFFFFF" />
 
         {/* ÁREA CLIQUEABLE RESTRINGIDA AL CONTENEDOR CENTRAL */}
         <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10 }]}>
@@ -139,6 +139,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderRadius: 72,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#FF8F21',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+    marginHorizontal: 10,
   },
   blobWrapper: {
     position: 'absolute',
@@ -164,13 +172,13 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#355342',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 12,
-    color: '#4B6959',
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

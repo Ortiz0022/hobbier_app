@@ -23,11 +23,11 @@ export const ActivitiesHeader = ({ profile, onFilterPress }) => {
           </View>
 
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
-            <Feather name="bell" size={18} color="#386756" />
+            <Feather name="bell" size={18} color="#121B22" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.8}>
-            <Feather name="sliders" size={18} color="#4A607D" />
+            <Feather name="sliders" size={18} color="#121B22" />
           </TouchableOpacity>
         </View>
       </View>
@@ -50,12 +50,12 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#1C201D',
+    color: '#121B22',
     letterSpacing: -0.4,
   },
   userHandleText: {
     fontSize: 13,
-    color: '#8A908B',
+    color: '#121B22',
     fontWeight: '400',
     marginTop: 2,
   },
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFEEEA',
+    backgroundColor: '#F0F3F5',
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
   },
   pointsText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#865046',
+    fontWeight: '700',
+    color: '#00DBFF',
   },
   iconBtn: {
     width: 36,
@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EAE8E4',
+    borderColor: '#F0F3F5',
   },
 });

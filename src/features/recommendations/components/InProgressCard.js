@@ -16,26 +16,33 @@ export const InProgressCard = ({ pendingActivity, onPress }) => {
           activeOpacity={0.9}
         >
           <View style={styles.progressCardTop}>
-            <View style={styles.categoryPill}>
-              <Text style={styles.categoryPillText}>
-                {pendingActivity.activity?.category_id ? 'Recomendada' : 'Hobby'}
-              </Text>
-            </View>
-            <View style={styles.progressIconCircle}>
-              <Feather name="edit-3" size={16} color="#8A4234" />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={styles.categoryPill}>
+                <Text style={styles.categoryPillText}>
+                  {pendingActivity.activity?.category_id ? 'Recomendada' : 'Hobby'}
+                </Text>
+              </View>
+              <View style={styles.missionActivePill}>
+                <Text style={styles.missionActiveText}>Misión Activa</Text>
+              </View>
             </View>
           </View>
 
-          <Text style={styles.progressTitle}>
-            {pendingActivity.activity?.title || 'Actividad Asignada'}
-          </Text>
+          <View style={styles.titleRow}>
+            <View style={styles.titleIconCircle}>
+              <Feather name="compass" size={18} color="#00DBFF" />
+            </View>
+            <Text style={styles.progressTitle}>
+              {pendingActivity.activity?.title || 'Actividad Asignada'}
+            </Text>
+          </View>
           <Text style={styles.progressDesc}>
             {pendingActivity.activity?.description || 'Completa esta tarea y sube una evidencia.'}
           </Text>
 
-          <View style={styles.progressBarRow}>
-            <Text style={styles.progressLabel}>Estado</Text>
-            <Text style={styles.progressPercent}>Pendiente</Text>
+          <View style={styles.actionButtonRow}>
+            <Text style={styles.actionButtonText}>¡Ir a la misión!</Text>
+            <Feather name="arrow-right" size={16} color="#0C8AA6" />
           </View>
         </TouchableOpacity>
       ) : (
@@ -61,7 +68,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#5C615D',
+    color: '#121B22',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
@@ -70,12 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#EBEBE5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: '#F0F3F5',
   },
   progressCardTop: {
     flexDirection: 'row',
@@ -84,49 +86,63 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   categoryPill: {
-    backgroundColor: '#F5DCD5',
+    backgroundColor: '#F0F3F5',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   categoryPillText: {
-    color: '#8A4234',
+    color: '#121B22',
     fontSize: 12,
     fontWeight: '500',
   },
-  progressIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F9ECE8',
+  missionActivePill: {
+    backgroundColor: '#F0F8FA',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  missionActiveText: {
+    color: '#0C8AA6',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  titleIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0F3F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   progressTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C201D',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#121B22',
+    flex: 1,
   },
   progressDesc: {
     fontSize: 13,
     color: '#666C67',
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  progressBarRow: {
+  actionButtonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    gap: 4,
   },
-  progressLabel: {
-    fontSize: 12,
-    color: '#666C67',
-    fontWeight: '400',
-  },
-  progressPercent: {
-    fontSize: 12,
-    color: '#1C201D',
-    fontWeight: '500',
+  actionButtonText: {
+    fontSize: 14,
+    color: '#0C8AA6',
+    fontWeight: '600',
   },
   progressBarTrack: {
     height: 8,
@@ -136,7 +152,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#DF9C8E',
+    backgroundColor: '#0C8AA6',
     borderRadius: 4,
   },
   emptyProgressCard: {
@@ -145,7 +161,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EBEBE5',
+    borderColor: '#F0F3F5',
   },
   emptyIcon: {
     marginBottom: 8,
@@ -153,7 +169,7 @@ const styles = StyleSheet.create({
   emptyProgressTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1C201D',
+    color: '#121B22',
     marginBottom: 4,
     textAlign: 'center',
   },

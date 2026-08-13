@@ -26,8 +26,8 @@ export const HomeHeader = ({ profile }) => {
       {/* DERECHA: PUNTOS Y CAMPANA DE NOTIFICACIONES */}
       <View style={styles.rightActions}>
         <View style={styles.pointsBadge}>
-          <Feather name="award" size={13} color="#2A6347" />
-          <Text style={styles.pointsValue}>{points} pts</Text>
+          <Feather name="star" size={14} color="#FF8F21" />
+          <Text style={styles.pointsValue}>+{points} pts</Text>
         </View>
 
         <TouchableOpacity style={styles.bellBtn} activeOpacity={0.8}>
@@ -74,10 +74,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 24, // DynaPuff es más robusta, este tamaño es ideal
-    color: '#1C3A30',
-    fontFamily: 'DynaPuff',
-    marginBottom: 2, // Restaurando márgenes naturales
+    fontSize: 22,
+    color: '#053E4A',
+    fontFamily: 'Poppins_800ExtraBold',
+    letterSpacing: -0.8,
+    marginBottom: 1,
   },
   userSubtext: {
     fontSize: 12,
@@ -92,15 +93,22 @@ const styles = StyleSheet.create({
   pointsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECF4EE',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FF8F21',
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 6,
     gap: 4,
+    shadowColor: '#FF8F21',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   pointsValue: {
-    color: '#2A6347',
-    fontWeight: '600',
+    color: '#FF8F21',
+    fontWeight: '700',
     fontSize: 12,
   },
   bellBtn: {

@@ -19,12 +19,7 @@ export const InlineEvidenceUploader = ({
     <View style={styles.container}>
       {/* CONTENEDOR CON PUNTITOS Y DECORACIÓN DE ESCARCHA */}
       <View style={styles.uploadWrapper}>
-        {/* PUNTOS Y ESCARCHAS DECORATIVAS EN EL FONDO */}
-        <View style={[styles.decorDot, styles.dot1]} />
-        <View style={[styles.decorDot, styles.dot2]} />
-        <View style={[styles.decorDot, styles.dot3]} />
-        <View style={[styles.decorDot, styles.dot4]} />
-        <View style={[styles.decorDot, styles.dot5]} />
+        {/* ELIMINADOS LOS PUNTOS DECORATIVOS PARA LIMPIEZA VISUAL */}
 
         <TouchableOpacity
           style={styles.dashedDropzone}
@@ -35,8 +30,13 @@ export const InlineEvidenceUploader = ({
             <Image source={{ uri: imageUri }} style={styles.previewImage} />
           ) : (
             <View style={styles.placeholderContent}>
-              <View style={styles.cameraCircle}>
-                <Feather name="camera" size={26} color="#386756" />
+              <View style={styles.cameraIconContainer}>
+                <View style={styles.cameraCircle}>
+                  <Feather name="camera" size={26} color="#0C8AA6" />
+                </View>
+                <View style={styles.plusIconBadge}>
+                  <Feather name="plus-circle" size={16} color="#FF8F21" />
+                </View>
               </View>
               <Text style={styles.uploadText}>Sube una foto de tu</Text>
               <Text style={styles.uploadTextSub}>creación</Text>
@@ -47,15 +47,17 @@ export const InlineEvidenceUploader = ({
 
       {/* BOTÓN MENTA COMPLETAR ACTIVIDAD */}
       <TouchableOpacity
-        style={styles.completeBtn}
+        style={[styles.completeBtn, !imageUri && styles.completeBtnDisabled]}
         onPress={onComplete}
-        disabled={completing}
+        disabled={!imageUri || completing}
         activeOpacity={0.88}
       >
         {completing ? (
-          <ActivityIndicator color="#386756" />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.completeBtnText}>Completar actividad</Text>
+          <Text style={[styles.completeBtnText, !imageUri && styles.completeBtnTextDisabled]}>
+            Completar actividad
+          </Text>
         )}
       </TouchableOpacity>
     </View>
@@ -74,11 +76,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   dashedDropzone: {
-    height: 200,
-    backgroundColor: '#FFFFFF',
+    height: 140,
+    backgroundColor: '#F5FCFF',
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#BEE0D0',
+    borderColor: 'rgba(0, 201, 253, 0.2)',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -89,25 +91,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  cameraIconContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   cameraCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#C5E6D6',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  plusIconBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 1,
   },
   uploadText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#386756',
+    color: '#121B22',
     textAlign: 'center',
   },
   uploadTextSub: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#386756',
+    color: '#121B22',
     textAlign: 'center',
   },
   previewImage: {
@@ -157,14 +175,20 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   completeBtn: {
-    backgroundColor: '#C5E6D6',
+    backgroundColor: '#FF8F21',
     borderRadius: 24,
     paddingVertical: 14,
     alignItems: 'center',
   },
+  completeBtnDisabled: {
+    backgroundColor: 'rgba(255, 143, 33, 0.4)',
+  },
   completeBtnText: {
-    color: '#2A5243',
+    color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '700',
+  },
+  completeBtnTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 });

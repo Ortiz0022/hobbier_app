@@ -10,6 +10,10 @@ import {
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { useFonts } from 'expo-font';
+import {
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from '@expo-google-fonts/poppins';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
@@ -103,12 +107,12 @@ const MainApp = () => {
         <View style={styles.bottomNav}>
           {navItems.map((item) => {
             const isActive = currentScreen === item.key;
-            const iconColor = isActive ? '#1b3b2b' : '#334155';
+            const iconColor = isActive ? '#0C8AA6' : '#121B22';
 
             return (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.navItem, isActive && styles.navItemActive]}
+                style={styles.navItem}
                 onPress={() => setCurrentScreen(item.key)}
                 activeOpacity={0.8}
               >
@@ -128,6 +132,8 @@ const MainApp = () => {
 export default function App() {
   const [fontsLoaded] = useFonts({
     'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
   });
 
   if (!fontsLoaded) {
@@ -187,19 +193,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 20,
-  },
-  navItemActive: {
-    backgroundColor: '#bbf7d0',
   },
   navLabel: {
     fontSize: 11,
-    color: '#334155',
-    fontWeight: '600',
+    color: '#121B22',
+    fontWeight: '500',
     marginTop: 3,
   },
   navLabelActive: {
-    color: '#1b3b2b',
+    color: '#0C8AA6',
     fontWeight: '700',
   },
 });
