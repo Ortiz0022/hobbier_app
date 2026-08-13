@@ -74,11 +74,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 20, // Incrementé el tamaño porque las fuentes script suelen ser más pequeñas visualmente
+    fontSize: 24, // DynaPuff es más robusta, este tamaño es ideal
     color: '#1C3A30',
-    fontFamily: 'AnotherShabby',
-    marginBottom: -8, // Compensa el enorme padding inferior de la tipografía
-    marginTop: 4,
+    fontFamily: 'DynaPuff',
+    marginBottom: 2, // Restaurando márgenes naturales
   },
   userSubtext: {
     fontSize: 12,

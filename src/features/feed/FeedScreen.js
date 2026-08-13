@@ -343,11 +343,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   logoTitle: {
-    fontSize: 32,
+    fontSize: 24, // DynaPuff es más robusta
     color: '#1C3A30',
-    fontFamily: 'AnotherShabby',
-    marginBottom: -18, // Compensa el enorme espacio en blanco inferior propio de la tipografía
-    marginTop: 1, // Compensa visualmente el centrado
+    fontFamily: 'DynaPuff',
+    marginBottom: 0, // Restaurando márgenes naturales
     textAlign: 'center',
   },
   emptyCard: {

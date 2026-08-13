@@ -127,7 +127,7 @@ const MainApp = () => {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'AnotherShabby': require('./assets/fonts/AnotherShabby.ttf'),
+    'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
   });
 
   if (!fontsLoaded) {
