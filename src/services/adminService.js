@@ -1,6 +1,5 @@
 import { supabase } from '../config/supabase';
 
-// 1. Obtener publicaciones reportadas (Solo accesible para ADMIN)
 export const getReportedPostsAdmin = async () => {
   try {
     const { data, error } = await supabase
@@ -24,7 +23,6 @@ export const getReportedPostsAdmin = async () => {
   }
 };
 
-// 2. Resolver reporte: Restaurar (ACTIVE) o Eliminar (DELETED)
 export const resolveReportedPostAdmin = async (postId, newStatus) => {
   try {
     if (!['ACTIVE', 'DELETED'].includes(newStatus)) {
@@ -46,7 +44,6 @@ export const resolveReportedPostAdmin = async (postId, newStatus) => {
   }
 };
 
-// 3. Obtener todas las actividades para administración
 export const getAllActivitiesAdmin = async () => {
   try {
     const { data, error } = await supabase
@@ -65,7 +62,6 @@ export const getAllActivitiesAdmin = async () => {
   }
 };
 
-// 4. Crear nueva actividad
 export const createActivityAdmin = async ({
   title,
   description,
@@ -73,6 +69,7 @@ export const createActivityAdmin = async ({
   minAge,
   maxAge,
   pointsAwarded,
+  createdBy,
 }) => {
   try {
     const { data, error } = await supabase
@@ -85,6 +82,7 @@ export const createActivityAdmin = async ({
         max_age: maxAge ? parseInt(maxAge, 10) : null,
         points_awarded: parseInt(pointsAwarded, 10) || 10,
         is_active: true,
+        created_by: createdBy || null,
       })
       .select()
       .single();
@@ -97,7 +95,6 @@ export const createActivityAdmin = async ({
   }
 };
 
-// 5. Activar / Desactivar estado de actividad
 export const toggleActivityActiveAdmin = async (activityId, currentIsActive) => {
   try {
     const { data, error } = await supabase
