@@ -1,4 +1,6 @@
 import { supabase } from '../config/supabase';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 
 // 1. Obtener actividad recomendada usando la función RPC en PostgreSQL
 export const getRecommendedActivity = async (userId) => {
@@ -81,10 +83,11 @@ export const uploadEvidenceImage = async (userId, activityId, imageUri) => {
   try {
     const fileName = `${userId}/${activityId}/${Date.now()}.jpg`;
 
-    // Convertir URI a Blob/ArrayBuffer según plataforma
-    let fileBody;
-    const response = await fetch(imageUri);
-    fileBody = await response.blob();
+    // Convertir URI a base64 y luego ArrayBuffer para evitar error "Network request failed" en celular
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const fileBody = decode(base64);
 
     const { data, error } = await supabase.storage
       .from('activity-evidence')
