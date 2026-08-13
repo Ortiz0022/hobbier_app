@@ -8,7 +8,8 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import Feather from '@expo/vector-icons/Feather';
+import { useFonts } from 'expo-font';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
@@ -21,7 +22,8 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 
 const MainApp = () => {
   const { user, loading, isAdmin } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState('recommendations'); // 'recommendations', 'my_activities', 'feed', 'friends', 'profile', 'preferences', 'admin'
+  const [currentScreen, setCurrentScreen] = useState('recommendations');
+  const [autoExpandId, setAutoExpandId] = useState(null);
 
   if (loading) {
     return (
@@ -41,12 +43,27 @@ const MainApp = () => {
       case 'recommendations':
         return (
           <RecommendationScreen
-            onActivityAccepted={() => setCurrentScreen('my_activities')}
+            onActivityAccepted={(userActivity) => {
+              if (userActivity?.id) {
+                setAutoExpandId(userActivity.id);
+              }
+              setCurrentScreen('my_activities');
+            }}
             onGoToPreferences={() => setCurrentScreen('preferences')}
+            onNavigateToFeed={() => setCurrentScreen('feed')}
+            onNavigateToActivities={() => setCurrentScreen('my_activities')}
           />
         );
       case 'my_activities':
-        return <PendingActivityScreen onActivityCompleted={() => setCurrentScreen('feed')} />;
+        return (
+          <PendingActivityScreen
+            initialExpandedId={autoExpandId}
+            onActivityCompleted={() => {
+              setAutoExpandId(null);
+              setCurrentScreen('feed');
+            }}
+          />
+        );
       case 'feed':
         return <FeedScreen />;
       case 'friends':
@@ -109,6 +126,18 @@ const MainApp = () => {
 };
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#386756" />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <MainApp />

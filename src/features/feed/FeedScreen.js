@@ -27,7 +27,7 @@ const REPORT_REASONS = [
 
 const getPillStyle = (title, index) => {
   const t = (title || '').toLowerCase();
-  
+
   const bgList = ['#dbeafe', '#ffe4e6', '#dcfce7', '#fef3c7', '#f3e8ff'];
   const backgroundColor = bgList[index % bgList.length];
 
@@ -343,10 +343,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   logoTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#386756',
-    letterSpacing: -0.5,
+    fontSize: 24, // DynaPuff es más robusta
+    color: '#1C3A30',
+    fontFamily: 'DynaPuff',
+    marginBottom: 0, // Restaurando márgenes naturales
     textAlign: 'center',
   },
   emptyCard: {
