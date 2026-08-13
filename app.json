@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "hobbier_app",
-    "slug": "hobbier_app",
+    "name": "Hobbier",
+    "slug": "hobbier-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,16 +12,22 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.angeortizsteam.hobbierapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e2588b17-9bb1-4dfb-b273-2c31a7359bb7"
+      }
+    }
   }
 }

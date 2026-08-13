@@ -1,0 +1,13 @@
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://mlmpolewfhxdcntxwllu.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sbXBvbGV3Zmh4ZGNudHh3bGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU2MzYsImV4cCI6MjEwMTc5MTYzNn0.CtFiO3o17iefd8K4weHBylJ-9Jwy5eDEtuTelhoZ1M4"
+      }
+    }
+  }
+}

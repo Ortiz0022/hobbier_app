@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { useFonts } from 'expo-font';
@@ -155,6 +156,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,

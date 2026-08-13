@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 export const HomeHeader = ({ profile }) => {
-  const firstName = profile?.full_name ? profile.full_name.split(' ')[0] : 'Usuario';
+  const username = profile?.username ? `@${profile.username}` : '@usuario';
   const points = profile?.points || 0;
 
   return (
@@ -14,12 +14,11 @@ export const HomeHeader = ({ profile }) => {
           <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>{firstName[0].toUpperCase()}</Text>
+            <Text style={styles.avatarInitial}>{username.charAt(1).toUpperCase()}</Text>
           </View>
         )}
         <View style={styles.brandTextCol}>
-          <Text style={styles.brandTitle}>Hobbier</Text>
-          <Text style={styles.userSubtext}>¡Hola, {firstName}!</Text>
+          <Text style={styles.brandTitle}>{username}</Text>
         </View>
       </View>
 
@@ -74,16 +73,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 18,
     color: '#053E4A',
-    fontFamily: 'Poppins_800ExtraBold',
-    letterSpacing: -0.8,
-    marginBottom: 1,
-  },
-  userSubtext: {
-    fontSize: 12,
-    color: '#666C67',
-    fontWeight: '400',
+    fontFamily: 'Poppins_700Bold',
+    letterSpacing: -0.5,
   },
   rightActions: {
     flexDirection: 'row',
