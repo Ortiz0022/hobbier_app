@@ -1,6 +1,5 @@
 import { supabase } from '../config/supabase';
 
-// 1. Buscar usuarios por username
 export const searchUsersByUsername = async (query, currentUserId) => {
   try {
     if (!query.trim()) return { users: [], error: null };
@@ -20,14 +19,12 @@ export const searchUsersByUsername = async (query, currentUserId) => {
   }
 };
 
-// 2. Enviar solicitud de amistad
 export const sendFriendRequest = async (requesterId, addresseeId) => {
   try {
     if (requesterId === addresseeId) {
       throw new Error('No puedes enviarte una solicitud de amistad a ti mismo.');
     }
 
-    // Verificar si ya existe alguna solicitud o amistad activa
     const { data: existing } = await supabase
       .from('friendships')
       .select('*')
@@ -43,7 +40,6 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
       if (existing.status === 'PENDING') {
         throw new Error('Ya existe una solicitud de amistad pendiente entre ustedes.');
       }
-      // Si fue rechazada previamente, reactivarla como PENDING
       const { data: updated, error: updateErr } = await supabase
         .from('friendships')
         .update({
@@ -78,7 +74,6 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
   }
 };
 
-// 3. Obtener solicitudes recibidas pendientes
 export const getReceivedFriendRequests = async (userId) => {
   try {
     const { data, error } = await supabase
@@ -99,7 +94,6 @@ export const getReceivedFriendRequests = async (userId) => {
   }
 };
 
-// 4. Aceptar o rechazar solicitud de amistad
 export const respondToFriendRequest = async (friendshipId, status) => {
   try {
     const { data, error } = await supabase
@@ -117,7 +111,6 @@ export const respondToFriendRequest = async (friendshipId, status) => {
   }
 };
 
-// 5. Obtener lista de amigos aceptados
 export const getFriendsList = async (userId) => {
   try {
     const { data, error } = await supabase
@@ -150,7 +143,6 @@ export const getFriendsList = async (userId) => {
   }
 };
 
-// 6. Eliminar amistad
 export const removeFriendship = async (friendshipId) => {
   try {
     const { error } = await supabase
@@ -166,24 +158,20 @@ export const removeFriendship = async (friendshipId) => {
   }
 };
 
-// 7. Feed de amigos con paginación
 export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
   try {
     const from = page * limit;
     const to = from + limit - 1;
 
-    // Primero obtener IDs de amigos aceptados
     const { friends } = await getFriendsList(userId);
     const friendIds = friends.map((f) => f.profile.id);
 
-    // Incluir al usuario actual y a sus amigos para vista completa
     const targetUserIds = Array.from(new Set([...friendIds, userId]));
 
     if (targetUserIds.length === 0) {
       return { posts: [], hasMore: false, error: null };
     }
 
-    // Obtener catálogo base de actividades para asegurar nombres reales en caso de restricción RLS
     const { data: catalogActivities } = await supabase
       .from('activities')
       .select('id, title, description, points_awarded, category_id');
@@ -211,7 +199,6 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
 
     if (error) throw error;
 
-    // Enriquecer publicaciones asegurando que siempre tengan nombre real de actividad y puntos
     const enrichedPosts = (data || []).map((post, idx) => {
       let activityTitle = post.user_activity?.activity?.title;
       let pointsAwarded = post.user_activity?.points_awarded;
@@ -240,7 +227,33 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
   }
 };
 
-// 8. Reportar publicación (vía RPC seguro report_post)
+export const getUserPosts = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        id,
+        image_url,
+        created_at,
+        user_activity:user_activities(
+          activity:activities(
+            title,
+            category:activity_categories(name)
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'ACTIVE')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { posts: data || [], error: null };
+  } catch (error) {
+    console.error('Error obteniendo publicaciones del usuario:', error.message);
+    return { posts: [], error };
+  }
+};
+
 export const reportPost = async (postId, reporterId, reason, details = '') => {
   try {
     const { data: rpcData, error: rpcError } = await supabase.rpc('report_post', {
@@ -253,7 +266,6 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
       return { report: rpcData, error: null };
     }
 
-    // Fallback a inserción directa
     const { data, error } = await supabase
       .from('reports')
       .insert({
