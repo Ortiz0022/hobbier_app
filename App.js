@@ -17,6 +17,8 @@ import {
 } from '@expo-google-fonts/poppins';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
+import { SplashScreen } from './src/features/auth/SplashScreen';
+import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { RecommendationScreen } from './src/features/recommendations/RecommendationScreen';
 import { PendingActivityScreen } from './src/features/user_activities/PendingActivityScreen';
@@ -26,9 +28,11 @@ import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
 
 const MainApp = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, passwordRecovery } = useAuth();
   const [currentScreen, setCurrentScreen] = useState('recommendations');
   const [autoExpandId, setAutoExpandId] = useState(null);
+  // La bienvenida se ve una sola vez por arranque de la app, antes del login.
+  const [showSplash, setShowSplash] = useState(true);
 
   if (loading) {
     return (
@@ -39,7 +43,17 @@ const MainApp = () => {
     );
   }
 
+  // Va ANTES de comprobar `user`: el enlace del correo abre la app con sesión ya
+  // iniciada, así que sin este corte el usuario entraría directo al inicio y nunca
+  // llegaría a escribir su contraseña nueva.
+  if (passwordRecovery) {
+    return <ResetPasswordScreen />;
+  }
+
   if (!user) {
+    if (showSplash) {
+      return <SplashScreen onFinish={() => setShowSplash(false)} />;
+    }
     return <AuthScreen />;
   }
 

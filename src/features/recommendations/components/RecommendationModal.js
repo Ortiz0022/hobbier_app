@@ -13,6 +13,7 @@ export const RecommendationModal = ({
   visible,
   loading,
   recommended,
+  reason = null,
   accepting,
   onAccept,
   onReload,
@@ -52,6 +53,15 @@ export const RecommendationModal = ({
 
               <Text style={styles.modalActivityTitle}>{recommended.title}</Text>
               <Text style={styles.modalActivityDesc}>{recommended.description}</Text>
+
+              {/* Solo aparece cuando eligió la IA; con el respaldo por afinidad
+                  no hay explicación que mostrar y el bloque desaparece. */}
+              {reason ? (
+                <View style={styles.reasonBox}>
+                  <Feather name="zap" size={13} color="#0C8AA6" style={{ marginTop: 2 }} />
+                  <Text style={styles.reasonText}>{reason}</Text>
+                </View>
+              ) : null}
 
               <View style={styles.modalActionsRow}>
                 <TouchableOpacity
@@ -175,6 +185,23 @@ const styles = StyleSheet.create({
     color: '#121B22',
     lineHeight: 20,
     marginBottom: 24,
+  },
+  reasonBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#EAF7FA',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: -10,
+    marginBottom: 22,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#0C8AA6',
   },
   modalActionsRow: {
     gap: 10,

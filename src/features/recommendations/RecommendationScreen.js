@@ -53,6 +53,9 @@ export const RecommendationScreen = ({
     setRecommended(null);
     setModalVisible(true);
 
+    // Recomendación aleatoria del catálogo, como siempre.
+    // La selección con IA está en pausa hasta decidirlo con el equipo: el SQL y la
+    // Edge Function siguen en supabase/ para retomarlos, solo se dejó de llamar.
     const { activity, error } = await getRecommendedActivity(user.id);
     setLoadingRec(false);
 

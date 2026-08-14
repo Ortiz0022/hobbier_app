@@ -13,6 +13,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import {
   getReportedPostsAdmin,
@@ -33,6 +34,8 @@ export const AdminScreen = () => {
   // Estado de actividades
   const [activities, setActivities] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Guarda el id del post pendiente de confirmar. Null = no hay confirmación abierta.
+  const [postToDelete, setPostToDelete] = useState(null);
 
   // Campos para crear actividad
   const [newTitle, setNewTitle] = useState('');
@@ -115,7 +118,7 @@ export const AdminScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.forbiddenBox}>
-          <Text style={styles.forbiddenEmoji}>🔒</Text>
+          <Ionicons name="lock-closed" size={54} color="#121B22" style={{ marginBottom: 12 }} />
           <Text style={styles.forbiddenTitle}>Acceso Restringido</Text>
           <Text style={styles.forbiddenSubtitle}>
             Esta sección solo está disponible para usuarios con rol de Administrador.
@@ -135,7 +138,7 @@ export const AdminScreen = () => {
             onPress={() => setActiveTab('reports')}
           >
             <Text style={[styles.tabText, activeTab === 'reports' && styles.activeTabText]}>
-              🚩 Reportes ({reportedPosts.length})
+              <Ionicons name="flag" size={14} /> Reportes ({reportedPosts.length})
             </Text>
           </TouchableOpacity>
 
@@ -144,7 +147,7 @@ export const AdminScreen = () => {
             onPress={() => setActiveTab('activities')}
           >
             <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
-              ⚡ Actividades
+              <Ionicons name="flash" size={14} /> Actividades
             </Text>
           </TouchableOpacity>
         </View>
@@ -154,10 +157,10 @@ export const AdminScreen = () => {
         {/* PESTAÑA REPORTES */}
         {activeTab === 'reports' && (
           <View>
-            {loading && <ActivityIndicator color="#6366f1" style={{ marginTop: 20 }} />}
+            {loading && <ActivityIndicator color="#0C8AA6" style={{ marginTop: 20 }} />}
             {!loading && reportedPosts.length === 0 && (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyEmoji}>✨</Text>
+                <Ionicons name="sparkles" size={40} color="#121B22" style={{ marginBottom: 8 }} />
                 <Text style={styles.emptyText}>No hay publicaciones reportadas pendientes de revisión.</Text>
               </View>
             )}
@@ -187,14 +190,14 @@ export const AdminScreen = () => {
                     style={styles.restoreBtn}
                     onPress={() => handleResolveReport(post.id, 'ACTIVE')}
                   >
-                    <Text style={styles.btnText}>Restaurar (ACTIVE)</Text>
+                    <Text style={styles.restoreBtnText}>Mantener</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.deleteBtn}
-                    onPress={() => handleResolveReport(post.id, 'DELETED')}
+                    onPress={() => setPostToDelete(post.id)}
                   >
-                    <Text style={styles.btnText}>Eliminar (DELETED)</Text>
+                    <Text style={styles.deleteBtnText}>Eliminar</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -212,7 +215,7 @@ export const AdminScreen = () => {
               <Text style={styles.createBtnText}>+ Crear Nueva Actividad</Text>
             </TouchableOpacity>
 
-            {loading && <ActivityIndicator color="#6366f1" style={{ marginTop: 20 }} />}
+            {loading && <ActivityIndicator color="#0C8AA6" style={{ marginTop: 20 }} />}
 
             {activities.map((act) => (
               <View key={act.id} style={styles.activityCard}>
@@ -238,6 +241,41 @@ export const AdminScreen = () => {
       </ScrollView>
 
       {/* MODAL DE CREACIÓN DE ACTIVIDAD */}
+      {/* CONFIRMACIÓN DE BORRADO.
+          Modal propio en lugar de Alert.alert o window.confirm: ninguno de los dos
+          deja ordenar los botones, y en web Alert.alert de react-native-web ni
+          siquiera se muestra. */}
+      <Modal visible={postToDelete !== null} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>¿Eliminar la publicación?</Text>
+            <Text style={styles.confirmText}>
+              Dejará de verse en el feed y el autor perderá su evidencia. Esta acción no
+              se puede deshacer.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.confirmDeleteBtn}
+                onPress={() => {
+                  handleResolveReport(postToDelete, 'DELETED');
+                  setPostToDelete(null);
+                }}
+              >
+                <Text style={styles.confirmDeleteText}>Sí, eliminar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelModalBtn}
+                onPress={() => setPostToDelete(null)}
+              >
+                <Text style={styles.cancelModalText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showCreateModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -247,7 +285,7 @@ export const AdminScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Ej. Pinta un cuadro abstracto"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#8A908B"
               value={newTitle}
               onChangeText={setNewTitle}
             />
@@ -256,7 +294,7 @@ export const AdminScreen = () => {
             <TextInput
               style={[styles.input, { height: 80 }]}
               placeholder="Explica detalladamente qué debe hacer el usuario..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#8A908B"
               multiline
               value={newDesc}
               onChangeText={setNewDesc}
@@ -277,7 +315,7 @@ export const AdminScreen = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Ej. 12"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#8A908B"
                   keyboardType="number-pad"
                   value={newMinAge}
                   onChangeText={setNewMinAge}
@@ -286,12 +324,6 @@ export const AdminScreen = () => {
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelModalBtn}
-                onPress={() => setShowCreateModal(false)}
-              >
-                <Text style={styles.cancelModalText}>Cancelar</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.submitModalBtn}
                 onPress={handleCreateActivity}
@@ -302,6 +334,12 @@ export const AdminScreen = () => {
                 ) : (
                   <Text style={styles.submitModalText}>Guardar Actividad</Text>
                 )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelModalBtn}
+                onPress={() => setShowCreateModal(false)}
+              >
+                <Text style={styles.cancelModalText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -314,7 +352,7 @@ export const AdminScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     padding: 24,
@@ -323,12 +361,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#121B22',
     marginBottom: 16,
   },
   tabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F0F3F5',
     borderRadius: 14,
     padding: 4,
   },
@@ -339,15 +379,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeTab: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#F0F8FA',
   },
   tabText: {
-    color: '#94a3b8',
+    color: '#8A908B',
     fontSize: 13,
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#ffffff',
+    color: '#0C8AA6',
     fontWeight: '700',
   },
   content: {
@@ -367,21 +407,21 @@ const styles = StyleSheet.create({
   forbiddenTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#121B22',
     marginBottom: 8,
   },
   forbiddenSubtitle: {
-    color: '#94a3b8',
+    color: '#8A908B',
     textAlign: 'center',
     fontSize: 14,
   },
   emptyCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#F0F8FA',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#F0F3F5',
     marginTop: 12,
   },
   emptyEmoji: {
@@ -389,17 +429,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptyText: {
-    color: '#94a3b8',
+    color: '#121B22',
     fontSize: 14,
     textAlign: 'center',
   },
   reportCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: '#F0F3F5',
   },
   reportHeader: {
     flexDirection: 'row',
@@ -408,12 +448,12 @@ const styles = StyleSheet.create({
   },
   reportAuthor: {
     fontWeight: '700',
-    color: '#f8fafc',
+    color: '#121B22',
     fontSize: 14,
   },
   reportBadge: {
-    backgroundColor: '#991b1b',
-    color: '#fca5a5',
+    backgroundColor: '#FF8F21',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
     paddingHorizontal: 8,
@@ -427,19 +467,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reasonsBox: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#F0F3F5',
     padding: 10,
     borderRadius: 10,
     marginBottom: 14,
   },
   reasonsLabel: {
-    color: '#cbd5e1',
+    color: '#121B22',
     fontWeight: '700',
     fontSize: 12,
     marginBottom: 4,
   },
   reasonText: {
-    color: '#fca5a5',
+    color: '#8A908B',
     fontSize: 12,
   },
   reportActions: {
@@ -448,42 +488,47 @@ const styles = StyleSheet.create({
   },
   restoreBtn: {
     flex: 1,
-    backgroundColor: '#10b981',
-    borderRadius: 10,
-    paddingVertical: 10,
+    backgroundColor: '#F0F3F5',
+    borderRadius: 20,
+    paddingVertical: 12,
     alignItems: 'center',
+  },
+  restoreBtnText: {
+    color: '#121B22',
+    fontWeight: '700',
+    fontSize: 14,
   },
   deleteBtn: {
     flex: 1,
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    paddingVertical: 10,
+    backgroundColor: '#A94403',
+    borderRadius: 20,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  btnText: {
-    color: '#ffffff',
+  deleteBtnText: {
+    color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
   },
   createBtn: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#0C8AA6',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
   },
   createBtnText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
   },
   activityCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#F0F3F5',
   },
   activityHeader: {
     flexDirection: 'row',
@@ -494,7 +539,7 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#f8fafc',
+    color: '#121B22',
     flex: 1,
     marginRight: 8,
   },
@@ -504,23 +549,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeToggle: {
-    backgroundColor: '#065f46',
+    backgroundColor: '#0C8AA6',
   },
   inactiveToggle: {
-    backgroundColor: '#451a03',
+    backgroundColor: '#8A908B',
   },
   statusToggleText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },
   activityDesc: {
-    color: '#94a3b8',
+    color: '#8A908B',
     fontSize: 13,
     marginBottom: 8,
   },
   activityMeta: {
-    color: '#818cf8',
+    color: '#8A908B',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -531,33 +576,32 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
-    borderWidth: 1,
-    borderColor: '#334155',
+    borderWidth: 0,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#f8fafc',
+    color: '#121B22',
     marginBottom: 16,
   },
   inputLabel: {
-    color: '#cbd5e1',
+    color: '#121B22',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
     marginTop: 8,
   },
   input: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#F0F3F5',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#f8fafc',
+    color: '#121B22',
     fontSize: 14,
   },
   formRow: {
@@ -569,26 +613,45 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 20,
   },
+  confirmText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8A908B',
+    marginBottom: 20,
+    marginTop: -8,
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    backgroundColor: '#A94403',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  confirmDeleteText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
   cancelModalBtn: {
     flex: 1,
-    backgroundColor: '#334155',
+    // Cancelar no es destructivo: superficie neutra, como el botón "Mantener".
+    backgroundColor: '#F0F3F5',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
   },
   cancelModalText: {
-    color: '#cbd5e1',
+    color: '#121B22',
     fontWeight: '600',
   },
   submitModalBtn: {
     flex: 1,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#0C8AA6',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
   },
   submitModalText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 });

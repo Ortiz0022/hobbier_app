@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../config/supabase';
+import { supabase, getRedirectUrl } from '../config/supabase';
 
 const AuthContext = createContext();
 
@@ -8,6 +8,10 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  // El enlace del correo de recuperación abre la app CON sesión iniciada. Sin esta
+  // bandera el usuario entraría directo al inicio y nunca vería el formulario para
+  // escribir su nueva contraseña.
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   // Obtener perfil del usuario desde Supabase PostgreSQL
   const fetchProfile = async (userId) => {
@@ -43,7 +47,10 @@ export const AuthProvider = ({ children }) => {
 
     // 2. Escuchar cambios de estado de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecovery(true);
+        }
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -117,6 +124,60 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ¿Está tomado ese nombre de usuario? La columna es UNIQUE y el trigger
+  // handle_new_user falla al insertarlo repetido, así que conviene avisar antes de
+  // crear la cuenta. Ante un fallo de red devuelve false: que decida el servidor,
+  // en lugar de bloquear un registro que quizá sí era válido.
+  const isUsernameTaken = async (username) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username.trim().toLowerCase())
+        .maybeSingle();
+
+      if (error) throw error;
+      return Boolean(data);
+    } catch (error) {
+      console.warn('No se pudo comprobar el nombre de usuario:', error.message);
+      return false;
+    }
+  };
+
+  // Enviar el correo con el enlace para restablecer la contraseña.
+  // No se distingue entre correo registrado y no registrado: Supabase responde igual
+  // en ambos casos a propósito, para no revelar qué cuentas existen.
+  const resetPassword = async ({ email }) => {
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: getRedirectUrl(),
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Guardar la contraseña nueva. Requiere la sesión temporal que crea el enlace
+  // del correo, por eso solo tiene sentido llamarla con passwordRecovery en true.
+  const updatePassword = async (newPassword) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      setPasswordRecovery(false);
+      return { error: null };
+    } catch (error) {
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Cerrar sesión
   const signOut = async () => {
     setLoading(true);
@@ -126,6 +187,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
+      setPasswordRecovery(false);
     } catch (error) {
       console.error('Error al cerrar sesión:', error.message);
     } finally {
@@ -147,9 +209,13 @@ export const AuthProvider = ({ children }) => {
         session,
         profile,
         loading,
+        passwordRecovery,
         signUp,
         signIn,
         signOut,
+        resetPassword,
+        updatePassword,
+        isUsernameTaken,
         refreshProfile,
         isAdmin: profile?.role === 'ADMIN',
       }}
