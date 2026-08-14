@@ -15,15 +15,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost } from '../../services/socialService';
-
-const REPORT_REASONS = [
-  'Contenido ofensivo',
-  'Contenido inapropiado',
-  'Violencia',
-  'Acoso',
-  'Spam',
-  'Otro',
-];
+import { ReportModal } from '../../components/ReportModal';
 
 const getPillStyle = (title, index) => {
   const t = (title || '').toLowerCase();
@@ -71,7 +63,6 @@ export const FeedScreen = () => {
   // Estado para el modal de reportes
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [selectedReason, setSelectedReason] = useState(REPORT_REASONS[0]);
   const [submittingReport, setSubmittingReport] = useState(false);
 
   useEffect(() => {
@@ -114,18 +105,17 @@ export const FeedScreen = () => {
 
   const openReportModal = (post) => {
     setSelectedPost(post);
-    setSelectedReason(REPORT_REASONS[0]);
     setReportModalVisible(true);
   };
 
-  const handleSendReport = async () => {
-    if (!selectedPost || !user?.id) return;
+  const handleSendReport = async (reason) => {
+    if (!selectedPost || !user?.id || !reason) return;
     setSubmittingReport(true);
 
     const { error } = await reportPost(
       selectedPost.id,
       user.id,
-      selectedReason,
+      reason,
       'Reportado desde el feed'
     );
 
@@ -260,57 +250,12 @@ export const FeedScreen = () => {
       </ScrollView>
 
       {/* MODAL DE REPORTE DE CONTENIDO */}
-      <Modal visible={reportModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reportar Publicación</Text>
-            <Text style={styles.modalSubtitle}>
-              Selecciona el motivo del reporte. La publicación se ocultará inmediatamente de tu feed.
-            </Text>
-
-            {REPORT_REASONS.map((reason) => (
-              <TouchableOpacity
-                key={reason}
-                style={[
-                  styles.reasonOption,
-                  selectedReason === reason && styles.reasonOptionSelected,
-                ]}
-                onPress={() => setSelectedReason(reason)}
-              >
-                <Text
-                  style={[
-                    styles.reasonOptionText,
-                    selectedReason === reason && styles.reasonOptionTextSelected,
-                  ]}
-                >
-                  {reason}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setReportModalVisible(false)}
-              >
-                <Text style={styles.modalCancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalSubmitBtn}
-                onPress={handleSendReport}
-                disabled={submittingReport}
-              >
-                {submittingReport ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <Text style={styles.modalSubmitBtnText}>Enviar Reporte</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ReportModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleSendReport}
+        submitting={submittingReport}
+      />
     </SafeAreaView>
   );
 };
@@ -501,74 +446,6 @@ const styles = StyleSheet.create({
   loadMoreBtnText: {
     color: '#334155',
     fontSize: 15,
-    fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 6,
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: '#64748b',
-    marginBottom: 16,
-  },
-  reasonOption: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  reasonOptionSelected: {
-    borderColor: '#6366f1',
-    backgroundColor: '#eef2ff',
-  },
-  reasonOptionText: {
-    color: '#334155',
-    fontSize: 14,
-  },
-  reasonOptionTextSelected: {
-    color: '#4f46e5',
-    fontWeight: '700',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 16,
-  },
-  modalCancelBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#f1f5f9',
-  },
-  modalCancelBtnText: {
-    color: '#475569',
-    fontWeight: '600',
-  },
-  modalSubmitBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#ef4444',
-  },
-  modalSubmitBtnText: {
-    color: '#ffffff',
     fontWeight: '700',
   },
 });
