@@ -29,12 +29,16 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
   const [pendingActivities, setPendingActivities] = useState([]);
   const [completedActivities, setCompletedActivities] = useState([]);
 
-  // Secciones colapsables con flechita de abrir/cerrar
+  // Secciones colapsables
   const [showPending, setShowPending] = useState(true);
   const [showCompleted, setShowCompleted] = useState(true);
 
-  const [expandedActivityId, setExpandedActivityId] = useState(initialExpandedId || null);
-  const [imageUri, setImageUri] = useState(null);
+  // Estados de expansión y carga de fotos para pendientes y completadas
+  const [expandedPendingId, setExpandedPendingId] = useState(initialExpandedId || null);
+  const [pendingImageUri, setPendingImageUri] = useState(null);
+
+  const [expandedCompletedId, setExpandedCompletedId] = useState(null);
+  const [completedImageUri, setCompletedImageUri] = useState(null);
 
   useEffect(() => {
     loadUserActivities();
@@ -51,15 +55,15 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
       setCompletedActivities(completed);
 
       if (initialExpandedId && pending.some((a) => a.id === initialExpandedId)) {
-        setExpandedActivityId(initialExpandedId);
-      } else if (pending.length > 0 && !expandedActivityId) {
-        setExpandedActivityId(pending[0].id);
+        setExpandedPendingId(initialExpandedId);
+      } else if (pending.length > 0 && !expandedPendingId) {
+        setExpandedPendingId(pending[0].id);
       }
     }
     setLoading(false);
   };
 
-  const handlePickImage = async () => {
+  const handlePickImage = async (isForCompleted = false) => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
@@ -77,17 +81,26 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUri(result.assets[0].uri);
+        const selectedUri = result.assets[0].uri;
+        if (isForCompleted) {
+          setCompletedImageUri(selectedUri);
+        } else {
+          setPendingImageUri(selectedUri);
+        }
       }
     } catch (err) {
       console.error('Error al seleccionar imagen:', err);
     }
   };
 
-  const handleCompleteActivity = async (targetActivity) => {
+  const handleCompleteOrRepeatActivity = async (targetActivity, isRepeating = false) => {
     if (!targetActivity) return;
-    if (!imageUri) {
-      const msg = 'Por favor selecciona o toma una fotografía de tu creación.';
+    const targetImageUri = isRepeating ? completedImageUri : pendingImageUri;
+
+    if (!targetImageUri) {
+      const msg = isRepeating
+        ? 'Por favor selecciona la foto de tu repetición.'
+        : 'Por favor selecciona o toma una fotografía de tu creación.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Evidencia requerida', msg);
       return;
@@ -98,7 +111,7 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
       const { publicUrl, error: uploadErr } = await uploadEvidenceImage(
         user.id,
         targetActivity.activity_id,
-        imageUri
+        targetImageUri
       );
 
       if (uploadErr || !publicUrl) {
@@ -111,19 +124,29 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
       );
 
       if (rpcErr || !result?.success) {
-        throw new Error(rpcErr?.message || 'Error al completar la actividad.');
+        throw new Error(rpcErr?.message || 'Error al registrar la actividad.');
       }
 
       await refreshProfile();
 
-      const msg = `¡Felicidades! Completaste la actividad y ganaste ${result.points_awarded} puntos.`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('¡Puntos Otorgados!', msg);
+      const successMsg = isRepeating
+        ? `¡Excelente constancia! Registraste tu avance y ganaste +${result.points_awarded} puntos.`
+        : `¡Felicidades! Completaste la actividad y ganaste ${result.points_awarded} puntos.`;
 
-      setImageUri(null);
-      setExpandedActivityId(null);
+      if (Platform.OS === 'web') alert(successMsg);
+      else Alert.alert('¡Puntos Otorgados!', successMsg);
+
+      if (isRepeating) {
+        setCompletedImageUri(null);
+      } else {
+        setPendingImageUri(null);
+        setExpandedPendingId(null);
+      }
+
       await loadUserActivities();
-      if (onActivityCompleted) onActivityCompleted();
+      if (!isRepeating && onActivityCompleted) {
+        onActivityCompleted();
+      }
     } catch (err) {
       const msg = err.message || 'No se pudo completar la actividad.';
       if (Platform.OS === 'web') alert(msg);
@@ -136,7 +159,7 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#386756" />
+        <ActivityIndicator size="large" color="#08333D" />
         <Text style={styles.loadingText}>Cargando mis actividades...</Text>
       </View>
     );
@@ -144,22 +167,22 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ActivitiesHeader profile={profile} />
 
-        {/* SECCIÓN 1: PENDIENTES COLAPSABLE */}
+        {/* SECCIÓN 1: PENDIENTES */}
         <TouchableOpacity
           style={styles.sectionHeaderBtn}
           onPress={() => setShowPending(!showPending)}
           activeOpacity={0.8}
         >
           <Text style={styles.sectionTitle}>
-            PENDIENTES ({pendingActivities.length})
+            Pendientes ({pendingActivities.length})
           </Text>
           <Feather
             name={showPending ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color="#386756"
+            size={17}
+            color={showPending ? '#00C9FD' : '#08333D'}
           />
         </TouchableOpacity>
 
@@ -171,7 +194,7 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
               </View>
             ) : (
               pendingActivities.map((item) => {
-                const isExpanded = expandedActivityId === item.id;
+                const isExpanded = expandedPendingId === item.id;
                 return (
                   <ActivityCard
                     key={item.id}
@@ -179,13 +202,13 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
                     isPending={true}
                     isExpanded={isExpanded}
                     onToggleExpand={() => {
-                      setExpandedActivityId(isExpanded ? null : item.id);
-                      setImageUri(null);
+                      setExpandedPendingId(isExpanded ? null : item.id);
+                      setPendingImageUri(null);
                     }}
-                    imageUri={isExpanded ? imageUri : null}
+                    imageUri={isExpanded ? pendingImageUri : null}
                     completing={completing}
-                    onPickImage={handlePickImage}
-                    onComplete={() => handleCompleteActivity(item)}
+                    onPickImage={() => handlePickImage(false)}
+                    onComplete={() => handleCompleteOrRepeatActivity(item, false)}
                   />
                 );
               })
@@ -193,19 +216,19 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
           </View>
         )}
 
-        {/* SECCIÓN 2: COMPLETADAS COLAPSABLE */}
+        {/* SECCIÓN 2: COMPLETADAS CON REPETICIÓN */}
         <TouchableOpacity
-          style={[styles.sectionHeaderBtn, { marginTop: 18 }]}
+          style={[styles.sectionHeaderBtn, { marginTop: 14 }]}
           onPress={() => setShowCompleted(!showCompleted)}
           activeOpacity={0.8}
         >
           <Text style={styles.sectionTitle}>
-            COMPLETADAS ({completedActivities.length})
+            Completadas ({completedActivities.length})
           </Text>
           <Feather
             name={showCompleted ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color="#386756"
+            size={17}
+            color={showCompleted ? '#00C9FD' : '#08333D'}
           />
         </TouchableOpacity>
 
@@ -216,9 +239,25 @@ export const PendingActivityScreen = ({ initialExpandedId, onActivityCompleted }
                 <Text style={styles.emptyText}>No has completado actividades aún.</Text>
               </View>
             ) : (
-              completedActivities.map((item) => (
-                <ActivityCard key={item.id} item={item} isPending={false} />
-              ))
+              completedActivities.map((item) => {
+                const isExpanded = expandedCompletedId === item.id;
+                return (
+                  <ActivityCard
+                    key={item.id}
+                    item={item}
+                    isPending={false}
+                    isExpanded={isExpanded}
+                    onToggleExpand={() => {
+                      setExpandedCompletedId(isExpanded ? null : item.id);
+                      setCompletedImageUri(null);
+                    }}
+                    imageUri={isExpanded ? completedImageUri : null}
+                    completing={completing}
+                    onPickImage={() => handlePickImage(true)}
+                    onComplete={() => handleCompleteOrRepeatActivity(item, true)}
+                  />
+                );
+              })
             )}
           </View>
         )}
@@ -252,17 +291,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#121B22',
-    letterSpacing: 0.8,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#08333D',
   },
   listContainer: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',

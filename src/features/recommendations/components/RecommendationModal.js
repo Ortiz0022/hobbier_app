@@ -27,7 +27,7 @@ export const RecommendationModal = ({
             <View style={styles.modalLoadingBox}>
               <ActivityIndicator size="large" color="#DF9C8E" />
               <Text style={styles.modalLoadingText}>
-                Buscando en Supabase una actividad basada en tu edad, gustos e insumos...
+                Buscando una actividad basada en tu edad, gustos e insumos...
               </Text>
             </View>
           ) : recommended ? (

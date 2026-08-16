@@ -14,13 +14,12 @@ export const InlineEvidenceUploader = ({
   completing,
   onPickImage,
   onComplete,
+  buttonText = 'Completar actividad',
+  placeholderText = 'Sube una foto de tu creación',
 }) => {
   return (
     <View style={styles.container}>
-      {/* CONTENEDOR CON PUNTITOS Y DECORACIÓN DE ESCARCHA */}
       <View style={styles.uploadWrapper}>
-        {/* ELIMINADOS LOS PUNTOS DECORATIVOS PARA LIMPIEZA VISUAL */}
-
         <TouchableOpacity
           style={styles.dashedDropzone}
           onPress={onPickImage}
@@ -32,20 +31,19 @@ export const InlineEvidenceUploader = ({
             <View style={styles.placeholderContent}>
               <View style={styles.cameraIconContainer}>
                 <View style={styles.cameraCircle}>
-                  <Feather name="camera" size={26} color="#0C8AA6" />
+                  <Feather name="camera" size={28} color="#08333D" />
                 </View>
                 <View style={styles.plusIconBadge}>
-                  <Feather name="plus-circle" size={16} color="#FF8F21" />
+                  <Feather name="plus-circle" size={18} color="#FF5A00" />
                 </View>
               </View>
-              <Text style={styles.uploadText}>Sube una foto de tu</Text>
-              <Text style={styles.uploadTextSub}>creación</Text>
+              <Text style={styles.uploadText}>{placeholderText}</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* BOTÓN MENTA COMPLETAR ACTIVIDAD */}
+      {/* BOTÓN REGISTRAR / COMPLETAR ACTIVIDAD */}
       <TouchableOpacity
         style={[styles.completeBtn, !imageUri && styles.completeBtnDisabled]}
         onPress={onComplete}
@@ -56,7 +54,7 @@ export const InlineEvidenceUploader = ({
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           <Text style={[styles.completeBtnText, !imageUri && styles.completeBtnTextDisabled]}>
-            Completar actividad
+            {buttonText}
           </Text>
         )}
       </TouchableOpacity>
@@ -69,23 +67,21 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#EFEEEA',
+    borderTopColor: '#F0F3F5',
   },
   uploadWrapper: {
-    position: 'relative',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   dashedDropzone: {
-    height: 140,
-    backgroundColor: '#F5FCFF',
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 201, 253, 0.2)',
+    height: 165,
+    backgroundColor: 'rgba(0, 201, 253, 0.05)',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 201, 253, 0.35)',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    zIndex: 2,
   },
   placeholderContent: {
     alignItems: 'center',
@@ -93,20 +89,20 @@ const styles = StyleSheet.create({
   },
   cameraIconContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cameraCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#08333D',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   plusIconBadge: {
     position: 'absolute',
@@ -114,74 +110,33 @@ const styles = StyleSheet.create({
     right: -2,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    padding: 1,
   },
   uploadText: {
     fontSize: 14,
-    fontWeight: '400',
-    color: '#121B22',
-    textAlign: 'center',
-  },
-  uploadTextSub: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#121B22',
+    fontWeight: '500',
+    color: '#08333D',
     textAlign: 'center',
   },
   previewImage: {
     width: '100%',
     height: '100%',
   },
-  // PUNTOS PASTEL DE FONDO (ESCARCHA Y CONFETI)
-  decorDot: {
-    position: 'absolute',
-    borderRadius: 10,
-    zIndex: 1,
-  },
-  dot1: {
-    top: 15,
-    left: -8,
-    width: 7,
-    height: 7,
-    backgroundColor: '#BEE0D0',
-  },
-  dot2: {
-    top: 35,
-    right: -6,
-    width: 9,
-    height: 9,
-    backgroundColor: '#E7A396',
-  },
-  dot3: {
-    bottom: 25,
-    left: -6,
-    width: 8,
-    height: 8,
-    backgroundColor: '#BDD4F6',
-  },
-  dot4: {
-    bottom: 12,
-    right: -8,
-    width: 6,
-    height: 6,
-    backgroundColor: '#FFCCC2',
-  },
-  dot5: {
-    top: 100,
-    right: -10,
-    width: 5,
-    height: 5,
-    backgroundColor: '#386756',
-    opacity: 0.5,
-  },
   completeBtn: {
-    backgroundColor: '#FF8F21',
-    borderRadius: 24,
+    backgroundColor: '#FF5A00',
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF5A00',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
   },
   completeBtnDisabled: {
-    backgroundColor: 'rgba(255, 143, 33, 0.4)',
+    backgroundColor: '#F1F3F5',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   completeBtnText: {
     color: '#FFFFFF',
@@ -189,6 +144,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   completeBtnTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#9AA0A6',
+    fontWeight: '600',
   },
 });

@@ -72,22 +72,41 @@ export const getAiRecommendation = async (excludeIds = []) => {
   }
 };
 
-// 2. Aceptar actividad recomendada (Pasa a estado PENDING)
+// 2. Aceptar actividad recomendada (Pasa a estado PENDING reutilizando registro si ya existía)
 export const acceptActivity = async (userId, activityId) => {
   try {
-    // Comprobar si ya tiene esta actividad PENDING
+    // 1. Comprobar si ya existe un registro para este usuario y actividad
     const { data: existing } = await supabase
       .from('user_activities')
       .select('*')
       .eq('user_id', userId)
       .eq('activity_id', activityId)
-      .eq('status', 'PENDING')
+      .order('assigned_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (existing) {
-      return { userActivity: existing, error: null };
+      if (existing.status === 'PENDING') {
+        return { userActivity: existing, error: null };
+      }
+
+      // Si ya estaba COMPLETED, la reactivamos a PENDING con nueva fecha de asignación
+      // manteniendo el mismo ID para unificar todo el historial de fotos
+      const { data: updated, error: updateErr } = await supabase
+        .from('user_activities')
+        .update({
+          status: 'PENDING',
+          assigned_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (updateErr) throw updateErr;
+      return { userActivity: updated, error: null };
     }
 
+    // 2. Si no existía previamente, crear el registro por primera vez
     const { data, error } = await supabase
       .from('user_activities')
       .insert({
@@ -120,13 +139,31 @@ export const getUserActivities = async (userId) => {
           points_awarded, 
           category_id,
           category:activity_categories(name, icon)
+        ),
+        posts:posts(
+          id,
+          image_url,
+          created_at,
+          status
         )
       `)
       .eq('user_id', userId)
       .order('assigned_at', { ascending: false });
 
     if (error) throw error;
-    return { activities: data || [], error: null };
+
+    // Ordenar posts de cada actividad por fecha descendente y filtrar solo los ACTIVE
+    const formattedData = (data || []).map((item) => {
+      const activePosts = (item.posts || [])
+        .filter((p) => p.status === 'ACTIVE')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      return {
+        ...item,
+        posts: activePosts,
+      };
+    });
+
+    return { activities: formattedData, error: null };
   } catch (error) {
     console.error('Error obteniendo actividades del usuario:', error.message);
     return { activities: [], error };
@@ -160,21 +197,32 @@ export const uploadEvidenceImage = async (userId, activityId, imageUri) => {
   }
 };
 
-// 5. Completar actividad y otorgar puntos mediante RPC transaccional
+// 5. Completar actividad / Registrar avance y otorgar puntos mediante RPC transaccional
 export const completeActivityRPC = async (userActivityId, imageUrl) => {
   try {
-    const { data, error } = await supabase.rpc('complete_activity', {
+    const { data, error } = await supabase.rpc('log_activity_progress', {
       p_user_activity_id: userActivityId,
       p_image_url: imageUrl,
     });
 
-    if (error) throw error;
+    if (error) {
+      // Fallback a complete_activity por compatibilidad
+      const { data: fallbackData, error: fallbackError } = await supabase.rpc('complete_activity', {
+        p_user_activity_id: userActivityId,
+        p_image_url: imageUrl,
+      });
+      if (fallbackError) throw fallbackError;
+      return { result: fallbackData, error: null };
+    }
+
     return { result: data, error: null };
   } catch (error) {
-    console.error('Error en RPC complete_activity:', error.message);
+    console.error('Error en RPC de registro de actividad:', error.message);
     return { result: null, error };
   }
 };
+
+export const logActivityProgressRPC = completeActivityRPC;
 
 // 6. Subir fotografía de perfil a Supabase Storage
 export const uploadAvatarImage = async (userId, imageUri) => {

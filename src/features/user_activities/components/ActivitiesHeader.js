@@ -15,19 +15,19 @@ export const ActivitiesHeader = ({ profile, onFilterPress }) => {
           <Text style={styles.userHandleText}>{username}</Text>
         </View>
 
-        {/* ACCIONES DE LA DERECHA: PUNTOS, NOTIFICACIONES Y FILTRO */}
+        {/* ACCIONES DE LA DERECHA: MARCADOR DORADO DE PUNTOS, NOTIFICACIONES Y FILTRO */}
         <View style={styles.actionsRow}>
           <View style={styles.pointsPill}>
-            <Feather name="target" size={12} color="#865046" />
+            <Feather name="star" size={13} color="#FFB300" />
             <Text style={styles.pointsText}>{points} pts</Text>
           </View>
 
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
-            <Feather name="bell" size={18} color="#121B22" />
+            <Feather name="bell" size={17} color="#08333D" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.8}>
-            <Feather name="sliders" size={18} color="#121B22" />
+            <Feather name="sliders" size={17} color="#08333D" />
           </TouchableOpacity>
         </View>
       </View>
@@ -37,7 +37,7 @@ export const ActivitiesHeader = ({ profile, onFilterPress }) => {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -48,35 +48,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#121B22',
-    letterSpacing: -0.4,
+    fontSize: 21,
+    fontWeight: '700',
+    color: '#08333D',
+    letterSpacing: -0.3,
   },
   userHandleText: {
     fontSize: 13,
-    color: '#121B22',
-    fontWeight: '400',
-    marginTop: 2,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 1,
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F3F5',
-    borderRadius: 16,
+    backgroundColor: '#FFF9EB',
+    borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 0, 0.3)',
+    gap: 5,
   },
   pointsText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#00DBFF',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#08333D',
   },
   iconBtn: {
     width: 36,

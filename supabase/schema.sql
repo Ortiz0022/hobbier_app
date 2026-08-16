@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS public.user_activities (
 CREATE TABLE IF NOT EXISTS public.posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  user_activity_id UUID UNIQUE NOT NULL REFERENCES public.user_activities(id) ON DELETE CASCADE,
+  user_activity_id UUID NOT NULL REFERENCES public.user_activities(id) ON DELETE CASCADE,
   image_url TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'REPORTED', 'DELETED')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -202,7 +202,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE FUNCTION public.complete_activity(
+CREATE OR REPLACE FUNCTION public.log_activity_progress(
   p_user_activity_id UUID,
   p_image_url TEXT
 )
@@ -224,20 +224,17 @@ BEGIN
     RAISE EXCEPTION 'La actividad del usuario no existe o no tiene permisos.';
   END IF;
 
-  IF v_status <> 'PENDING' THEN
-    RAISE EXCEPTION 'La actividad no está en estado PENDING.';
-  END IF;
-
   SELECT points_awarded INTO v_points FROM public.activities WHERE id = v_activity_id;
+  v_points := COALESCE(v_points, 10);
 
   UPDATE public.user_activities
   SET status = 'COMPLETED',
       completed_at = NOW(),
-      points_awarded = COALESCE(v_points, 10)
+      points_awarded = COALESCE(points_awarded, 0) + v_points
   WHERE id = p_user_activity_id;
 
   UPDATE public.profiles
-  SET points = COALESCE(points, 0) + COALESCE(v_points, 10),
+  SET points = COALESCE(points, 0) + v_points,
       updated_at = NOW()
   WHERE id = auth.uid();
 
@@ -247,9 +244,19 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
-    'points_awarded', COALESCE(v_points, 10),
+    'points_awarded', v_points,
     'post_id', v_post_id
   );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.complete_activity(
+  p_user_activity_id UUID,
+  p_image_url TEXT
+)
+RETURNS JSONB AS $$
+BEGIN
+  RETURN public.log_activity_progress(p_user_activity_id, p_image_url);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
