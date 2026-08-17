@@ -15,7 +15,6 @@ import {
   Pressable,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../config/supabase';
@@ -23,16 +22,64 @@ import { uploadAvatarImage, getUserActivities } from '../../services/activitySer
 import { getUserPosts } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 
+const TABS = [
+  { key: 'fotos', label: 'Fotos' },
+  { key: 'actividades', label: 'Actividades' },
+];
+
+// Misma función que usa ActivityCard.js para mapear categoría/título a un ícono.
+const getCategoryStyle = (categoryObj, title = '') => {
+  const catName = categoryObj?.name || '';
+  const searchKey = `${catName} ${title}`.toLowerCase();
+
+  let name = catName || 'Hobby';
+  let iconName = 'star';
+
+  if (searchKey.includes('arte') || searchKey.includes('pint') || searchKey.includes('cerám')) {
+    name = catName || 'Arte';
+    iconName = 'edit-2';
+  } else if (searchKey.includes('tecno') || searchKey.includes('python') || searchKey.includes('idioma') || searchKey.includes('program')) {
+    name = catName || 'Tecnología';
+    iconName = 'monitor';
+  } else if (searchKey.includes('natura') || searchKey.includes('botán') || searchKey.includes('deport') || searchKey.includes('paseo') || searchKey.includes('camin')) {
+    name = catName || 'Naturaleza';
+    iconName = 'map';
+  } else if (searchKey.includes('músic') || searchKey.includes('canc') || searchKey.includes('jam') || searchKey.includes('instrum')) {
+    name = catName || 'Música';
+    iconName = 'music';
+  } else if (searchKey.includes('juego') || searchKey.includes('ajedrez')) {
+    name = catName || 'Juegos';
+    iconName = 'award';
+  } else if (searchKey.includes('leer') || searchKey.includes('libro')) {
+    name = catName || 'Lectura';
+    iconName = 'book-open';
+  }
+
+  return { name, iconName };
+};
+
+// Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
+// ActivityCard e InlineEvidenceUploader (pantalla "Actividad").
 const COLORS = {
-  bg: '#F8F8F5',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  border: '#EBEBE5',
-  primary: '#0089A8',
-  primaryDark: '#005F73',
-  primarySoft: '#D9F7FB',
-  accent: '#FF9130',
-  textPrimary: '#1C201D',
-  textSecondary: '#666C67',
+  border: '#F0F3F5',
+  textPrimary: '#08333D',
+  textSecondary: '#64748B',
+  textMuted: '#8A908B',
+  cyan: '#00C9FD',
+  cyanIcon: '#0C8AA6',
+  cyanSoft: 'rgba(0, 201, 253, 0.09)',
+  cyanBorder: 'rgba(0, 201, 253, 0.22)',
+  cyanCardBorder: '#D4F1F9',
+  cyanDropzoneBg: 'rgba(0, 201, 253, 0.05)',
+  cyanDropzoneBorder: 'rgba(0, 201, 253, 0.35)',
+  gold: '#FFB300',
+  goldSoft: '#FFF9EB',
+  goldBorder: 'rgba(255, 179, 0, 0.3)',
+  orange: '#FF5A00',
+  disabledBg: '#F1F3F5',
+  disabledText: '#9AA0A6',
   danger: '#ef4444',
   dangerSoft: '#FEF2F2',
 };
@@ -47,20 +94,24 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
 
   const [createActivityOpen, setCreateActivityOpen] = useState(false);
 
-  const [completedCount, setCompletedCount] = useState(0);
+  const [completedActivities, setCompletedActivities] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
   const [viewerImage, setViewerImage] = useState(null);
+  const [expandedActivityId, setExpandedActivityId] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('fotos');
 
   const loadExtras = useCallback(async () => {
     if (!profile?.id) return;
 
     setLoadingStats(true);
     const { activities } = await getUserActivities(profile.id);
-    setCompletedCount((activities || []).filter((a) => a.status === 'COMPLETED').length);
+    const completed = (activities || []).filter((a) => a.status === 'COMPLETED');
+    setCompletedActivities(completed);
     setLoadingStats(false);
 
     setLoadingPosts(true);
@@ -140,21 +191,27 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
   };
 
   const displayImageUri = newImageUri || profile?.avatar_url;
-  const firstName = profile?.full_name ? profile.full_name.split(' ')[0] : 'Hobbier';
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.navHeader}>
-          <Text style={styles.navHeaderTitle}>Hola, {firstName} 👋</Text>
+        <View style={styles.headerContainer}>
+          <View style={styles.headerRow}>
+            <View style={styles.titleCol}>
+              <Text style={styles.mainTitle}>Mi perfil</Text>
+              <Text style={styles.userHandleText}>@{profile?.username}</Text>
+            </View>
 
-          <TouchableOpacity
-            style={styles.menuBtn}
-            onPress={() => setMenuOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Feather name="menu" size={20} color={COLORS.primaryDark} />
-          </TouchableOpacity>
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => setMenuOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="menu" size={17} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
@@ -169,7 +226,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                   setEditing(true);
                 }}
               >
-                <Feather name="edit-2" size={16} color={COLORS.primaryDark} />
+                <Feather name="edit-2" size={16} color={COLORS.textPrimary} />
                 <Text style={styles.menuItemText}>Editar perfil</Text>
               </TouchableOpacity>
 
@@ -182,7 +239,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                   onGoToPreferences();
                 }}
               >
-                <Feather name="settings" size={16} color={COLORS.primaryDark} />
+                <Feather name="sliders" size={16} color={COLORS.textPrimary} />
                 <Text style={styles.menuItemText}>Configurar Gustos, Intereses y Recursos</Text>
               </TouchableOpacity>
 
@@ -194,7 +251,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                   setCreateActivityOpen(true);
                 }}
               >
-                <Feather name="plus-circle" size={16} color={COLORS.primaryDark} />
+                <Feather name="plus-circle" size={16} color={COLORS.orange} />
                 <Text style={styles.menuItemText}>Crea tu propia actividad</Text>
               </TouchableOpacity>
 
@@ -240,7 +297,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                     onPress={() => setViewerImage(null)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Feather name="x" size={18} color={COLORS.primaryDark} />
+                    <Feather name="x" size={18} color={COLORS.textPrimary} />
                   </TouchableOpacity>
                 </View>
 
@@ -254,6 +311,30 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                     {viewerImage.title && (
                       <Text style={styles.viewerTitle}>{viewerImage.title}</Text>
                     )}
+
+                    <View style={styles.viewerStatsRow}>
+                      <View style={styles.viewerStatItem}>
+                        <Feather name="heart" size={13} color={COLORS.textSecondary} />
+                        <Text style={styles.viewerStatText}>{viewerImage.reactionsCount || 0}</Text>
+                      </View>
+
+                      {!!viewerImage.completedAt && (
+                        <View style={styles.viewerStatItem}>
+                          <Feather name="clock" size={13} color={COLORS.textSecondary} />
+                          <Text style={styles.viewerStatText}>
+                            {new Date(viewerImage.completedAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={styles.viewerStatItem}>
+                        <Feather name="star" size={13} color={COLORS.gold} />
+                        <Text style={styles.viewerStatText}>+{viewerImage.points || 0} pts</Text>
+                      </View>
+                    </View>
                   </View>
                 )}
               </Pressable>
@@ -290,11 +371,13 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
 
           <View style={styles.statsRow}>
             <View style={styles.statChip}>
-              <Text style={styles.statChipText}>✨ {profile?.points || 0} puntos</Text>
+              <Feather name="star" size={13} color={COLORS.gold} />
+              <Text style={styles.statChipText}>{profile?.points || 0} puntos</Text>
             </View>
-            <View style={styles.statChip}>
-              <Text style={styles.statChipText}>
-                {loadingStats ? '…' : `🎨 ${completedCount} actividades`}
+            <View style={styles.statChipCyan}>
+              <Feather name="check-circle" size={13} color={COLORS.cyanIcon} />
+              <Text style={styles.statChipCyanText}>
+                {loadingPosts ? '…' : `${posts.length} actividades`}
               </Text>
             </View>
           </View>
@@ -314,12 +397,6 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
 
             <Text style={styles.inputLabel}>Foto de Perfil</Text>
             <View style={styles.uploadWrapper}>
-              <View style={[styles.decorDot, styles.dot1]} />
-              <View style={[styles.decorDot, styles.dot2]} />
-              <View style={[styles.decorDot, styles.dot3]} />
-              <View style={[styles.decorDot, styles.dot4]} />
-              <View style={[styles.decorDot, styles.dot5]} />
-
               <TouchableOpacity
                 style={styles.dashedDropzone}
                 onPress={handlePickAvatar}
@@ -329,8 +406,13 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                   <Image source={{ uri: newImageUri }} style={styles.dropzonePreview} />
                 ) : (
                   <View style={styles.dropzonePlaceholder}>
-                    <View style={styles.cameraCircle}>
-                      <Feather name="camera" size={26} color={COLORS.primary} />
+                    <View style={styles.cameraIconContainer}>
+                      <View style={styles.cameraCircle}>
+                        <Feather name="camera" size={28} color={COLORS.textPrimary} />
+                      </View>
+                      <View style={styles.plusIconBadge}>
+                        <Feather name="plus-circle" size={18} color={COLORS.orange} />
+                      </View>
                     </View>
                     <Text style={styles.dropzoneText}>Sube una foto de tu perfil</Text>
                   </View>
@@ -364,86 +446,184 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
           </View>
         ) : (
           <>
-            {loadingPosts ? (
-              <ActivityIndicator color={COLORS.primary} style={styles.sectionLoader} />
-            ) : posts.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyStateText}>
-                  Todavía no subiste fotos de tus actividades.
-                </Text>
-                <Text style={styles.emptyStateHint}>
-                  Completá una actividad y compartí la evidencia para que aparezca acá.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.photoGrid}>
-                {posts.map((post, index) => {
-                  const title = post.user_activity?.activity?.title || 'Actividad completada';
-                  const category = post.user_activity?.activity?.category?.name;
-                  const big = index === 0;
-                  return (
-                    <TouchableOpacity
-                      key={post.id}
-                      activeOpacity={0.85}
-                      onPress={() => setViewerImage({ uri: post.image_url, title, category })}
-                      style={[styles.photoCard, big ? styles.photoCardBig : styles.photoCardSmall]}
-                    >
-                      <View style={styles.photoImageWrap}>
-                        <Image
-                          source={{ uri: post.image_url }}
-                          style={[styles.photoImage, big ? styles.photoImageBig : styles.photoImageSmall]}
-                        />
+            <View style={styles.tabsRow}>
+              {TABS.map((tab) => {
+                const active = tab.key === activeTab;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    style={[styles.tabItem, active && styles.tabItemActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.tabItemText, active && styles.tabItemTextActive]}>
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-                        <Svg style={StyleSheet.absoluteFillObject} width="100%" height="100%">
-                          <Defs>
-                            <LinearGradient id={`scrim-${post.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <Stop offset="0.4" stopColor="#000000" stopOpacity="0" />
-                              <Stop offset="1" stopColor="#000000" stopOpacity="0.6" />
-                            </LinearGradient>
-                          </Defs>
-                          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#scrim-${post.id})`} />
-                        </Svg>
-
-                        <View
-                          style={[
-                            styles.photoOverlayContent,
-                            !big && styles.photoOverlayContentSmall,
-                          ]}
+            {activeTab === 'actividades' && (
+              loadingStats ? (
+                <ActivityIndicator color={COLORS.cyanIcon} style={styles.sectionLoader} />
+              ) : completedActivities.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Todavía no completaste ninguna actividad.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.activitiesList}>
+                  {completedActivities.map((item) => {
+                    const isExpanded = expandedActivityId === item.id;
+                    const activityPosts = item.posts || [];
+                    const catStyle = getCategoryStyle(item.activity?.category, item.activity?.title);
+                    const totalRepetitions = activityPosts.length > 0 ? activityPosts.length : 1;
+                    return (
+                      <View
+                        key={item.id}
+                        style={[styles.activityCard, isExpanded && styles.activityCardActive]}
+                      >
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => setExpandedActivityId(isExpanded ? null : item.id)}
                         >
-                          {category && (
-                            <View
-                              style={[
-                                styles.photoCategoryBadge,
-                                !big && styles.photoCategoryBadgeSmall,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.photoCategoryBadgeText,
-                                  !big && styles.photoCategoryBadgeTextSmall,
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {category}
+                          <View style={styles.cardTopRow}>
+                            <View style={styles.categoryPill}>
+                              <Feather
+                                name={catStyle.iconName}
+                                size={12}
+                                color={COLORS.cyanIcon}
+                                style={{ marginRight: 4 }}
+                              />
+                              <Text style={styles.categoryText} numberOfLines={1}>
+                                {catStyle.name}
                               </Text>
                             </View>
-                          )}
 
-                          <Text
-                            style={[
-                              styles.photoCardTitleOverlay,
-                              big ? styles.photoCardTitleOverlayBig : styles.photoCardTitleOverlaySmall,
-                            ]}
-                            numberOfLines={big ? 2 : 1}
-                          >
-                            {title}
+                            <View style={styles.topRightRow}>
+                              <View style={styles.pointsBadge}>
+                                <Feather name="star" size={11} color={COLORS.textPrimary} />
+                                <Text style={styles.pointsBadgeText}>
+                                  +{item.points_awarded || item.activity?.points_awarded || 0} pts
+                                </Text>
+                              </View>
+                              <Feather
+                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                size={18}
+                                color={isExpanded ? COLORS.cyan : COLORS.textMuted}
+                                style={{ marginLeft: 6 }}
+                              />
+                            </View>
+                          </View>
+
+                          <Text style={styles.titleText}>
+                            {item.activity?.title || 'Actividad completada'}
                           </Text>
-                        </View>
+
+                          <View style={styles.streakRow}>
+                            <Feather name="zap" size={12} color={COLORS.orange} style={{ marginRight: 4 }} />
+                            <Text style={styles.streakText}>
+                              Has completado este reto {totalRepetitions}{' '}
+                              {totalRepetitions === 1 ? 'vez' : 'veces'}
+                            </Text>
+                          </View>
+
+                          {item.activity?.description ? (
+                            <Text
+                              style={styles.descText}
+                              numberOfLines={isExpanded ? undefined : 2}
+                            >
+                              {item.activity.description}
+                            </Text>
+                          ) : null}
+                        </TouchableOpacity>
+
+                        {isExpanded && (
+                          <View style={styles.photosSection}>
+                            {activityPosts.length === 0 ? (
+                              <Text style={styles.emptyText}>
+                                Todavía no hay fotos para esta actividad.
+                              </Text>
+                            ) : (
+                              <View style={styles.igGrid}>
+                                {activityPosts.map((post) => (
+                                  <TouchableOpacity
+                                    key={post.id}
+                                    style={styles.igThumb}
+                                    activeOpacity={0.85}
+                                    onPress={() =>
+                                      setViewerImage({
+                                        uri: post.image_url,
+                                        title: item.activity?.title,
+                                        category: item.activity?.category?.name,
+                                        points: item.activity?.points_awarded || 0,
+                                        completedAt: post.created_at,
+                                        reactionsCount: (post.post_reactions || []).length,
+                                      })
+                                    }
+                                  >
+                                    <Image
+                                      source={{ uri: post.image_url }}
+                                      style={styles.igThumbImage}
+                                    />
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            )}
+                          </View>
+                        )}
                       </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                    );
+                  })}
+                </View>
+              )
+            )}
+
+            {activeTab === 'fotos' && (
+              loadingPosts ? (
+                <ActivityIndicator color={COLORS.cyanIcon} style={styles.sectionLoader} />
+              ) : posts.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Todavía no subiste fotos de tus actividades.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.photoGrid}>
+                  {posts.map((post) => {
+                    const title = post.user_activity?.activity?.title || 'Actividad completada';
+                    const category = post.user_activity?.activity?.category?.name;
+                    const points = post.user_activity?.activity?.points_awarded || 0;
+                    const reactionsCount = (post.post_reactions || []).length;
+                    return (
+                      <TouchableOpacity
+                        key={post.id}
+                        activeOpacity={0.85}
+                        onPress={() =>
+                          setViewerImage({
+                            uri: post.image_url,
+                            title,
+                            category,
+                            points,
+                            completedAt: post.created_at,
+                            reactionsCount,
+                          })
+                        }
+                        style={styles.photoCard}
+                      >
+                        <View style={styles.photoImageWrap}>
+                          <Image
+                            source={{ uri: post.image_url }}
+                            style={styles.photoImage}
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )
             )}
           </>
         )}
@@ -459,25 +639,42 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 36,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
-  navHeader: {
+  headerContainer: {
+    marginBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  titleCol: {
+    flex: 1,
+  },
+  mainTitle: {
+    fontSize: 21,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.3,
+  },
+  userHandleText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 16,
-    paddingBottom: 8,
+    gap: 8,
   },
-  navHeaderTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-  },
-  menuBtn: {
+  iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -485,7 +682,7 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: 'rgba(8, 51, 61, 0.15)',
   },
   menuDropdown: {
     position: 'absolute',
@@ -497,9 +694,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
+    shadowColor: COLORS.textPrimary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 8,
   },
@@ -526,7 +723,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
     marginBottom: 24,
   },
   avatarContainer: {
@@ -534,25 +731,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 3,
+    borderColor: COLORS.cyanCardBorder,
   },
   avatarLarge: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: COLORS.accent,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: COLORS.cyan,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    borderWidth: 3,
+    borderColor: COLORS.cyanCardBorder,
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 38,
+    fontSize: 36,
     fontWeight: '800',
   },
   avatarEditOverlay: {
@@ -562,10 +759,10 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     gap: 4,
-    backgroundColor: 'rgba(0, 95, 115, 0.8)',
+    backgroundColor: 'rgba(8, 51, 61, 0.8)',
     paddingVertical: 5,
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
+    borderBottomLeftRadius: 46,
+    borderBottomRightRadius: 46,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -575,143 +772,232 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   profileName: {
-    fontSize: 21,
-    fontWeight: '800',
+    fontSize: 19,
+    fontWeight: '700',
     color: COLORS.textPrimary,
+    letterSpacing: -0.3,
   },
   profileUsername: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    fontWeight: '500',
+    marginTop: 1,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
+    gap: 8,
+    marginTop: 14,
   },
   statChip: {
-    backgroundColor: '#FFEEDD',
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.goldSoft,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: COLORS.goldBorder,
   },
   statChipText: {
-    color: '#C2530A',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  statChipCyan: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.cyanSoft,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
+  },
+  statChipCyanText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
   sectionLoader: {
     marginBottom: 16,
   },
+  tabsRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabItemActive: {
+    borderBottomColor: COLORS.cyan,
+  },
+  tabItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  tabItemTextActive: {
+    color: COLORS.textPrimary,
+    fontWeight: '700',
+  },
+  activitiesList: {
+    gap: 10,
+    marginBottom: 8,
+  },
+  activityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginHorizontal: -20,
+  },
+  activityCardActive: {
+    borderColor: COLORS.cyanCardBorder,
+    shadowColor: COLORS.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cyanSoft,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
+    flexShrink: 1,
+    marginRight: 8,
+  },
+  categoryText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  topRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pointsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gold,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 3.5,
+  },
+  pointsBadgeText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  titleText: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    lineHeight: 21,
+    marginBottom: 3,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  descText: {
+    fontSize: 12.5,
+    color: COLORS.textSecondary,
+    fontWeight: '400',
+    lineHeight: 17,
+  },
+  photosSection: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  igGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -14,
+    marginBottom: -14,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  igThumb: {
+    width: '33.3%',
+    aspectRatio: 1,
+    backgroundColor: COLORS.cyanSoft,
+  },
+  igThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 24,
+    marginHorizontal: -20,
+    marginBottom: 8,
   },
   photoCard: {
-    marginBottom: 2,
-  },
-  photoCardBig: {
-    width: '100%',
-  },
-  photoCardSmall: {
-    width: '47%',
+    width: '33.3%',
+    aspectRatio: 1,
   },
   photoImageWrap: {
-    position: 'relative',
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: COLORS.primarySoft,
+    flex: 1,
+    backgroundColor: COLORS.cyanSoft,
   },
   photoImage: {
     width: '100%',
-  },
-  photoImageBig: {
-    height: 170,
-  },
-  photoImageSmall: {
-    height: 150,
-  },
-  photoOverlayContent: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 10,
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  photoOverlayContentSmall: {
-    left: 8,
-    right: 8,
-    bottom: 8,
-    gap: 4,
-  },
-  photoCategoryBadge: {
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  photoCategoryBadgeSmall: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    maxWidth: '100%',
-  },
-  photoCategoryBadgeText: {
-    color: COLORS.primaryDark,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  photoCategoryBadgeTextSmall: {
-    fontSize: 9,
-  },
-  photoCardTitleOverlay: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-  photoCardTitleOverlayBig: {
-    fontSize: 17,
-  },
-  photoCardTitleOverlaySmall: {
-    fontSize: 12,
+    height: '100%',
   },
   emptyCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: 10,
   },
-  emptyStateHint: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  emptyStateText: {
-    color: COLORS.textSecondary,
+  emptyText: {
+    color: COLORS.textMuted,
     fontSize: 13,
     textAlign: 'center',
-    marginBottom: 6,
   },
   detailsCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   detailsTitle: {
-    fontSize: 15,
+    fontSize: 15.5,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 14,
@@ -724,7 +1010,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    backgroundColor: COLORS.bg,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -735,84 +1021,56 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   uploadWrapper: {
-    position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   dashedDropzone: {
-    height: 160,
-    backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#8AD9E6',
+    height: 165,
+    backgroundColor: COLORS.cyanDropzoneBg,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.cyanDropzoneBorder,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    zIndex: 2,
   },
   dropzonePlaceholder: {
     alignItems: 'center',
     padding: 16,
   },
+  cameraIconContainer: {
+    position: 'relative',
+    marginBottom: 10,
+  },
   cameraCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#B8EEF5',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    shadowColor: COLORS.textPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  plusIconBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
   },
   dropzoneText: {
     fontSize: 14,
-    fontWeight: '400',
-    color: COLORS.primary,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
     textAlign: 'center',
   },
   dropzonePreview: {
     width: '100%',
     height: '100%',
-  },
-  decorDot: {
-    position: 'absolute',
-    borderRadius: 10,
-    zIndex: 1,
-  },
-  dot1: {
-    top: 15,
-    left: -8,
-    width: 7,
-    height: 7,
-    backgroundColor: '#8AD9E6',
-  },
-  dot2: {
-    top: 35,
-    right: -6,
-    width: 9,
-    height: 9,
-    backgroundColor: '#FF9130',
-  },
-  dot3: {
-    bottom: 25,
-    left: -6,
-    width: 8,
-    height: 8,
-    backgroundColor: '#12D6EC',
-  },
-  dot4: {
-    bottom: 12,
-    right: -8,
-    width: 6,
-    height: 6,
-    backgroundColor: '#FFC58A',
-  },
-  dot5: {
-    top: 80,
-    right: -10,
-    width: 5,
-    height: 5,
-    backgroundColor: COLORS.primary,
-    opacity: 0.5,
   },
   editActions: {
     flexDirection: 'row',
@@ -821,31 +1079,38 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingVertical: 11,
+    backgroundColor: COLORS.disabledBg,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelBtnText: {
-    color: COLORS.textPrimary,
+    color: COLORS.textSecondary,
     fontWeight: '600',
+    fontSize: 14,
   },
   saveBtn: {
     flex: 1,
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 11,
+    backgroundColor: COLORS.orange,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
   },
   saveBtnText: {
     color: '#ffffff',
     fontWeight: '700',
+    fontSize: 14,
   },
   viewerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(28, 32, 29, 0.7)',
+    backgroundColor: 'rgba(8, 51, 61, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -854,17 +1119,17 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     backgroundColor: COLORS.surface,
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: COLORS.textPrimary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 24,
     elevation: 10,
   },
   viewerImageWrap: {
     position: 'relative',
-    backgroundColor: COLORS.primarySoft,
+    backgroundColor: COLORS.cyanSoft,
   },
   viewerImage: {
     width: '100%',
@@ -884,24 +1149,43 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   viewerCaption: {
-    padding: 20,
+    padding: 18,
     alignItems: 'flex-start',
     gap: 8,
   },
   viewerCategoryBadge: {
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    backgroundColor: COLORS.cyanSoft,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: COLORS.cyanBorder,
   },
   viewerCategoryBadgeText: {
-    color: COLORS.primaryDark,
-    fontSize: 12,
-    fontWeight: '700',
+    color: COLORS.textPrimary,
+    fontSize: 11.5,
+    fontWeight: '600',
   },
   viewerTitle: {
     color: COLORS.textPrimary,
-    fontSize: 17,
+    fontSize: 15.5,
     fontWeight: '700',
+  },
+  viewerStatsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 4,
+  },
+  viewerStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  viewerStatText: {
+    color: COLORS.textSecondary,
+    fontSize: 12.5,
+    fontWeight: '600',
   },
 });

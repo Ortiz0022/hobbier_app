@@ -10,12 +10,34 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import {
   fetchAllCatalogs,
   fetchUserPreferences,
   saveUserPreferences,
 } from '../../services/catalogService';
+
+// Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
+// ActivityCard, InlineEvidenceUploader y ProfileScreen (pantalla "Actividad").
+const COLORS = {
+  bg: '#FFFFFF',
+  border: '#F0F3F5',
+  textPrimary: '#08333D',
+  textSecondary: '#64748B',
+  textMuted: '#8A908B',
+  cyan: '#00C9FD',
+  cyanIcon: '#0C8AA6',
+  cyanSoft: 'rgba(0, 201, 253, 0.09)',
+  cyanBorder: 'rgba(0, 201, 253, 0.22)',
+  orange: '#FF5A00',
+};
+
+const SECTIONS = [
+  { key: 'likes', icon: 'check-circle', title: 'Mis Gustos', description: '¿Qué tipo de cosas te gustan?' },
+  { key: 'interests', icon: 'target', title: 'Mis Intereses', description: '¿Qué objetivos o habilidades buscas desarrollar?' },
+  { key: 'resources', icon: 'star', title: 'Recursos Disponibles', description: '¿Qué objetos o herramientas tienes a la mano?' },
+];
 
 export const OnboardingScreen = ({ onComplete }) => {
   const { user } = useAuth();
@@ -88,93 +110,62 @@ export const OnboardingScreen = ({ onComplete }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color={COLORS.cyanIcon} />
         <Text style={styles.loadingText}>Cargando catálogos...</Text>
       </View>
     );
   }
 
+  const sectionData = {
+    likes: { catalog: likesCatalog, selected: selectedLikes, setSelected: setSelectedLikes },
+    interests: { catalog: interestsCatalog, selected: selectedInterests, setSelected: setSelectedInterests },
+    resources: { catalog: resourcesCatalog, selected: selectedResources, setSelected: setSelectedResources },
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Personaliza tu Experiencia</Text>
         <Text style={styles.subtitle}>
           Selecciona tus gustos, intereses y recursos para recibir las mejores recomendaciones.
         </Text>
 
-        {/* SECCIÓN 1: GUSTOS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎨 Mis Gustos</Text>
-          <Text style={styles.sectionDescription}>¿Qué tipo de cosas te gustan?</Text>
-          <View style={styles.chipsContainer}>
-            {likesCatalog.map((item) => {
-              const isSelected = selectedLikes.includes(item.id);
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  onPress={() => toggleItem(item.id, selectedLikes, setSelectedLikes)}
-                >
-                  <Text style={styles.chipEmoji}>{item.icon || '❤️'}</Text>
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+        {SECTIONS.map((section) => {
+          const { catalog, selected, setSelected } = sectionData[section.key];
+          return (
+            <View key={section.key} style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Feather name={section.icon} size={16} color={COLORS.cyanIcon} />
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
+              <Text style={styles.sectionDescription}>{section.description}</Text>
 
-        {/* SECCIÓN 2: INTERESES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎯 Mis Intereses</Text>
-          <Text style={styles.sectionDescription}>¿Qué objetivos o habilidades buscas desarrollar?</Text>
-          <View style={styles.chipsContainer}>
-            {interestsCatalog.map((item) => {
-              const isSelected = selectedInterests.includes(item.id);
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  onPress={() => toggleItem(item.id, selectedInterests, setSelectedInterests)}
-                >
-                  <Text style={styles.chipEmoji}>{item.icon || '🌟'}</Text>
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* SECCIÓN 3: RECURSOS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📦 Recursos Disponibles</Text>
-          <Text style={styles.sectionDescription}>¿Qué objetos o herramientas tienes a la mano?</Text>
-          <View style={styles.chipsContainer}>
-            {resourcesCatalog.map((item) => {
-              const isSelected = selectedResources.includes(item.id);
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
-                  onPress={() => toggleItem(item.id, selectedResources, setSelectedResources)}
-                >
-                  <Text style={styles.chipEmoji}>{item.icon || '🔧'}</Text>
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+              <View style={styles.chipsContainer}>
+                {catalog.map((item) => {
+                  const isSelected = selected.includes(item.id);
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.chip, isSelected && styles.chipSelected]}
+                      onPress={() => toggleItem(item.id, selected, setSelected)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })}
 
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSave}
           disabled={saving}
+          activeOpacity={0.88}
         >
           {saving ? (
             <ActivityIndicator color="#ffffff" />
@@ -190,95 +181,99 @@ export const OnboardingScreen = ({ onComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: COLORS.bg,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94a3b8',
+    color: COLORS.textMuted,
     marginTop: 12,
     fontSize: 14,
   },
   scrollContent: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#f8fafc',
-    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.3,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginBottom: 24,
-    lineHeight: 20,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 22,
+    lineHeight: 18,
   },
   section: {
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15.5,
     fontWeight: '700',
-    color: '#f8fafc',
-    marginBottom: 4,
+    color: COLORS.textPrimary,
   },
   sectionDescription: {
-    fontSize: 13,
-    color: '#64748b',
+    fontSize: 12.5,
+    color: COLORS.textSecondary,
     marginBottom: 12,
   },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderColor: '#334155',
+    backgroundColor: '#FFFFFF',
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   chipSelected: {
-    backgroundColor: '#4f46e5',
-    borderColor: '#6366f1',
-  },
-  chipEmoji: {
-    fontSize: 16,
-    marginRight: 8,
+    backgroundColor: COLORS.cyan,
+    borderColor: COLORS.cyan,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#cbd5e1',
+    color: COLORS.textPrimary,
   },
   chipTextSelected: {
     color: '#ffffff',
   },
   saveButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: COLORS.orange,
+    borderRadius: 16,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 40,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 8,
+    marginBottom: 24,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
   },
   saveButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
 });
