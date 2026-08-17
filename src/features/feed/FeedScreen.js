@@ -14,7 +14,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { getFriendsFeed, reportPost } from '../../services/socialService';
+import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { ReportModal } from '../../components/ReportModal';
 import { StarReactionButton } from '../../components/StarReactionButton';
 
@@ -69,6 +69,45 @@ export const FeedScreen = () => {
   useEffect(() => {
     loadFeed(0, true);
   }, []);
+
+  const handleToggleReaction = async (postId, newReacted) => {
+    if (!user?.id) return;
+
+    // Actualización optimista local en la lista de publicaciones
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => {
+        if (p.id === postId) {
+          const currentCount = p.likesCount || 0;
+          return {
+            ...p,
+            userReacted: newReacted,
+            likesCount: newReacted ? currentCount + 1 : Math.max(0, currentCount - 1),
+          };
+        }
+        return p;
+      })
+    );
+
+    // Persistir en Supabase
+    const { error } = await togglePostReaction(postId, user.id);
+    if (error) {
+      console.error('Error al persistir reacción:', error);
+      // Revertir estado si falla
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => {
+          if (p.id === postId) {
+            const currentCount = p.likesCount || 0;
+            return {
+              ...p,
+              userReacted: !newReacted,
+              likesCount: !newReacted ? currentCount + 1 : Math.max(0, currentCount - 1),
+            };
+          }
+          return p;
+        })
+      );
+    }
+  };
 
   const loadFeed = async (pageNumber = 0, reset = false) => {
     if (!user?.id) return;
@@ -223,7 +262,11 @@ export const FeedScreen = () => {
 
                 {/* PIE DE LA PUBLICACIÓN CON REACCIÓN DE ESTRELLA Y PUNTOS */}
                 <View style={styles.postFooter}>
-                  <StarReactionButton initialCount={post.likes_count || Math.floor(Math.random() * 5) + 1} />
+                  <StarReactionButton
+                    initialCount={post.likesCount || 0}
+                    initialReacted={post.userReacted || false}
+                    onToggle={(newReacted) => handleToggleReaction(post.id, newReacted)}
+                  />
 
                   <View style={styles.pointsPill}>
                     <Text style={styles.pointsPillText}>

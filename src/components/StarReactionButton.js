@@ -85,10 +85,15 @@ const PARTICLE_COLORS = [
   '#FF6B6B', // Coral festivo
 ];
 
-export const StarReactionButton = ({ initialCount = 0, initialReacted = false }) => {
+export const StarReactionButton = ({ initialCount = 0, initialReacted = false, onToggle }) => {
   const [reacted, setReacted] = useState(initialReacted);
   const [count, setCount] = useState(initialCount);
   const [particles, setParticles] = useState([]);
+
+  useEffect(() => {
+    setReacted(initialReacted);
+    setCount(initialCount);
+  }, [initialCount, initialReacted]);
 
   // Animación de rebote en el botón al reaccionar
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -97,6 +102,10 @@ export const StarReactionButton = ({ initialCount = 0, initialReacted = false })
     const newReacted = !reacted;
     setReacted(newReacted);
     setCount((prev) => (newReacted ? prev + 1 : Math.max(0, prev - 1)));
+
+    if (onToggle) {
+      onToggle(newReacted);
+    }
 
     // Animación física de rebote elástico en el botón
     Animated.sequence([

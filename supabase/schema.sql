@@ -110,6 +110,14 @@ CREATE TABLE IF NOT EXISTS public.posts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.post_reactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT idx_unique_post_user_reaction UNIQUE (post_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS public.friendships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   requester_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -338,6 +346,7 @@ ALTER TABLE public.activity_interests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_resources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 
@@ -384,6 +393,10 @@ CREATE POLICY "Ver posts en feed" ON public.posts FOR SELECT USING (
 );
 CREATE POLICY "Crear propios posts" ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Admin gestionar posts" ON public.posts FOR UPDATE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN'));
+
+CREATE POLICY "Lectura publica reacciones" ON public.post_reactions FOR SELECT USING (true);
+CREATE POLICY "Insertar propia reaccion" ON public.post_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Eliminar propia reaccion" ON public.post_reactions FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Ver propias amistades" ON public.friendships FOR SELECT USING (auth.uid() = requester_id OR auth.uid() = addressee_id);
 CREATE POLICY "Crear solicitud amistad" ON public.friendships FOR INSERT WITH CHECK (auth.uid() = requester_id);
