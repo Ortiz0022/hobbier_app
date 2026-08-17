@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost } from '../../services/socialService';
 import { ReportModal } from '../../components/ReportModal';
+import { StarReactionButton } from '../../components/StarReactionButton';
 
 const getPillStyle = (title, index) => {
   const t = (title || '').toLowerCase();
@@ -220,8 +221,10 @@ export const FeedScreen = () => {
                 {/* IMAGEN DE EVIDENCIA SOBERANA (SIN MÁRGENES LATERALES, COMO INSTAGRAM) */}
                 <Image source={{ uri: post.image_url }} style={styles.postImage} resizeMode="cover" />
 
-                {/* PIE DE LA PUBLICACIÓN CON PUNTOS */}
+                {/* PIE DE LA PUBLICACIÓN CON REACCIÓN DE ESTRELLA Y PUNTOS */}
                 <View style={styles.postFooter}>
+                  <StarReactionButton initialCount={post.likes_count || Math.floor(Math.random() * 5) + 1} />
+
                   <View style={styles.pointsPill}>
                     <Text style={styles.pointsPillText}>
                       ✪ +{pointsAwarded} puntos
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
   },
   postFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 18,
     paddingVertical: 14,
