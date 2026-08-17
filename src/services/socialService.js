@@ -190,7 +190,8 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
           id,
           points_awarded,
           activity:activities(id, title, description, category_id)
-        )
+        ),
+        post_reactions(user_id)
       `, { count: 'exact' })
       .eq('status', 'ACTIVE')
       .in('user_id', targetUserIds)
@@ -209,10 +210,16 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
         pointsAwarded = pointsAwarded || fallbackActivity?.points_awarded || 20;
       }
 
+      const reactions = post.post_reactions || [];
+      const likesCount = reactions.length;
+      const userReacted = reactions.some((r) => r.user_id === userId);
+
       return {
         ...post,
         activityTitle: activityTitle || 'Pinta algo creativo',
         pointsAwarded: pointsAwarded || 20,
+        likesCount,
+        userReacted,
       };
     });
 
@@ -224,6 +231,39 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
   } catch (error) {
     console.error('Error obteniendo feed de amigos:', error.message);
     return { posts: [], hasMore: false, error };
+  }
+};
+
+export const togglePostReaction = async (postId, userId) => {
+  try {
+    const { data: existing, error: checkErr } = await supabase
+      .from('post_reactions')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (checkErr) throw checkErr;
+
+    if (existing) {
+      const { error: delErr } = await supabase
+        .from('post_reactions')
+        .delete()
+        .eq('id', existing.id);
+
+      if (delErr) throw delErr;
+      return { reacted: false, error: null };
+    } else {
+      const { error: insErr } = await supabase
+        .from('post_reactions')
+        .insert({ post_id: postId, user_id: userId });
+
+      if (insErr) throw insErr;
+      return { reacted: true, error: null };
+    }
+  } catch (error) {
+    console.error('Error al cambiar reacción:', error.message);
+    return { reacted: null, error };
   }
 };
 
