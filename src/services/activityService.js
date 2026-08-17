@@ -144,7 +144,8 @@ export const getUserActivities = async (userId) => {
           id,
           image_url,
           created_at,
-          status
+          status,
+          post_reactions(user_id)
         )
       `)
       .eq('user_id', userId)

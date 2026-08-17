@@ -276,11 +276,14 @@ export const getUserPosts = async (userId) => {
         image_url,
         created_at,
         user_activity:user_activities(
+          points_awarded,
           activity:activities(
             title,
+            points_awarded,
             category:activity_categories(name)
           )
-        )
+        ),
+        post_reactions(user_id)
       `)
       .eq('user_id', userId)
       .eq('status', 'ACTIVE')
