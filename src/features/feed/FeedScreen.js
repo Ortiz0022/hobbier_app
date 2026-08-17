@@ -237,7 +237,9 @@ export const FeedScreen = () => {
                     )}
                     <View style={styles.authorInfo}>
                       <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
-                      <Text style={styles.authorAction}>Completó un reto</Text>
+                      <Text style={styles.authorAction} numberOfLines={1}>
+                        {pillStyle.emoji} {activityTitle}
+                      </Text>
                     </View>
 
                     <TouchableOpacity
@@ -247,13 +249,6 @@ export const FeedScreen = () => {
                     >
                       <Text style={styles.optionsIcon}>•••</Text>
                     </TouchableOpacity>
-                  </View>
-
-                  {/* INSIGNIA DE NOMBRE DE ACTIVIDAD (TEXTO PESO NORMAL / NO NEGRITA) */}
-                  <View style={[styles.activityPill, { backgroundColor: pillStyle.backgroundColor }]}>
-                    <Text style={styles.activityPillText}>
-                      {pillStyle.emoji} {activityTitle}
-                    </Text>
                   </View>
                 </View>
 
@@ -388,31 +383,30 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F3F5',
   },
   postHeader: {
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
   authorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#F0F3F5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
     borderWidth: 2,
     borderColor: '#00DBFF',
   },
   authorAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    marginRight: 10,
     borderWidth: 2,
     borderColor: '#00DBFF',
   },
@@ -425,13 +419,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorHandle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#121B22',
   },
   authorAction: {
     fontSize: 13,
-    color: '#777777',
+    fontWeight: '500',
+    color: '#475569',
     marginTop: 1,
   },
   optionsBtn: {
@@ -443,35 +438,24 @@ const styles = StyleSheet.create({
     color: '#121B22',
     letterSpacing: -1,
   },
-  activityPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  activityPillText: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#000000',
-  },
   postImage: {
     width: '100%',
-    height: 350,
+    height: 460,
     backgroundColor: '#f1f5f9',
   },
   postFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: '#ffffff',
   },
   pointsPill: {
     backgroundColor: '#F0F3F5',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   pointsPillText: {
     color: '#00DBFF',
