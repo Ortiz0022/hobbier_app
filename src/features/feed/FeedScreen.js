@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { ReportModal } from '../../components/ReportModal';
 import { StarReactionButton } from '../../components/StarReactionButton';
+import { UserProfileModal } from '../../components/UserProfileModal';
 
 const getPillStyle = (title, index) => {
   const t = (title || '').toLowerCase();
@@ -61,10 +62,11 @@ export const FeedScreen = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
-  // Estado para el modal de reportes
+  // Estado para el modal de reportes y perfil de usuario
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   useEffect(() => {
     loadFeed(0, true);
@@ -226,21 +228,27 @@ export const FeedScreen = () => {
                 {/* CABECERA DE LA PUBLICACIÓN */}
                 <View style={styles.postHeader}>
                   <View style={styles.authorRow}>
-                    {post.author?.avatar_url ? (
-                      <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
-                    ) : (
-                      <View style={styles.authorAvatar}>
-                        <Text style={styles.authorInitial}>
-                          {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
+                    <TouchableOpacity
+                      style={styles.authorClickArea}
+                      onPress={() => setSelectedUserProfile(post.author)}
+                      activeOpacity={0.8}
+                    >
+                      {post.author?.avatar_url ? (
+                        <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
+                      ) : (
+                        <View style={styles.authorAvatar}>
+                          <Text style={styles.authorInitial}>
+                            {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.authorInfo}>
+                        <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
+                        <Text style={styles.authorAction} numberOfLines={1}>
+                          {pillStyle.emoji} {activityTitle}
                         </Text>
                       </View>
-                    )}
-                    <View style={styles.authorInfo}>
-                      <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
-                      <Text style={styles.authorAction} numberOfLines={1}>
-                        {pillStyle.emoji} {activityTitle}
-                      </Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                       style={styles.optionsBtn}
@@ -296,6 +304,13 @@ export const FeedScreen = () => {
         onClose={() => setReportModalVisible(false)}
         onSubmit={handleSendReport}
         submitting={submittingReport}
+      />
+
+      {/* MODAL DE PERFIL DE USUARIO */}
+      <UserProfileModal
+        visible={!!selectedUserProfile}
+        userProfile={selectedUserProfile}
+        onClose={() => setSelectedUserProfile(null)}
       />
     </SafeAreaView>
   );
@@ -388,6 +403,12 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  authorClickArea: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
