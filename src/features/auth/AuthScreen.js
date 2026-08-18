@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -13,6 +11,7 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
+import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { isSupabaseConfigured } from '../../config/supabase';

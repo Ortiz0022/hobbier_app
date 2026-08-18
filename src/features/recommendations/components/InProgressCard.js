@@ -1,6 +1,12 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+} from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
+import { getCategoryLabel } from '../../../utils/category';
 
 export const InProgressCard = ({ pendingActivity, onPress }) => {
   return (
@@ -19,7 +25,7 @@ export const InProgressCard = ({ pendingActivity, onPress }) => {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={styles.categoryPill}>
                 <Text style={styles.categoryPillText}>
-                  {pendingActivity.activity?.category_id ? 'Recomendada' : 'Hobby'}
+                  {getCategoryLabel(pendingActivity.activity?.category)}
                 </Text>
               </View>
               <View style={styles.missionActivePill}>

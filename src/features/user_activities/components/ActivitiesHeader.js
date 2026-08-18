@@ -1,5 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+} from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 
 export const ActivitiesHeader = ({ profile, onFilterPress }) => {

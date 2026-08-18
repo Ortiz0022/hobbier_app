@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Image,
@@ -14,6 +12,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -21,42 +20,13 @@ import { supabase } from '../../config/supabase';
 import { uploadAvatarImage, getUserActivities } from '../../services/activityService';
 import { getUserPosts } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
+import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
 const TABS = [
   { key: 'fotos', label: 'Fotos' },
   { key: 'actividades', label: 'Actividades' },
 ];
 
-// Misma función que usa ActivityCard.js para mapear categoría/título a un ícono.
-const getCategoryStyle = (categoryObj, title = '') => {
-  const catName = categoryObj?.name || '';
-  const searchKey = `${catName} ${title}`.toLowerCase();
-
-  let name = catName || 'Hobby';
-  let iconName = 'star';
-
-  if (searchKey.includes('arte') || searchKey.includes('pint') || searchKey.includes('cerám')) {
-    name = catName || 'Arte';
-    iconName = 'edit-2';
-  } else if (searchKey.includes('tecno') || searchKey.includes('python') || searchKey.includes('idioma') || searchKey.includes('program')) {
-    name = catName || 'Tecnología';
-    iconName = 'monitor';
-  } else if (searchKey.includes('natura') || searchKey.includes('botán') || searchKey.includes('deport') || searchKey.includes('paseo') || searchKey.includes('camin')) {
-    name = catName || 'Naturaleza';
-    iconName = 'map';
-  } else if (searchKey.includes('músic') || searchKey.includes('canc') || searchKey.includes('jam') || searchKey.includes('instrum')) {
-    name = catName || 'Música';
-    iconName = 'music';
-  } else if (searchKey.includes('juego') || searchKey.includes('ajedrez')) {
-    name = catName || 'Juegos';
-    iconName = 'award';
-  } else if (searchKey.includes('leer') || searchKey.includes('libro')) {
-    name = catName || 'Lectura';
-    iconName = 'book-open';
-  }
-
-  return { name, iconName };
-};
 
 // Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
 // ActivityCard e InlineEvidenceUploader (pantalla "Actividad").
@@ -303,9 +273,11 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
 
                 {(viewerImage.title || viewerImage.category) && (
                   <View style={styles.viewerCaption}>
-                    {viewerImage.category && (
+                    {(
                       <View style={styles.viewerCategoryBadge}>
-                        <Text style={styles.viewerCategoryBadgeText}>{viewerImage.category}</Text>
+                        <Text style={styles.viewerCategoryBadgeText}>
+                          {viewerImage.category || 'Libre'}
+                        </Text>
                       </View>
                     )}
                     {viewerImage.title && (
@@ -557,7 +529,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                                       setViewerImage({
                                         uri: post.image_url,
                                         title: item.activity?.title,
-                                        category: item.activity?.category?.name,
+                                        category: getCategoryLabel(item.activity?.category),
                                         points: item.activity?.points_awarded || 0,
                                         completedAt: post.created_at,
                                         reactionsCount: (post.post_reactions || []).length,
@@ -594,7 +566,7 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
                 <View style={styles.photoGrid}>
                   {posts.map((post) => {
                     const title = post.user_activity?.activity?.title || 'Actividad completada';
-                    const category = post.user_activity?.activity?.category?.name;
+                    const category = getCategoryLabel(post.user_activity?.activity?.category);
                     const points = post.user_activity?.activity?.points_awarded || 0;
                     const reactionsCount = (post.post_reactions || []).length;
                     return (

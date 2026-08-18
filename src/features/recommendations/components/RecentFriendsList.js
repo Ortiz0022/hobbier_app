@@ -1,5 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 
 export const RecentFriendsList = ({ recentFriendPosts, onNavigateToFeed }) => {

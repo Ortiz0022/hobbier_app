@@ -1,38 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+} from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { InlineEvidenceUploader } from './InlineEvidenceUploader';
+import { getCategoryStyle, getCategoryLabel } from '../../../utils/category';
 
-// Función para mapear categorías e iconos
-const getCategoryStyle = (categoryObj, title = '') => {
-  const catName = categoryObj?.name || '';
-  const searchKey = `${catName} ${title}`.toLowerCase();
-
-  let name = catName || 'Hobby';
-  let iconName = 'star';
-
-  if (searchKey.includes('arte') || searchKey.includes('pint') || searchKey.includes('cerám')) {
-    name = catName || 'Arte';
-    iconName = 'edit-2';
-  } else if (searchKey.includes('tecno') || searchKey.includes('python') || searchKey.includes('idioma') || searchKey.includes('program')) {
-    name = catName || 'Tecnología';
-    iconName = 'monitor';
-  } else if (searchKey.includes('natura') || searchKey.includes('botán') || searchKey.includes('deport') || searchKey.includes('paseo') || searchKey.includes('camin')) {
-    name = catName || 'Naturaleza';
-    iconName = 'map';
-  } else if (searchKey.includes('músic') || searchKey.includes('canc') || searchKey.includes('jam') || searchKey.includes('instrum')) {
-    name = catName || 'Música';
-    iconName = 'music';
-  } else if (searchKey.includes('juego') || searchKey.includes('ajedrez')) {
-    name = catName || 'Juegos';
-    iconName = 'award';
-  } else if (searchKey.includes('leer') || searchKey.includes('libro')) {
-    name = catName || 'Lectura';
-    iconName = 'book-open';
-  }
-
-  return { name, iconName };
-};
 
 export const ActivityCard = ({
   item,

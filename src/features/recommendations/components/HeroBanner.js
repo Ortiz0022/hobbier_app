@@ -1,5 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, Animated, View } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  View,
+} from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const Sparkle = ({ size = 20, color = '#4B6959', style, delay = 0 }) => {

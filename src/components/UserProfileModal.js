@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   Image,
@@ -11,9 +10,11 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { getUserPosts } from '../services/socialService';
 import { getUserActivities } from '../services/activityService';
+import { getCategoryLabel } from '../utils/category';
 
 export const UserProfileModal = ({ visible, userProfile, onClose }) => {
   const [loading, setLoading] = useState(false);
@@ -119,7 +120,8 @@ export const UserProfileModal = ({ visible, userProfile, onClose }) => {
             <View style={styles.photoGrid}>
               {posts.map((post, index) => {
                 const title = post.user_activity?.activity?.title || 'Actividad completada';
-                const category = post.user_activity?.activity?.category?.name;
+                // Sin categoria se muestra "Libre": es un estado valido, no un vacio.
+                const category = getCategoryLabel(post.user_activity?.activity?.category);
                 const big = index === 0;
                 return (
                   <TouchableOpacity
@@ -134,7 +136,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose }) => {
                         style={[styles.photoImage, big ? styles.photoImageBig : styles.photoImageSmall]}
                       />
                       <View style={styles.photoOverlayContent}>
-                        {category && (
+                        {(
                           <View style={styles.photoCategoryBadge}>
                             <Text style={styles.photoCategoryBadgeText} numberOfLines={1}>
                               {category}
@@ -178,9 +180,11 @@ export const UserProfileModal = ({ visible, userProfile, onClose }) => {
                 </View>
                 {(viewerImage.title || viewerImage.category) && (
                   <View style={styles.viewerCaption}>
-                    {viewerImage.category && (
+                    {(
                       <View style={styles.viewerCategoryBadge}>
-                        <Text style={styles.viewerCategoryBadgeText}>{viewerImage.category}</Text>
+                        <Text style={styles.viewerCategoryBadgeText}>
+                          {viewerImage.category || 'Libre'}
+                        </Text>
                       </View>
                     )}
                     {viewerImage.title && (

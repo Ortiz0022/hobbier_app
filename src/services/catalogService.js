@@ -28,21 +28,25 @@ export const fetchAllCatalogs = async () => {
 // Obtener las selecciones actuales del usuario
 export const fetchUserPreferences = async (userId) => {
   try {
-    const [userLikesRes, userInterestsRes, userResourcesRes] = await Promise.all([
+    const [userLikesRes, userInterestsRes, userResourcesRes, profileRes] = await Promise.all([
       supabase.from('user_likes').select('like_id').eq('user_id', userId),
       supabase.from('user_interests').select('interest_id').eq('user_id', userId),
       supabase.from('user_resources').select('resource_id').eq('user_id', userId),
+      // La fecha decide qué metas son aptas por edad, así que se edita junto al
+      // resto de preferencias y no en una pantalla aparte.
+      supabase.from('profiles').select('birth_date').eq('id', userId).maybeSingle(),
     ]);
 
     return {
       userLikes: (userLikesRes.data || []).map((row) => row.like_id),
       userInterests: (userInterestsRes.data || []).map((row) => row.interest_id),
       userResources: (userResourcesRes.data || []).map((row) => row.resource_id),
+      birthDate: profileRes.data?.birth_date || null,
       error: null,
     };
   } catch (error) {
     console.error('Error al obtener preferencias del usuario:', error.message);
-    return { userLikes: [], userInterests: [], userResources: [], error };
+    return { userLikes: [], userInterests: [], userResources: [], birthDate: null, error };
   }
 };
 
@@ -88,5 +92,42 @@ export const saveUserPreferences = async (userId, selectedLikes, selectedInteres
   } catch (error) {
     console.error('Error al guardar preferencias:', error.message);
     return { success: false, error };
+  }
+};
+
+// Guardar la fecha de nacimiento del perfil.
+// Se guarda la FECHA, no la edad: un número quedaría desactualizado en cada
+// cumpleaños, mientras que la fecha permite recalcular la edad siempre.
+// La columna `birth_date` ya existe en `profiles`; esto no altera el esquema.
+export const saveUserBirthDate = async (userId, isoBirthDate) => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ birth_date: isoBirthDate, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error al guardar la fecha de nacimiento:', error.message);
+    return { success: false, error };
+  }
+};
+
+// Categorías de actividad, para el selector del panel de administración.
+// No incluye "Libre": esa es la etiqueta de la interfaz para category_id = null,
+// no una fila del catálogo. Ver src/utils/category.js.
+export const fetchActivityCategories = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('activity_categories')
+      .select('id, name')
+      .order('name');
+
+    if (error) throw error;
+    return { categories: data || [], error: null };
+  } catch (error) {
+    console.error('Error al obtener categorías:', error.message);
+    return { categories: [], error };
   }
 };

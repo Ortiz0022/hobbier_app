@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { Text } from './src/components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useFonts } from 'expo-font';
 import {

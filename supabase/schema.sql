@@ -183,16 +183,30 @@ BEGIN
     AND (a.min_age IS NULL OR v_age >= a.min_age)
     AND (a.max_age IS NULL OR v_age <= a.max_age)
     AND (
+      -- Etiquetada con un gusto del usuario
       EXISTS (
         SELECT 1 FROM public.activity_likes al
         JOIN public.user_likes ul ON ul.like_id = al.like_id
         WHERE al.activity_id = a.id AND ul.user_id = p_user_id
       )
+      -- Etiquetada con un interés del usuario
       OR EXISTS (
         SELECT 1 FROM public.activity_interests ai
         JOIN public.user_interests ui ON ui.interest_id = ai.interest_id
         WHERE ai.activity_id = a.id AND ui.user_id = p_user_id
       )
+      -- NUEVO: su categoría corresponde a un gusto del usuario
+      OR EXISTS (
+        SELECT 1
+        FROM public.activity_categories c
+        JOIN public.user_likes ul ON ul.user_id = p_user_id
+        JOIN public.likes l ON l.id = ul.like_id
+        WHERE c.id = a.category_id
+          AND starts_with(lower(c.name), lower(l.name))
+      )
+      -- NUEVO: sin categoría ("Libre"), disponible para cualquiera
+      OR a.category_id IS NULL
+      -- Sin ninguna etiqueta: comodín, como antes
       OR (
         NOT EXISTS (SELECT 1 FROM public.activity_likes al WHERE al.activity_id = a.id)
         AND NOT EXISTS (SELECT 1 FROM public.activity_interests ai WHERE ai.activity_id = a.id)

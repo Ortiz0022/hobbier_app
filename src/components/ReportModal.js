@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Modal,
   ActivityIndicator,
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
+import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
 
 const DEFAULT_REASONS = [

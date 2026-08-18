@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Animated,
   Easing,
 } from 'react-native';
+import { Text } from './scaledText';
 import Svg, { Path } from 'react-native-svg';
 
 // Path de la estrella/chispita idéntica a la de Sorpréndeme (HeroBanner)

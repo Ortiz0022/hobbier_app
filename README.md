@@ -40,3 +40,72 @@ Por definir
     - Diseño moderno con tarjetas, iconos vibrantes y animaciones sutiles.
     - Navegación fluida entre pantallas (Home, Perfil, Recomendaciones, Actividades Pendientes).
     - Modo oscuro automático (según configuración del sistema).
+
+## ♿ Accesibilidad: tamaño de letra del sistema
+
+Android e iOS dejan al usuario agrandar el texto del sistema hasta el 200%, y con
+los ajustes de accesibilidad todavía más. React Native aplica ese factor a **todo**
+`<Text>` por defecto, así que sin control la interfaz se rompe: los botones se
+salen de la pantalla, los títulos desbordan las tarjetas y las filas se desarman.
+
+### Cómo está resuelto
+
+Toda la app escribe texto a través de `src/components/scaledText.js`, que envuelve
+`Text` y `TextInput` de React Native aplicando un tope de escalado:
+
+```js
+export const MAX_FONT_SCALE = 1.3;
+```
+
+Es un **tope, no un tamaño fijo**. Si el usuario tiene el sistema al 110%, ve el
+110%; solo se recorta a partir del 130%. Quien necesita letra grande la obtiene, y
+ninguna pantalla se rompe.
+
+**Regla para el equipo:** nunca importes `Text` ni `TextInput` desde
+`react-native`. Impórtalos siempre desde el envoltorio:
+
+```js
+// ❌ el texto crecerá sin límite y romperá el diseño
+import { Text, TextInput } from 'react-native';
+
+// ✅
+import { Text, TextInput } from '../../components/scaledText';
+```
+
+El JSX no cambia: los componentes se llaman igual.
+
+### Dos decisiones y por qué
+
+**No se usa `allowFontScaling={false}`.** Desactivar el escalado dejaría el diseño
+intacto, pero haría la app inutilizable para quien no ve bien: su preferencia se
+ignoraría por completo. El tope respeta la preferencia dentro de un margen seguro.
+
+**No se usa `Text.defaultProps`.** Es el patrón que aparece en la mayoría de
+tutoriales, pero **React 19 eliminó `defaultProps` en componentes de función**.
+Asignarlo no da error: simplemente no hace nada, y el problema seguiría ahí sin que
+nadie lo note. Por eso son componentes envoltorio.
+
+### Al escribir pantallas nuevas
+
+El tope evita lo peor, pero el diseño también tiene que ceder:
+
+- **Sin alturas fijas** en contenedores con texto. Usa `paddingVertical` y deja
+  que la altura la marque el contenido.
+- **Filas de botones o etiquetas con `flexWrap: 'wrap'`**, para que bajen de línea
+  en vez de salirse.
+- **`flex: 1` o `flexShrink: 1`** en el texto que convive con un icono, para que
+  pueda partirse en dos líneas en lugar de empujar al icono fuera.
+- **`numberOfLines` solo donde recortar es aceptable** (títulos de tarjeta), nunca
+  en mensajes de error o instrucciones.
+
+### Cómo probarlo
+
+Sin necesidad de un dispositivo real:
+
+- **Android:** Ajustes → Pantalla → Tamaño de fuente, al máximo.
+- **iOS:** Ajustes → Accesibilidad → Pantalla y tamaño del texto → Texto más
+  grande, al máximo.
+- **Web:** las herramientas de desarrollo del navegador, aumentando el zoom.
+
+Recorre login, registro, preferencias, el panel de administración y el modal de
+recomendación: son las pantallas con más texto por fila.

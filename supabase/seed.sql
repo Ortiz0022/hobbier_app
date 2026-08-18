@@ -41,7 +41,8 @@ INSERT INTO public.activity_categories (id, name, icon, description) VALUES
   ('44444444-4444-4444-4444-444444444403', 'Lectura y Aprendizaje', '📖', 'Lectura, idiomas e intelecto'),
   ('44444444-4444-4444-4444-444444444404', 'Juegos y Entretenimiento', '🎲', 'Juegos de mesa y cartas'),
   ('44444444-4444-4444-4444-444444444405', 'Cocina y Gastronomía', '👨‍🍳', 'Recetas y delicias culinarias'),
-  ('44444444-4444-4444-4444-444444444406', 'Música', '🎵', 'Práctica y disfrute musical')
+  ('44444444-4444-4444-4444-444444444406', 'Música', '🎵', 'Práctica y disfrute musical'),
+  ('44444444-4444-4444-4444-444444444407', 'Naturaleza', '🌿', 'Aire libre, plantas y entorno natural')
 ON CONFLICT (name) DO NOTHING;
 
 -- 5. ACTIVIDADES DE EJEMPLO

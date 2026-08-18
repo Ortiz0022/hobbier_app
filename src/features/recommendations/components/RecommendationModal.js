@@ -2,11 +2,11 @@ import React from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 
 export const RecommendationModal = ({
@@ -14,6 +14,7 @@ export const RecommendationModal = ({
   loading,
   recommended,
   reason = null,
+  onGoToPreferences,
   accepting,
   onAccept,
   onReload,
@@ -94,9 +95,22 @@ export const RecommendationModal = ({
             </View>
           ) : (
             <View style={styles.modalLoadingBox}>
+              <Feather name="compass" size={26} color="#8A908B" />
               <Text style={styles.modalLoadingText}>
-                No se encontraron actividades compatibles. Modifica tus gustos o recursos en tu Perfil.
+                No se encontraron actividades compatibles. Ajusta tus gustos, intereses o
+                recursos en tus preferencias.
               </Text>
+              {onGoToPreferences ? (
+                <TouchableOpacity
+                  style={styles.modalAcceptBtn}
+                  onPress={() => {
+                    onClose();
+                    onGoToPreferences();
+                  }}
+                >
+                  <Text style={styles.modalAcceptBtnText}>Ajustar preferencias</Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
                 <Text style={styles.modalCloseText}>Cerrar</Text>
               </TouchableOpacity>

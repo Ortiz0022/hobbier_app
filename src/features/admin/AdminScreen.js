@@ -2,24 +2,25 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   Image,
-  TextInput,
   ActivityIndicator,
   SafeAreaView,
   Modal,
   Alert,
   Platform,
 } from 'react-native';
+import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { getCategoryLabel } from '../../utils/category';
+import { TOKENS } from '../../theme/designTokens';
+import { CreateActivityModal } from '../../components/CreateActivityModal';
 import {
   getReportedPostsAdmin,
   resolveReportedPostAdmin,
   getAllActivitiesAdmin,
-  createActivityAdmin,
   toggleActivityActiveAdmin,
 } from '../../services/adminService';
 
@@ -37,13 +38,6 @@ export const AdminScreen = () => {
   // Guarda el id del post pendiente de confirmar. Null = no hay confirmación abierta.
   const [postToDelete, setPostToDelete] = useState(null);
 
-  // Campos para crear actividad
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [newPoints, setNewPoints] = useState('20');
-  const [newMinAge, setNewMinAge] = useState('');
-  const [newMaxAge, setNewMaxAge] = useState('');
-  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'reports') loadReports();
@@ -84,35 +78,6 @@ export const AdminScreen = () => {
     if (!error) loadActivities();
   };
 
-  const handleCreateActivity = async () => {
-    if (!newTitle.trim() || !newDesc.trim()) {
-      const msg = 'Por favor completa el título y la descripción.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Campos requeridos', msg);
-      return;
-    }
-
-    setCreating(true);
-    const { error } = await createActivityAdmin({
-      title: newTitle,
-      description: newDesc,
-      pointsAwarded: newPoints,
-      minAge: newMinAge,
-      maxAge: newMaxAge,
-    });
-    setCreating(false);
-
-    if (error) {
-      const msg = error.message || 'Error al crear la actividad.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
-    } else {
-      setShowCreateModal(false);
-      setNewTitle('');
-      setNewDesc('');
-      loadActivities();
-    }
-  };
 
   if (!isAdmin) {
     return (
@@ -137,8 +102,13 @@ export const AdminScreen = () => {
             style={[styles.tab, activeTab === 'reports' && styles.activeTab]}
             onPress={() => setActiveTab('reports')}
           >
+            <Ionicons
+              name="flag"
+              size={14}
+              color={activeTab === 'reports' ? TOKENS.colors.active : TOKENS.colors.textMuted}
+            />
             <Text style={[styles.tabText, activeTab === 'reports' && styles.activeTabText]}>
-              <Ionicons name="flag" size={14} /> Reportes ({reportedPosts.length})
+              Reportes ({reportedPosts.length})
             </Text>
           </TouchableOpacity>
 
@@ -146,8 +116,13 @@ export const AdminScreen = () => {
             style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
             onPress={() => setActiveTab('activities')}
           >
+            <Ionicons
+              name="flash"
+              size={14}
+              color={activeTab === 'activities' ? TOKENS.colors.active : TOKENS.colors.textMuted}
+            />
             <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
-              <Ionicons name="flash" size={14} /> Actividades
+              Actividades
             </Text>
           </TouchableOpacity>
         </View>
@@ -165,43 +140,82 @@ export const AdminScreen = () => {
               </View>
             )}
 
-            {reportedPosts.map((post) => (
+            {reportedPosts.map((post) => {
+              const actividad = post.user_activity?.activity;
+              return (
               <View key={post.id} style={styles.reportCard}>
                 <View style={styles.reportHeader}>
-                  <Text style={styles.reportAuthor}>Post de: @{post.author?.username}</Text>
-                  <Text style={styles.reportBadge}>REPORTED</Text>
+                  <Text style={styles.reportAuthor}>
+                    Post de: <Text style={styles.reportAuthorName}>@{post.author?.username}</Text>
+                  </Text>
+                  {/* "REVISAR" en vez de "REPORTED": dice qué hacer, no repite
+                      el estado que ya implica estar en esta pestaña. */}
+                  <View style={styles.alertBadge}>
+                    <Text style={styles.alertBadgeText}>REVISAR</Text>
+                  </View>
                 </View>
 
+                {/* Contexto: a qué actividad correspondía la foto. Sin esto hay
+                    que juzgar una imagen suelta sin saber qué se pedía. */}
+                {actividad ? (
+                  <View style={styles.originalPostPreview}>
+                    <View style={styles.categoryRow}>
+                      <View style={styles.tagCategory}>
+                        <Text style={styles.tagText}>{getCategoryLabel(actividad.category)}</Text>
+                      </View>
+                      <View style={styles.tagPoints}>
+                        <Ionicons name="star" size={10} color={TOKENS.colors.badgePointsText} />
+                        <Text style={styles.pointsText}>+{actividad.points_awarded} pts</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.postTitle}>{actividad.title}</Text>
+                    <Text style={styles.postSubtitle} numberOfLines={2}>
+                      {actividad.description}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* La evidencia. Es lo que de verdad se está moderando: sin la
+                    imagen no hay forma de decidir si el reporte procede. */}
                 <Image source={{ uri: post.image_url }} style={styles.reportImage} />
 
                 {post.reports && post.reports.length > 0 && (
                   <View style={styles.reasonsBox}>
-                    <Text style={styles.reasonsLabel}>Motivo(s) del reporte:</Text>
+                    <Text style={styles.reasonsLabel}>
+                      {post.reports.length > 1 ? 'Motivos del reporte' : 'Motivo del reporte'}
+                    </Text>
                     {post.reports.map((r) => (
-                      <Text key={r.id} style={styles.reasonText}>
-                        • {r.reason} (por @{r.reporter?.username})
-                      </Text>
+                      <View key={r.id} style={styles.reasonRow}>
+                        <Ionicons name="alert-circle" size={13} color={TOKENS.colors.alertText} />
+                        <Text style={styles.reasonText}>
+                          <Text style={styles.reasonBold}>{r.reason}</Text>
+                          {r.reporter?.username ? ` · por @${r.reporter.username}` : ''}
+                        </Text>
+                      </View>
                     ))}
                   </View>
                 )}
 
                 <View style={styles.reportActions}>
                   <TouchableOpacity
-                    style={styles.restoreBtn}
+                    style={[styles.btn, styles.btnKeep]}
                     onPress={() => handleResolveReport(post.id, 'ACTIVE')}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.restoreBtnText}>Mantener</Text>
+                    <Text style={styles.btnTextKeep}>Mantener post</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.deleteBtn}
+                    style={[styles.btn, styles.btnDelete]}
                     onPress={() => setPostToDelete(post.id)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.deleteBtnText}>Eliminar</Text>
+                    <Text style={styles.btnTextDelete}>Eliminar</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -225,15 +239,36 @@ export const AdminScreen = () => {
                     style={[styles.statusToggle, act.is_active ? styles.activeToggle : styles.inactiveToggle]}
                     onPress={() => handleToggleActive(act.id, act.is_active)}
                   >
-                    <Text style={styles.statusToggleText}>
+                    <Text
+                      style={[
+                        styles.statusToggleText,
+                        { color: act.is_active ? TOKENS.colors.badgeInfoText : TOKENS.colors.textMuted },
+                      ]}
+                    >
                       {act.is_active ? 'ACTIVA' : 'INACTIVA'}
                     </Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.activityDesc}>{act.description}</Text>
-                <Text style={styles.activityMeta}>
-                  Puntos: {act.points_awarded} | Edad: {act.min_age || 0} - {act.max_age || 'Sin límite'}
-                </Text>
+
+                {/* Los tres datos como etiquetas sueltas: en una sola línea gris
+                    había que leerla entera para encontrar un dato concreto. */}
+                <View style={styles.metaRow}>
+                  <View style={styles.metaBadge}>
+                    <Ionicons name="pricetag-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Text style={styles.metaBadgeText}>{getCategoryLabel(act.category)}</Text>
+                  </View>
+                  <View style={styles.metaBadge}>
+                    <Ionicons name="star-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Text style={styles.metaBadgeText}>{act.points_awarded} pts</Text>
+                  </View>
+                  <View style={styles.metaBadge}>
+                    <Ionicons name="person-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Text style={styles.metaBadgeText}>
+                      {act.max_age ? `${act.min_age || 0}-${act.max_age} años` : `${act.min_age || 0}+ años`}
+                    </Text>
+                  </View>
+                </View>
               </View>
             ))}
           </View>
@@ -276,75 +311,15 @@ export const AdminScreen = () => {
         </View>
       </Modal>
 
-      <Modal visible={showCreateModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Nueva Actividad</Text>
-
-            <Text style={styles.inputLabel}>Título</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej. Pinta un cuadro abstracto"
-              placeholderTextColor="#8A908B"
-              value={newTitle}
-              onChangeText={setNewTitle}
-            />
-
-            <Text style={styles.inputLabel}>Descripción</Text>
-            <TextInput
-              style={[styles.input, { height: 80 }]}
-              placeholder="Explica detalladamente qué debe hacer el usuario..."
-              placeholderTextColor="#8A908B"
-              multiline
-              value={newDesc}
-              onChangeText={setNewDesc}
-            />
-
-            <View style={styles.formRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Puntos</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  value={newPoints}
-                  onChangeText={setNewPoints}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Edad Mínima</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ej. 12"
-                  placeholderTextColor="#8A908B"
-                  keyboardType="number-pad"
-                  value={newMinAge}
-                  onChangeText={setNewMinAge}
-                />
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.submitModalBtn}
-                onPress={handleCreateActivity}
-                disabled={creating}
-              >
-                {creating ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.submitModalText}>Guardar Actividad</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelModalBtn}
-                onPress={() => setShowCreateModal(false)}
-              >
-                <Text style={styles.cancelModalText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Mismo formulario que usa Perfil. `forCatalog` guarda la actividad con
+          created_by NULL, para que entre al catálogo general en vez de quedar
+          visible solo para el administrador que la creó. */}
+      <CreateActivityModal
+        visible={showCreateModal}
+        forCatalog
+        onClose={() => setShowCreateModal(false)}
+        onCreated={loadActivities}
+      />
     </SafeAreaView>
   );
 };
@@ -366,29 +341,38 @@ const styles = StyleSheet.create({
   },
   tabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
-    borderRadius: 14,
+    backgroundColor: TOKENS.colors.segmentTrack,
+    borderRadius: 12,
     padding: 4,
+    gap: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#F0F8FA',
+    // La pastilla activa es BLANCA, no del color de marca: así no compite con
+    // el botón "Crear Nueva Actividad", que es la acción principal de la pantalla.
+    backgroundColor: TOKENS.colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabText: {
-    color: '#8A908B',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    color: TOKENS.colors.textMuted,
   },
   activeTabText: {
-    color: '#0C8AA6',
-    fontWeight: '700',
+    color: TOKENS.colors.active,
+    fontWeight: '600',
   },
   content: {
     padding: 24,
@@ -399,10 +383,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-  },
-  forbiddenEmoji: {
-    fontSize: 54,
-    marginBottom: 12,
   },
   forbiddenTitle: {
     fontSize: 22,
@@ -424,41 +404,97 @@ const styles = StyleSheet.create({
     borderColor: '#F0F3F5',
     marginTop: 12,
   },
-  emptyEmoji: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
   emptyText: {
     color: '#121B22',
     fontSize: 14,
     textAlign: 'center',
   },
   reportCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: TOKENS.colors.white,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: TOKENS.colors.inactiveBorder,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
   },
   reportHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 12,
   },
   reportAuthor: {
-    fontWeight: '700',
-    color: '#121B22',
     fontSize: 14,
+    color: TOKENS.colors.inactiveText,
+    flexShrink: 1,
   },
-  reportBadge: {
-    backgroundColor: '#FF8F21',
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
+  reportAuthorName: {
+    fontWeight: '700',
+    color: TOKENS.colors.textDark,
+  },
+  alertBadge: {
+    backgroundColor: TOKENS.colors.alertBg,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.alertBorder,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: 6,
+  },
+  alertBadgeText: {
+    color: TOKENS.colors.alertText,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  originalPostPreview: {
+    backgroundColor: TOKENS.colors.inactiveBg,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.segmentTrack,
+    marginBottom: 12,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  tagCategory: {
+    backgroundColor: TOKENS.colors.inactiveBorder,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexShrink: 1,
+  },
+  tagText: {
+    fontSize: 11,
+    color: TOKENS.colors.inactiveText,
+  },
+  tagPoints: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: TOKENS.colors.badgePointsBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  pointsText: {
+    fontSize: 11,
+    color: TOKENS.colors.badgePointsText,
+    fontWeight: '600',
+  },
+  postTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: TOKENS.colors.textDark,
+    marginBottom: 2,
+  },
+  postSubtitle: {
+    fontSize: 12,
+    color: TOKENS.colors.textMuted,
+    lineHeight: 16,
   },
   reportImage: {
     width: '100%',
@@ -467,53 +503,62 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reasonsBox: {
-    backgroundColor: '#F0F3F5',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 14,
+    backgroundColor: TOKENS.colors.segmentTrack,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 6,
   },
   reasonsLabel: {
-    color: '#121B22',
-    fontWeight: '700',
     fontSize: 12,
-    marginBottom: 4,
+    fontWeight: '600',
+    color: TOKENS.colors.inactiveText,
+  },
+  reasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
   },
   reasonText: {
-    color: '#8A908B',
-    fontSize: 12,
+    flex: 1,
+    fontSize: 13,
+    color: TOKENS.colors.textDark,
+    lineHeight: 18,
+  },
+  reasonBold: {
+    fontWeight: '600',
   },
   reportActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
-  restoreBtn: {
+  btn: {
     flex: 1,
-    backgroundColor: '#F0F3F5',
-    borderRadius: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  restoreBtnText: {
-    color: '#121B22',
-    fontWeight: '700',
+  btnKeep: {
+    backgroundColor: TOKENS.colors.inactiveBorder,
+  },
+  btnDelete: {
+    backgroundColor: TOKENS.colors.destructive,
+  },
+  btnTextKeep: {
+    color: TOKENS.colors.inactiveText,
     fontSize: 14,
+    fontWeight: '600',
   },
-  deleteBtn: {
-    flex: 1,
-    backgroundColor: '#A94403',
-    borderRadius: 20,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  deleteBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+  btnTextDelete: {
+    color: TOKENS.colors.white,
     fontSize: 14,
+    fontWeight: '700',
   },
   createBtn: {
-    backgroundColor: '#0C8AA6',
-    borderRadius: 14,
+    backgroundColor: TOKENS.colors.active,
     paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -523,12 +568,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: TOKENS.colors.white,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.inactiveBorder,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
   },
   activityHeader: {
     flexDirection: 'row',
@@ -549,25 +594,43 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeToggle: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: TOKENS.colors.badgeInfoBg,
   },
   inactiveToggle: {
-    backgroundColor: '#8A908B',
+    backgroundColor: TOKENS.colors.inactiveBg,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.inactiveBorder,
   },
   statusToggleText: {
-    color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   activityDesc: {
-    color: '#8A908B',
     fontSize: 13,
-    marginBottom: 8,
+    color: TOKENS.colors.inactiveText,
+    lineHeight: 18,
+    marginBottom: 12,
   },
-  activityMeta: {
-    color: '#8A908B',
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: TOKENS.colors.inactiveBg,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.inactiveBorder,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  metaBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    color: TOKENS.colors.inactiveText,
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
@@ -586,27 +649,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#121B22',
     marginBottom: 16,
-  },
-  inputLabel: {
-    color: '#121B22',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#121B22',
-    fontSize: 14,
-  },
-  formRow: {
-    flexDirection: 'row',
-    gap: 12,
   },
   modalActions: {
     flexDirection: 'row',
@@ -642,16 +684,5 @@ const styles = StyleSheet.create({
   cancelModalText: {
     color: '#121B22',
     fontWeight: '600',
-  },
-  submitModalBtn: {
-    flex: 1,
-    backgroundColor: '#0C8AA6',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  submitModalText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
 });

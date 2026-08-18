@@ -10,7 +10,15 @@ export const getReportedPostsAdmin = async () => {
         status,
         created_at,
         author:profiles(full_name, username),
-        reports(id, reason, details, created_at, reporter:profiles(full_name, username))
+        reports(id, reason, details, created_at, reporter:profiles(full_name, username)),
+        user_activity:user_activities(
+          activity:activities(
+            title,
+            description,
+            points_awarded,
+            category:activity_categories(name)
+          )
+        )
       `)
       .eq('status', 'REPORTED')
       .order('created_at', { ascending: false });
@@ -66,6 +74,10 @@ export const createActivityAdmin = async ({
   title,
   description,
   categoryId,
+  // Gusto con el que se etiqueta la actividad. Es lo que la hace recomendable:
+  // sin ninguna etiqueta, get_recommended_activity la trata como comodín y se la
+  // ofrece a cualquier perfil, sin importar qué marcó el usuario.
+  likeId,
   minAge,
   maxAge,
   pointsAwarded,
@@ -88,6 +100,20 @@ export const createActivityAdmin = async ({
       .single();
 
     if (error) throw error;
+
+    // La relación va aparte porque activity_likes necesita el id que Postgres
+    // acaba de generar. Si fallara, la actividad ya existe: se avisa por consola
+    // en vez de dejar al admin creyendo que no se creó nada.
+    if (likeId) {
+      const { error: likeError } = await supabase
+        .from('activity_likes')
+        .insert({ activity_id: data.id, like_id: likeId });
+
+      if (likeError) {
+        console.error('La actividad se creó pero no se pudo etiquetar:', likeError.message);
+      }
+    }
+
     return { activity: data, error: null };
   } catch (error) {
     console.error('Error al crear actividad:', error.message);

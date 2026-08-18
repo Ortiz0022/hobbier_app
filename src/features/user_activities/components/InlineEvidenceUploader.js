@@ -2,11 +2,11 @@ import React from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 
 export const InlineEvidenceUploader = ({

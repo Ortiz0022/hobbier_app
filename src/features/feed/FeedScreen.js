@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   Image,
@@ -13,6 +12,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
+import { Text } from '../../components/scaledText';
 import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { ReportModal } from '../../components/ReportModal';
