@@ -31,6 +31,10 @@ const MainApp = () => {
   const { user, loading, isAdmin, passwordRecovery } = useAuth();
   const [currentScreen, setCurrentScreen] = useState('recommendations');
   const [autoExpandId, setAutoExpandId] = useState(null);
+  // A qué pestaña volver si se sale de preferencias sin guardar. Se recuerda
+  // porque a preferencias se entra desde dos sitios (Sugerencia y Perfil) y
+  // devolver siempre al mismo dejaría al usuario en una pantalla que no pidió.
+  const [volverA, setVolverA] = useState('recommendations');
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
 
@@ -57,6 +61,11 @@ const MainApp = () => {
     return <AuthScreen />;
   }
 
+  const irAPreferencias = (origen) => {
+    setVolverA(origen);
+    setCurrentScreen('preferences');
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'recommendations':
@@ -68,7 +77,7 @@ const MainApp = () => {
               }
               setCurrentScreen('my_activities');
             }}
-            onGoToPreferences={() => setCurrentScreen('preferences')}
+            onGoToPreferences={() => irAPreferencias('recommendations')}
             onNavigateToFeed={() => setCurrentScreen('feed')}
             onNavigateToActivities={() => setCurrentScreen('my_activities')}
           />
@@ -88,9 +97,17 @@ const MainApp = () => {
       case 'friends':
         return <FriendsScreen />;
       case 'profile':
-        return <ProfileScreen onGoToPreferences={() => setCurrentScreen('preferences')} />;
+        return <ProfileScreen onGoToPreferences={() => irAPreferencias('profile')} />;
       case 'preferences':
-        return <OnboardingScreen onComplete={() => setCurrentScreen('recommendations')} />;
+        return (
+          <OnboardingScreen
+            onComplete={() => setCurrentScreen('recommendations')}
+            // Sin barra de navegación abajo, la flecha del primer paso es la
+            // ÚNICA salida: sin esto el usuario queda encerrado en el asistente
+            // hasta terminarlo.
+            onCancel={() => setCurrentScreen(volverA)}
+          />
+        );
       case 'admin':
         return <AdminScreen />;
       default:
@@ -110,6 +127,11 @@ const MainApp = () => {
     navItems.push({ key: 'admin', label: 'Admin', icon: 'shield' });
   }
 
+  // El asistente de preferencias ocupa la pantalla entera: es un flujo con sus
+  // propios pasos y su propia salida, y dejar las pestañas abajo invita a irse
+  // a la mitad y perder lo elegido.
+  const pantallaCompleta = currentScreen === 'preferences';
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -118,6 +140,7 @@ const MainApp = () => {
       <View style={styles.mainContent}>{renderScreen()}</View>
 
       {/* BARRA DE NAVEGACIÓN INFERIOR DE ESTILO MINIMALISTA */}
+      {pantallaCompleta ? null : (
       <View style={styles.bottomNavContainer}>
         <View style={styles.bottomNav}>
           {navItems.map((item) => {
@@ -140,6 +163,7 @@ const MainApp = () => {
           })}
         </View>
       </View>
+      )}
     </SafeAreaView>
   );
 };

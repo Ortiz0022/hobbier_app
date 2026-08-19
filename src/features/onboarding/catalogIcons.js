@@ -13,6 +13,8 @@
  * MaterialCommunityIcons instalado.
  */
 
+import { TOKENS } from '../../theme/designTokens';
+
 export const FALLBACK_ICON = 'tag-outline';
 
 const ICONS = {
@@ -47,4 +49,22 @@ const ICONS = {
 export const getCatalogIcon = (name) => {
   if (!name) return FALLBACK_ICON;
   return ICONS[name.trim().toLowerCase()] || FALLBACK_ICON;
+};
+
+/**
+ * Tono pastel del círculo del icono.
+ *
+ * Se calcula a partir del NOMBRE, no de la posición en la lista: así una opción
+ * conserva su color aunque Supabase devuelva el catálogo en otro orden, y no
+ * cambia de tono al agregar opciones nuevas por delante.
+ *
+ * Solo hay tres familias (ver TOKENS.iconTints) y salen de la paleta existente.
+ * No es un color por opción como en la maqueta original: eso obligaría a
+ * inventar tonos que no usa ninguna otra pantalla.
+ */
+export const getCatalogTint = (name) => {
+  const texto = (name || '').trim().toLowerCase();
+  let suma = 0;
+  for (let i = 0; i < texto.length; i += 1) suma += texto.charCodeAt(i);
+  return TOKENS.iconTints[suma % TOKENS.iconTints.length];
 };
