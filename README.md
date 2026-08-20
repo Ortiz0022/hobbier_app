@@ -15,7 +15,7 @@ El desarrollo del proyecto siguió una metodología iterativa, priorizando la ex
 | **1** | **Planteamiento y Diseño UX**             | Definición de usuarios (`adolescentes`, `adultos`, `adultos mayores`) y criterios de validación. Creación de mockups con **Figma** (pantallas iniciales y de perfil) y diseño del modelo de datos relacional (`users`, `interests`, `activities`, `user_activities`). |
 | **2** | **Inicio del Desarrollo y Autenticación** | Configuración del proyecto con **Expo** y **TypeScript**. Implementación del sistema de autenticación (`signUp`, `signIn`) con **Supabase Auth** y gestión de perfiles usando **React Context** y componentes React Native.                                           |
 | **3** | **Motor de Recomendaciones**              | Desarrollo de la lógica central (`RecommendationEngine`) para sugerir actividades. Implementación inicial de un sistema de puntos (`ActivityPoints`), validación de intereses y filtrado de actividades (edad, capacidad física).                                     |
-| **4** | **Integración con IA (Groq)**             | Integración de la API **Groq** (`generateGoalNow`, `getAiRecommendation`) para generar metas diarias personalizadas y obtener recomendaciones más dinámicas basadas en intereses y contexto. AUN NO ESTA FUNCIONADO, SE BLOQUEO PARA APLICAR A FUTURO.                |
+| **4** | **Integración con IA**                    | Posible implementación a futuro. Todavía no se sabe qué papel tendría.                                                                                                                                                                                               |
 
 ## 🎨 Paleta de Colores
 
@@ -29,7 +29,6 @@ Por definir
     - Selección de intereses mediante un sistema de tags intuitivo.
     - Configuración de nivel de condición física.
 3.  **Motor de Recomendación Inteligente**:
-    - Generación de metas diarias personalizadas mediante IA.
     - Recomendaciones basadas en intereses, edad y nivel de actividad.
     - Sistema de puntos (`150, 100, 50`) para motivar la actividad física.
     - Manejo de rechazos: si el usuario rechaza una actividad, se le muestra una nueva opción.
@@ -40,6 +39,60 @@ Por definir
     - Diseño moderno con tarjetas, iconos vibrantes y animaciones sutiles.
     - Navegación fluida entre pantallas (Home, Perfil, Recomendaciones, Actividades Pendientes).
     - Modo oscuro automático (según configuración del sistema).
+
+## 🎯 Cómo se eligen las recomendaciones
+
+Cuando el usuario pulsa **"Sorpréndeme"**, la app **no filtra nada**: llama a la
+función `get_recommended_activity` en Postgres y muestra la actividad que le
+devuelve. Todo el criterio vive en `supabase/schema.sql`, en un solo sitio.
+
+La función se queda con las actividades que cumplen **todo** esto:
+
+1. Están activas (`is_active`).
+2. Son del catálogo (`created_by IS NULL`) o las creó el propio usuario.
+3. La edad del usuario entra en el rango `min_age` / `max_age`.
+4. El usuario tiene **todos** los recursos que la actividad exige. Si pide uno
+   que no marcó en sus preferencias, la actividad no aparece.
+5. No la tiene **en curso** (`user_activities.status = 'PENDING'`).
+
+Y encaja con el usuario por **alguna** de estas vías:
+
+- está etiquetada con uno de sus gustos, o
+- está etiquetada con uno de sus objetivos, o
+- su categoría empieza con el nombre de un gusto suyo (`Lectura` →
+  `Lectura y Aprendizaje`), o
+- no tiene categoría (se muestra como **"Libre"**), o
+- no tiene ninguna etiqueta, en cuyo caso vale como comodín.
+
+### Lo ya hecho va al final, no se descarta
+
+De las que sobreviven se elige una sola, con este orden:
+
+1. Las que el usuario **nunca hizo** (al azar entre ellas).
+2. Si no queda ninguna nueva, las ya completadas, empezando por la que **hace
+   más tiempo que no hace**.
+
+Las completadas no se excluyen del todo **a propósito**: repetir una actividad
+es una función del producto —`log_activity_progress` guarda el historial de
+fotos de cada repetición— y excluirlas dejaría "Sorpréndeme" sin nada que
+ofrecer en cuanto se acabara el catálogo.
+
+> **Antes de este cambio** la función no miraba `user_activities`, así que
+> sorteaba entre todo el catálogo apto, incluida la actividad que el usuario ya
+> tenía pendiente en la pantalla de inicio. De ahí venía la sensación de que
+> "Sorpréndeme" devolvía siempre lo mismo.
+
+### Cómo aplicar cambios en la base
+
+Los despliegues de Supabase de este proyecto son **manuales**: no hay CLI
+enlazada. Para aplicar un cambio hay que pegar el archivo correspondiente de
+`supabase/migrations/` en el **SQL Editor** de Supabase y ejecutarlo. El último
+es `20260820_recomendacion_sin_repetir.sql`.
+
+El catálogo de metas se genera aparte, con `python supabase/generate_import.py`,
+que reescribe `supabase/import_metas.sql` desde mockapi.io. También se pega a
+mano y es seguro ejecutarlo más de una vez: la identidad de cada actividad es su
+`external_id`, no su título.
 
 ## ♿ Accesibilidad: tamaño de letra del sistema
 
