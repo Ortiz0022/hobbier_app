@@ -61,7 +61,7 @@ export const RecommendationScreen = ({
 
     if (error) {
       setModalVisible(false);
-      const msg = 'Error al consultar recomendación. Ajusta tus preferencias.';
+      const msg = 'No pudimos revelar una misión. Ajusta tus preferencias e inténtalo de nuevo.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } else {
@@ -78,13 +78,10 @@ export const RecommendationScreen = ({
     setModalVisible(false);
 
     if (error) {
-      const msg = 'No se pudo aceptar la actividad.';
+      const msg = 'No pudimos añadir esta misión a tu mazo.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } else {
-      const msg = '¡Actividad aceptada! La encontrarás en tu sección de Actividad en Progreso.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('¡Genial!', msg);
       loadHomeData();
       if (onActivityAccepted) onActivityAccepted(userActivity);
     }

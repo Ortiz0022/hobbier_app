@@ -1,150 +1,127 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { colors } from '../../../theme';
 
 export const InlineEvidenceUploader = ({
   imageUri,
   completing,
   onPickImage,
+  onTakePhoto,
   onComplete,
-  buttonText = 'Completar actividad',
-  placeholderText = 'Sube una foto de tu creación',
-}) => {
-  return (
-    <View style={styles.container}>
-      <View style={styles.uploadWrapper}>
-        <TouchableOpacity
-          style={styles.dashedDropzone}
-          onPress={onPickImage}
-          activeOpacity={0.85}
-        >
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.previewImage} />
-          ) : (
-            <View style={styles.placeholderContent}>
-              <View style={styles.cameraIconContainer}>
-                <View style={styles.cameraCircle}>
-                  <Feather name="camera" size={28} color="#08333D" />
-                </View>
-                <View style={styles.plusIconBadge}>
-                  <Feather name="plus-circle" size={18} color="#FF5A00" />
-                </View>
-              </View>
-              <Text style={styles.uploadText}>{placeholderText}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* BOTÓN REGISTRAR / COMPLETAR ACTIVIDAD */}
-      <TouchableOpacity
-        style={[styles.completeBtn, !imageUri && styles.completeBtnDisabled]}
-        onPress={onComplete}
-        disabled={!imageUri || completing}
-        activeOpacity={0.88}
-      >
-        {completing ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={[styles.completeBtnText, !imageUri && styles.completeBtnTextDisabled]}>
-            {buttonText}
+  buttonText = 'Superar misión',
+}) => (
+  <View style={styles.container}>
+    {imageUri ? (
+      <View style={styles.readyCard}>
+        <View style={styles.readyIcon}>
+          <Feather name="check" size={24} color={colors.success} />
+        </View>
+        <View style={styles.readyCopy}>
+          <Text style={styles.readyTitle}>Evidencia lista</Text>
+          <Text style={styles.readyText}>
+            La foto está preparada. La encontrarás en tu Perfil al completar.
           </Text>
-        )}
+        </View>
+      </View>
+    ) : (
+      <View style={styles.introCard}>
+        <View style={styles.introIcon}>
+          <Feather name="camera" size={25} color={colors.primary} />
+        </View>
+        <Text style={styles.introTitle}>Guarda este momento</Text>
+        <Text style={styles.introText}>
+          Necesitamos una foto como evidencia, pero no la mostraremos en Actividad.
+        </Text>
+      </View>
+    )}
+
+    <View style={styles.sourceRow}>
+      <TouchableOpacity
+        style={styles.sourceButton}
+        onPress={onTakePhoto}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+      >
+        <Feather name="camera" size={18} color={colors.primaryDark} />
+        <Text style={styles.sourceButtonText}>Cámara</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.sourceButton}
+        onPress={onPickImage}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+      >
+        <Feather name="image" size={18} color={colors.primaryDark} />
+        <Text style={styles.sourceButtonText}>Galería</Text>
       </TouchableOpacity>
     </View>
-  );
-};
+
+    <TouchableOpacity
+      style={[styles.completeButton, !imageUri && styles.completeButtonDisabled]}
+      onPress={onComplete}
+      disabled={!imageUri || completing}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+    >
+      {completing ? (
+        <ActivityIndicator color={colors.onPrimary} />
+      ) : (
+        <>
+          <Text style={[styles.completeText, !imageUri && styles.completeTextDisabled]}>
+            {buttonText}
+          </Text>
+          <Feather
+            name="arrow-right"
+            size={17}
+            color={imageUri ? colors.onPrimary : colors.textMuted}
+          />
+        </>
+      )}
+    </TouchableOpacity>
+  </View>
+);
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F3F5',
+  container: { marginTop: 18 },
+  introCard: {
+    alignItems: 'center', backgroundColor: colors.primarySoft,
+    borderRadius: 22, paddingHorizontal: 20, paddingVertical: 22,
   },
-  uploadWrapper: {
+  introIcon: {
+    width: 54, height: 54, borderRadius: 18,
+    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
     marginBottom: 12,
   },
-  dashedDropzone: {
-    height: 165,
-    backgroundColor: 'rgba(0, 201, 253, 0.05)',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 201, 253, 0.35)',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+  introTitle: { color: colors.text, fontSize: 16, fontWeight: '500' },
+  introText: {
+    color: colors.textMuted, fontSize: 12, lineHeight: 18,
+    textAlign: 'center', marginTop: 5, maxWidth: 280,
   },
-  placeholderContent: {
-    alignItems: 'center',
-    padding: 16,
+  readyCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 13,
+    backgroundColor: '#EDF7F1', borderRadius: 22, padding: 17,
   },
-  cameraIconContainer: {
-    position: 'relative',
-    marginBottom: 10,
+  readyIcon: {
+    width: 48, height: 48, borderRadius: 16,
+    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
   },
-  cameraCircle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#08333D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  plusIconBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-  },
-  uploadText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#08333D',
-    textAlign: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  completeBtn: {
-    backgroundColor: '#FF5A00',
+  readyCopy: { flex: 1 },
+  readyTitle: { color: colors.text, fontSize: 15, fontWeight: '500' },
+  readyText: { color: colors.textFaint, fontSize: 11, lineHeight: 16, marginTop: 3 },
+  sourceRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  sourceButton: {
+    flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 8, backgroundColor: colors.surfaceMuted,
     borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FF5A00',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  completeBtnDisabled: {
-    backgroundColor: '#F1F3F5',
-    shadowOpacity: 0,
-    elevation: 0,
+  sourceButtonText: { color: colors.primaryDark, fontSize: 12, fontWeight: '500' },
+  completeButton: {
+    minHeight: 53, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 9, backgroundColor: colors.accent,
+    borderRadius: 18, marginTop: 12,
   },
-  completeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  completeBtnTextDisabled: {
-    color: '#9AA0A6',
-    fontWeight: '600',
-  },
+  completeButtonDisabled: { backgroundColor: colors.surfaceMuted },
+  completeText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  completeTextDisabled: { color: colors.textMuted },
 });

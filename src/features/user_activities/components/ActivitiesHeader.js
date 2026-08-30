@@ -1,34 +1,19 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { colors } from '../../../theme';
 
-export const ActivitiesHeader = ({ profile, onFilterPress }) => {
-  const username = profile?.username ? `@${profile.username}` : 'Mi progreso';
+export const ActivitiesHeader = ({ profile }) => {
   const points = profile?.points || 0;
 
   return (
-    <View style={styles.headerContainer}>
-      <View style={styles.headerRow}>
-        {/* TÍTULO Y USERNAME DE LA PANTALLA */}
-        <View style={styles.titleCol}>
-          <Text style={styles.mainTitle}>Mis actividades</Text>
-          <Text style={styles.userHandleText}>{username}</Text>
-        </View>
+    <View style={styles.header}>
+      <View style={styles.topRow}>
+        <Text style={styles.brand}>hobbier.</Text>
 
-        {/* ACCIONES DE LA DERECHA: MARCADOR DORADO DE PUNTOS, NOTIFICACIONES Y FILTRO */}
-        <View style={styles.actionsRow}>
-          <View style={styles.pointsPill}>
-            <Feather name="star" size={13} color="#FFB300" />
-            <Text style={styles.pointsText}>{points} pts</Text>
-          </View>
-
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
-            <Feather name="bell" size={17} color="#08333D" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconBtn} onPress={onFilterPress} activeOpacity={0.8}>
-            <Feather name="sliders" size={17} color="#08333D" />
-          </TouchableOpacity>
+        <View style={styles.pointsPill}>
+          <Feather name="star" size={13} color={colors.accent} />
+          <Text style={styles.pointsText}>{points} pts</Text>
         </View>
       </View>
     </View>
@@ -36,58 +21,19 @@ export const ActivitiesHeader = ({ profile, onFilterPress }) => {
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    marginBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
+  header: { marginBottom: 12 },
+  topRow: {
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  titleCol: {
-    flex: 1,
-  },
-  mainTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-    color: '#08333D',
-    letterSpacing: -0.3,
-  },
-  userHandleText: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 1,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  brand: {
+    fontFamily: 'DynaPuff', fontSize: 23,
+    color: colors.primaryDark, letterSpacing: -0.6,
   },
   pointsPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF9EB',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 179, 0, 0.3)',
-    gap: 5,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#FFF5EA', borderRadius: 999,
+    paddingHorizontal: 11, paddingVertical: 7,
   },
-  pointsText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#08333D',
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
-  },
+  pointsText: { color: colors.accentDark, fontSize: 12, fontWeight: '500' },
 });

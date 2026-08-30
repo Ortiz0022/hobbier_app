@@ -39,17 +39,14 @@ export const HomeHeader = ({ profile }) => {
           )}
         </View>
       </View>
-
-      <Text style={styles.greeting}>Hola, {displayName} 👋</Text>
-      <Text style={styles.prompt}>¿Qué historia quieres vivir hoy?</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: { marginBottom: 22 },
+  header: { marginBottom: 12 },
   topRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   brand: {
     fontFamily: 'DynaPuff', fontSize: 24, color: colors.primaryDark, letterSpacing: -0.6,
@@ -68,9 +65,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   avatarInitial: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
-  greeting: { color: colors.textMuted, fontSize: 14, marginBottom: 4 },
-  prompt: {
-    color: colors.text, fontSize: 25, lineHeight: 32, fontWeight: '500',
-    letterSpacing: -0.6, maxWidth: 330,
-  },
 });

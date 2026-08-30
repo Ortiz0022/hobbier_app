@@ -37,8 +37,8 @@ export const HeroBanner = ({ onPress }) => {
       onPress={onPress}
       activeOpacity={0.92}
       accessibilityRole="button"
-      accessibilityLabel="Sorpréndeme con un hobby nuevo"
-      accessibilityHint="Busca una actividad elegida para ti"
+      accessibilityLabel="Revelar una misión sorpresa"
+      accessibilityHint="Descubre un reto elegido para ti"
     >
       <View pointerEvents="none" style={styles.decorations}>
         <View style={styles.topDot} />
@@ -46,7 +46,7 @@ export const HeroBanner = ({ onPress }) => {
         <Animated.View style={[styles.discoveryOrb, { transform: [{ scale: visualScale }] }]}>
           <View style={styles.orbit} />
           <View style={styles.orbCore}>
-            <Feather name="compass" size={37} color={colors.onPrimary} />
+            <Feather name="gift" size={31} color={colors.onPrimary} />
           </View>
           <View style={styles.sparkleSmall} />
           <Feather name="star" size={18} color={colors.onPrimary} style={styles.orbStar} />
@@ -56,13 +56,13 @@ export const HeroBanner = ({ onPress }) => {
       <View style={styles.content}>
         <View style={styles.eyebrowRow}>
           <Feather name="zap" size={12} color="#B9F3FF" />
-          <Text style={styles.eyebrow}>UNA IDEA PARA TI</Text>
+          <Text style={styles.eyebrow}>MISIÓN SORPRESA</Text>
         </View>
-        <Text style={styles.title}>Sal de la rutina.</Text>
-        <Text style={styles.subtitle}>Tu próximo hobby puede empezar ahora.</Text>
+        <Text style={styles.title}>¿Te atreves?</Text>
+        <Text style={styles.subtitle}>Revela un reto elegido para ti.</Text>
         <View style={styles.cta}>
-          <Text style={styles.ctaText}>Sorpréndeme</Text>
-          <Feather name="arrow-up-right" size={17} color={colors.primaryDark} />
+          <Text style={styles.ctaText}>Revelar misión</Text>
+          <Feather name="zap" size={15} color={colors.primaryDark} />
         </View>
       </View>
     </TouchableOpacity>
@@ -71,60 +71,60 @@ export const HeroBanner = ({ onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 224, borderRadius: 30, backgroundColor: colors.primaryDark,
-    overflow: 'hidden', marginBottom: 30,
+    minHeight: 168, borderRadius: 27, backgroundColor: colors.primaryDark,
+    overflow: 'hidden', marginBottom: 20,
   },
   content: {
-    flex: 1, paddingHorizontal: 22, paddingVertical: 24,
+    flex: 1, paddingHorizontal: 19, paddingVertical: 18,
     alignItems: 'flex-start', zIndex: 2,
   },
   eyebrowRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12,
   },
   eyebrow: {
     color: '#B9F3FF', fontSize: 10, fontWeight: '600', letterSpacing: 1.2,
   },
   title: {
-    maxWidth: '72%', color: colors.onPrimary, fontSize: 27, lineHeight: 33,
-    fontWeight: '600', letterSpacing: -0.7,
+    maxWidth: '68%', color: colors.onPrimary, fontSize: 24, lineHeight: 29,
+    fontWeight: '600', letterSpacing: -0.5,
   },
   subtitle: {
-    maxWidth: '64%', color: '#D3E7EA', fontSize: 13, lineHeight: 19,
-    marginTop: 5, marginBottom: 18,
+    maxWidth: '60%', color: '#D3E7EA', fontSize: 11, lineHeight: 16,
+    marginTop: 3, marginBottom: 12,
   },
   cta: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.onPrimary, borderRadius: 999,
-    paddingVertical: 10, paddingHorizontal: 15,
+    paddingVertical: 9, paddingHorizontal: 13,
   },
   ctaText: {
-    color: colors.primaryDark, fontSize: 13, fontWeight: '600',
+    color: colors.primaryDark, fontSize: 12, fontWeight: '600',
   },
   decorations: { ...StyleSheet.absoluteFillObject },
   discoveryOrb: {
-    position: 'absolute', width: 138, height: 138, borderRadius: 69,
-    right: -18, bottom: -12, backgroundColor: colors.accent,
+    position: 'absolute', width: 112, height: 112, borderRadius: 56,
+    right: -15, bottom: -13, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },
   orbCore: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: colors.accentDark,
+    width: 60, height: 60, borderRadius: 30, backgroundColor: colors.accentDark,
     alignItems: 'center', justifyContent: 'center',
   },
   orbit: {
-    position: 'absolute', width: 112, height: 112, borderRadius: 56,
+    position: 'absolute', width: 91, height: 91, borderRadius: 46,
     borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.48)',
   },
-  orbStar: { position: 'absolute', top: 17, right: 23 },
+  orbStar: { position: 'absolute', top: 13, right: 18 },
   sparkleSmall: {
     position: 'absolute', width: 7, height: 7, borderRadius: 4,
-    backgroundColor: colors.onPrimary, bottom: 24, left: 25,
+    backgroundColor: colors.onPrimary, bottom: 19, left: 20,
   },
   topDot: {
     position: 'absolute', width: 18, height: 18, borderRadius: 9,
-    backgroundColor: colors.salmon, right: 85, top: 25,
+    backgroundColor: colors.salmon, right: 73, top: 20,
   },
   sideRing: {
-    position: 'absolute', width: 54, height: 54, borderRadius: 27,
-    borderWidth: 9, borderColor: colors.primary, right: -25, top: 25,
+    position: 'absolute', width: 48, height: 48, borderRadius: 24,
+    borderWidth: 8, borderColor: colors.primary, right: -22, top: 18,
   },
 });

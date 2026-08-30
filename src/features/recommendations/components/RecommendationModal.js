@@ -45,7 +45,7 @@ export const RecommendationModal = ({
           onPress={onClose}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar recomendación"
+          accessibilityLabel="Cerrar misión revelada"
         >
           <Feather name="x" size={19} color={colors.textFaint} />
         </TouchableOpacity>
@@ -57,8 +57,8 @@ export const RecommendationModal = ({
               <Feather name="compass" size={38} color={colors.onPrimary} />
             </View>
             <ActivityIndicator color={colors.accent} style={styles.loadingIndicator} />
-            <Text style={styles.loadingTitle}>Buscando una chispa para ti…</Text>
-            <Text style={styles.loadingText}>Algo nuevo, posible y con ganas de convertirse en historia.</Text>
+            <Text style={styles.loadingTitle}>Barajando misiones…</Text>
+            <Text style={styles.loadingText}>Preparando un reto nuevo, posible y elegido para ti.</Text>
           </View>
         ) : recommended ? (
           <ScrollView
@@ -69,7 +69,7 @@ export const RecommendationModal = ({
             <View style={styles.topRow}>
               <View style={styles.foundBadge}>
                 <Feather name="zap" size={11} color={colors.primary} />
-                <Text style={styles.foundText}>IDEA ENCONTRADA</Text>
+                <Text style={styles.foundText}>MISIÓN REVELADA</Text>
               </View>
               <View style={styles.pointsBadge}>
                 <Feather name="star" size={12} color={colors.accentDark} />
@@ -100,7 +100,7 @@ export const RecommendationModal = ({
             ) : null}
 
             <Text style={styles.encouragement}>
-              No tiene que salir perfecto. Solo tiene que empezar.
+              No tiene que salir perfecto. Solo tienes que jugar a tu manera.
             </Text>
 
             <TouchableOpacity
@@ -113,7 +113,7 @@ export const RecommendationModal = ({
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <>
-                  <Text style={styles.acceptButtonText}>Quiero intentarlo</Text>
+                  <Text style={styles.acceptButtonText}>Añadir a mis misiones</Text>
                   <Feather name="arrow-right" size={17} color={colors.onPrimary} />
                 </>
               )}
@@ -126,7 +126,7 @@ export const RecommendationModal = ({
               accessibilityRole="button"
             >
               <Feather name="refresh-cw" size={14} color={colors.primary} />
-              <Text style={styles.reloadButtonText}>Muéstrame otra idea</Text>
+              <Text style={styles.reloadButtonText}>Revelar otra misión</Text>
             </TouchableOpacity>
           </ScrollView>
         ) : (
@@ -134,8 +134,8 @@ export const RecommendationModal = ({
             <View style={styles.emptyIcon}>
               <Feather name="search" size={31} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>Hoy no encontramos el match</Text>
-            <Text style={styles.emptyText}>Ajusta tus gustos o recursos en tu perfil y volvemos a intentarlo.</Text>
+            <Text style={styles.emptyTitle}>No encontramos una misión compatible</Text>
+            <Text style={styles.emptyText}>Ajusta tus gustos o recursos en tu Perfil y vuelve a intentarlo.</Text>
             <TouchableOpacity style={styles.emptyButton} onPress={onClose}>
               <Text style={styles.emptyButtonText}>Entendido</Text>
             </TouchableOpacity>
