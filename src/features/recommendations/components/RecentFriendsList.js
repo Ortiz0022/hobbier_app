@@ -1,176 +1,206 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { colors } from '../../../theme';
 
-export const RecentFriendsList = ({ recentFriendPosts, onNavigateToFeed }) => {
-  return (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>ACTIVIDADES RECIENTES DE AMIGOS</Text>
-        <TouchableOpacity onPress={onNavigateToFeed}>
-          <Text style={styles.verTodoLink}>Ver todo</Text>
-        </TouchableOpacity>
-      </View>
+const placeholderColors = [colors.salmonSoft, '#BDECF3', '#FFE2C2'];
 
-      {recentFriendPosts.length === 0 ? (
-        <View style={styles.emptyFriendsCard}>
-          <Feather name="users" size={32} color="#8A908B" style={styles.emptyFriendsIcon} />
-          <Text style={styles.emptyFriendsText}>
-            Agrega amigos para ver sus hobbies y actividades recientes aquí.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.friendsList}>
-          {recentFriendPosts.map((post) => (
-            <TouchableOpacity
-              key={post.id}
-              style={styles.friendActivityCard}
-              onPress={onNavigateToFeed}
-              activeOpacity={0.9}
-            >
-              <View style={styles.avatarRing}>
-                {post.author?.avatar_url ? (
-                  <Image
-                    source={{ uri: post.author.avatar_url }}
-                    style={styles.friendAvatarImage}
-                  />
-                ) : (
-                  <View style={styles.friendAvatarPlaceholder}>
-                    <Text style={styles.friendAvatarInitial}>
-                      {(post.author?.full_name || 'C')[0].toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-              </View>
+const formatRelativeTime = (dateValue) => {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'Hace poco';
 
-              <View style={styles.friendTextCol}>
-                <Text style={styles.friendSentence}>
-                  <Text style={styles.friendName}>{post.author?.full_name?.split(' ')[0]} </Text>
-                  terminó{' '}
-                  <Text style={styles.activityName}>
-                    {post.user_activity?.activity?.title || 'una actividad'}
-                  </Text>
-                </Text>
-                <Text style={styles.friendTimeAgo}>
-                  {new Date(post.created_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+  if (minutes < 1) return 'Ahora';
+  if (minutes < 60) return `Hace ${minutes} min`;
 
-              <Feather name="check-circle" size={20} color="#A94403" style={styles.actionIcon} />
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'Ayer' : `Hace ${days} días`;
 };
 
+export const RecentFriendsList = ({ recentFriendPosts = [], onNavigateToFeed }) => (
+  <View style={styles.sectionContainer}>
+    <View style={styles.sectionHeaderRow}>
+      <View style={styles.headingCopy}>
+        <Text style={styles.sectionTitle}>La comunidad se mueve</Text>
+        <Text style={styles.sectionSubtitle}>Pequeños logros que también inspiran.</Text>
+      </View>
+      <TouchableOpacity
+        onPress={onNavigateToFeed}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Ver toda la actividad de la comunidad"
+      >
+        <Text style={styles.seeAllLink}>Ver todo</Text>
+      </TouchableOpacity>
+    </View>
+
+    {recentFriendPosts.length === 0 ? (
+      <TouchableOpacity
+        style={styles.emptyCard}
+        onPress={onNavigateToFeed}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+      >
+        <View style={styles.emptyAvatars}>
+          <View style={[styles.miniAvatar, styles.miniAvatarBack]} />
+          <View style={[styles.miniAvatar, styles.miniAvatarFront]}>
+            <Feather name="users" size={18} color={colors.primary} />
+          </View>
+        </View>
+        <View style={styles.emptyCopy}>
+          <Text style={styles.emptyTitle}>Inspírense juntos</Text>
+          <Text style={styles.emptyText}>Agrega amigos y celebren cada hobby que prueben.</Text>
+        </View>
+        <Feather name="arrow-up-right" size={18} color={colors.primary} />
+      </TouchableOpacity>
+    ) : (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalList}
+      >
+        {recentFriendPosts.map((post, index) => {
+          const authorName = post.author?.full_name || post.author?.username || 'Alguien';
+          const activityTitle = post.activityTitle
+            || post.user_activity?.activity?.title
+            || 'una actividad nueva';
+
+          return (
+            <TouchableOpacity
+              key={post.id}
+              style={styles.activityCard}
+              onPress={onNavigateToFeed}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel={`${authorName} completó ${activityTitle}`}
+            >
+              <View style={styles.mediaContainer}>
+                {post.image_url ? (
+                  <Image
+                    source={{ uri: post.image_url }}
+                    style={styles.activityImage}
+                    resizeMode="cover"
+                    accessibilityLabel={`Evidencia de ${activityTitle}`}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.imagePlaceholder,
+                      { backgroundColor: placeholderColors[index % placeholderColors.length] },
+                    ]}
+                  >
+                    <Feather name="camera" size={30} color={colors.primaryDark} />
+                    <Text style={styles.placeholderText}>Momento Hobbier</Text>
+                  </View>
+                )}
+
+                <View style={styles.pointsPill}>
+                  <Feather name="star" size={11} color={colors.accentDark} />
+                  <Text style={styles.pointsPillText}>+{post.pointsAwarded || 20}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardBody}>
+                <View style={styles.authorRow}>
+                  {post.author?.avatar_url ? (
+                    <Image source={{ uri: post.author.avatar_url }} style={styles.avatar} />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Text style={styles.avatarInitial}>{authorName.charAt(0).toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
+                </View>
+
+                <Text style={styles.activityTitle} numberOfLines={2}>{activityTitle}</Text>
+                <View style={styles.cardFooter}>
+                  <Text style={styles.timeAgo}>{formatRelativeTime(post.created_at)}</Text>
+                  <Feather name="arrow-right" size={14} color={colors.primary} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    )}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginBottom: 16,
-  },
+  sectionContainer: { marginBottom: 12 },
   sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-end', marginBottom: 14,
   },
+  headingCopy: { flex: 1, paddingRight: 12 },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#121B22',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    color: colors.text, fontSize: 19, lineHeight: 25,
+    fontWeight: '500', letterSpacing: -0.3,
   },
-  verTodoLink: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#00DBFF',
+  sectionSubtitle: {
+    color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 2,
   },
-  emptyFriendsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
+  seeAllLink: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  horizontalList: { gap: 12, paddingRight: 2 },
+  activityCard: {
+    width: 178, backgroundColor: colors.surface, borderRadius: 22,
+    borderWidth: 1, borderColor: colors.surfaceMuted, overflow: 'hidden',
   },
-  emptyFriendsIcon: {
-    marginBottom: 6,
+  mediaContainer: {
+    height: 132, backgroundColor: colors.surfaceMuted, position: 'relative',
   },
-  emptyFriendsText: {
-    fontSize: 13,
-    color: '#727773',
-    textAlign: 'center',
+  activityImage: { width: '100%', height: '100%' },
+  imagePlaceholder: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  friendsList: {
-    gap: 10,
+  placeholderText: { color: colors.primaryDark, fontSize: 11 },
+  pointsPill: {
+    position: 'absolute', top: 10, right: 10, flexDirection: 'row',
+    alignItems: 'center', gap: 3, backgroundColor: '#FFF5EA',
+    borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5,
   },
-  friendActivityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
+  pointsPillText: { color: colors.accentDark, fontSize: 10, fontWeight: '600' },
+  cardBody: { padding: 12 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  avatar: {
+    width: 25, height: 25, borderRadius: 13,
+    borderWidth: 1, borderColor: colors.salmonSoft,
   },
-  avatarRing: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#00DBFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  avatarPlaceholder: {
+    width: 25, height: 25, borderRadius: 13, backgroundColor: colors.primarySoft,
+    alignItems: 'center', justifyContent: 'center',
   },
-  friendAvatarImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+  avatarInitial: { color: colors.primary, fontSize: 10, fontWeight: '600' },
+  authorName: {
+    flex: 1, color: colors.textFaint, fontSize: 11, fontWeight: '500',
   },
-  friendAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#0C8AA6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+  activityTitle: {
+    minHeight: 38, color: colors.text, fontSize: 14, lineHeight: 19,
+    fontWeight: '500', marginTop: 9,
   },
-  friendAvatarInitial: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  cardFooter: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginTop: 8,
   },
-  friendTextCol: {
-    flex: 1,
+  timeAgo: { color: colors.textMuted, fontSize: 10 },
+  emptyCard: {
+    minHeight: 106, flexDirection: 'row', alignItems: 'center', gap: 13,
+    backgroundColor: colors.surfaceAccent, borderRadius: 24, padding: 17,
   },
-  friendSentence: {
-    fontSize: 14,
-    color: '#434744',
+  emptyAvatars: { width: 55, height: 50, position: 'relative' },
+  miniAvatar: {
+    position: 'absolute', width: 38, height: 38, borderRadius: 19,
+    borderWidth: 2, borderColor: colors.onPrimary,
   },
-  friendName: {
-    fontWeight: '600',
-    color: '#121B22',
+  miniAvatarBack: { top: 0, right: 0, backgroundColor: colors.salmonSoft },
+  miniAvatarFront: {
+    bottom: 0, left: 0, backgroundColor: '#D7F3F7',
+    alignItems: 'center', justifyContent: 'center',
   },
-  activityName: {
-    fontWeight: '600',
-    color: '#2A6347',
-  },
-  friendTimeAgo: {
-    fontSize: 12,
-    color: '#8A908B',
-    marginTop: 2,
-  },
-  actionIcon: {
-    marginLeft: 8,
-  },
+  emptyCopy: { flex: 1 },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '500' },
+  emptyText: { color: colors.textFaint, fontSize: 11, lineHeight: 16, marginTop: 3 },
 });

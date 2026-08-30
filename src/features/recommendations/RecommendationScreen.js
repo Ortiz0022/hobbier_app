@@ -92,7 +92,10 @@ export const RecommendationScreen = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <HomeHeader profile={profile} />
 
         <HeroBanner onPress={handleSorprendeme} />
@@ -100,6 +103,7 @@ export const RecommendationScreen = ({
         <InProgressCard
           pendingActivity={pendingActivity}
           onPress={onNavigateToActivities}
+          onDiscover={handleSorprendeme}
         />
 
         <RecentFriendsList
@@ -124,11 +128,14 @@ export const RecommendationScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBFCFA',
   },
   scrollContent: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 14,
+    paddingBottom: 36,
   },
 });

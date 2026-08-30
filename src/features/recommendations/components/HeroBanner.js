@@ -1,184 +1,130 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, Animated, View } from 'react-native';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-
-const Sparkle = ({ size = 20, color = '#4B6959', style, delay = 0 }) => {
-  const animValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(animValue, {
-          toValue: 1,
-          duration: 1200 + Math.random() * 500,
-          delay: delay,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animValue, {
-          toValue: 0,
-          duration: 1200 + Math.random() * 500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [animValue, delay]);
-
-  const scale = animValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.6, 1.1, 0.6],
-  });
-
-  const opacity = animValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.3, 0.9, 0.3],
-  });
-
-  return (
-    <Animated.View style={[style, { transform: [{ scale }], opacity }]}>
-      <Svg width={size} height={size} viewBox="0 0 20 20">
-        <Path d="M10,0 Q10,10 20,10 Q10,10 10,20 Q10,10 0,10 Q10,10 10,0 Z" fill={color} />
-      </Svg>
-    </Animated.View>
-  );
-};
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
+import { colors } from '../../../theme';
 
 export const HeroBanner = ({ onPress }) => {
-  const blobScaleX = useRef(new Animated.Value(1)).current;
-  const blobScaleY = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animación de respiración horizontal
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(blobScaleX, {
-          toValue: 1.04,
-          duration: 3500,
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1800,
           useNativeDriver: true,
         }),
-        Animated.timing(blobScaleX, {
-          toValue: 1,
-          duration: 3500,
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1800,
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
 
-    // Animación de respiración vertical (desfasada para simular cambio de forma orgánico)
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(blobScaleY, {
-          toValue: 1.03,
-          duration: 4200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blobScaleY, {
-          toValue: 1,
-          duration: 4200,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [blobScaleX, blobScaleY]);
+    animation.start();
+    return () => animation.stop();
+  }, [pulse]);
+
+  const visualScale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.06],
+  });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.cardContainer}>
-
-        {/* FONDO BLOB ANIMADO - Volando sin recuadro blanco */}
-        <Animated.View style={[styles.blobWrapper, { transform: [{ scaleX: blobScaleX }, { scaleY: blobScaleY }] }]}>
-          <Svg width="200%" height="220%" viewBox="0 0 200 200" style={styles.svgBlob}>
-            <Defs>
-              <LinearGradient id="blobGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor="#FFAA55" />
-                <Stop offset="0.4" stopColor="#FF8F21" />
-                <Stop offset="1" stopColor="#E67A15" />
-              </LinearGradient>
-            </Defs>
-            {/* Blob orgánico horizontal (menos alto de arriba y más extendido a los lados) */}
-            <Path
-              d="M180,105C172,135,138,152,98,150C58,148,20,132,16,100C12,68,45,46,95,45C145,44,188,75,180,105Z"
-              fill="url(#blobGrad)"
-            />
-          </Svg>
-        </Animated.View>
-
-        {/* LÍNEA ROSA DECORATIVA (SQUIGGLE) ABAJO A LA DERECHA */}
-        <View style={styles.squiggleWrapper}>
-          <Svg width={40} height={20} viewBox="0 0 40 20">
-            <Path d="M0,10 Q10,0 20,10 T40,10" fill="none" stroke="#F1C2B8" strokeWidth="2.5" strokeLinecap="round" />
-          </Svg>
-        </View>
-
-        {/* ESTRELLAS ANIMADAS */}
-        <Sparkle size={18} style={{ position: 'absolute', top: 15, left: 35 }} delay={0} color="#FF8F21" />
-        <Sparkle size={12} style={{ position: 'absolute', top: 55, left: 15 }} delay={500} color="#FFAA55" />
-        <Sparkle size={14} style={{ position: 'absolute', bottom: 20, right: 35 }} delay={800} color="#E67A15" />
-        <Sparkle size={10} style={{ position: 'absolute', bottom: 10, right: 60 }} delay={300} color="#FF8F21" />
-        <Sparkle size={18} style={{ position: 'absolute', top: '65%', left: '48%' }} delay={1200} color="#FFFFFF" />
-        <Sparkle size={10} style={{ position: 'absolute', top: '73%', left: '55%' }} delay={200} color="#FFFFFF" />
-
-        {/* ÁREA CLIQUEABLE RESTRINGIDA AL CONTENEDOR CENTRAL */}
-        <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', zIndex: 10 }]}>
-          <View style={styles.textContent}>
-            <Text style={styles.heroTitle}>Sorpréndeme</Text>
-            <Text style={styles.heroSubtitle}>Descubre un nuevo hobby hoy</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.92}
+      accessibilityRole="button"
+      accessibilityLabel="Sorpréndeme con un hobby nuevo"
+      accessibilityHint="Busca una actividad elegida para ti"
+    >
+      <View pointerEvents="none" style={styles.decorations}>
+        <View style={styles.topDot} />
+        <View style={styles.sideRing} />
+        <Animated.View style={[styles.discoveryOrb, { transform: [{ scale: visualScale }] }]}>
+          <View style={styles.orbit} />
+          <View style={styles.orbCore}>
+            <Feather name="compass" size={37} color={colors.onPrimary} />
           </View>
-        </TouchableOpacity>
+          <View style={styles.sparkleSmall} />
+          <Feather name="star" size={18} color={colors.onPrimary} style={styles.orbStar} />
+        </Animated.View>
       </View>
-    </View>
+
+      <View style={styles.content}>
+        <View style={styles.eyebrowRow}>
+          <Feather name="zap" size={12} color="#B9F3FF" />
+          <Text style={styles.eyebrow}>UNA IDEA PARA TI</Text>
+        </View>
+        <Text style={styles.title}>Sal de la rutina.</Text>
+        <Text style={styles.subtitle}>Tu próximo hobby puede empezar ahora.</Text>
+        <View style={styles.cta}>
+          <Text style={styles.ctaText}>Sorpréndeme</Text>
+          <Feather name="arrow-up-right" size={17} color={colors.primaryDark} />
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 30,
-    marginTop: 5,
+  card: {
+    minHeight: 224, borderRadius: 30, backgroundColor: colors.primaryDark,
+    overflow: 'hidden', marginBottom: 30,
   },
-  cardContainer: {
-    height: 145,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    borderRadius: 72,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#FF8F21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-    marginHorizontal: 10,
+  content: {
+    flex: 1, paddingHorizontal: 22, paddingVertical: 24,
+    alignItems: 'flex-start', zIndex: 2,
   },
-  blobWrapper: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+  eyebrowRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20,
   },
-  svgBlob: {
-    position: 'absolute',
+  eyebrow: {
+    color: '#B9F3FF', fontSize: 10, fontWeight: '600', letterSpacing: 1.2,
   },
-  squiggleWrapper: {
-    position: 'absolute',
-    bottom: -5,
-    right: 15,
+  title: {
+    maxWidth: '72%', color: colors.onPrimary, fontSize: 27, lineHeight: 33,
+    fontWeight: '600', letterSpacing: -0.7,
   },
-  textContent: {
-    alignItems: 'center',
-    zIndex: 10,
-    // Ajuste sutil para centrar ópticamente el texto con el peso visual del blob
-    marginTop: 5,
+  subtitle: {
+    maxWidth: '64%', color: '#D3E7EA', fontSize: 13, lineHeight: 19,
+    marginTop: 5, marginBottom: 18,
   },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: -0.5,
+  cta: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.onPrimary, borderRadius: 999,
+    paddingVertical: 10, paddingHorizontal: 15,
   },
-  heroSubtitle: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '700',
+  ctaText: {
+    color: colors.primaryDark, fontSize: 13, fontWeight: '600',
+  },
+  decorations: { ...StyleSheet.absoluteFillObject },
+  discoveryOrb: {
+    position: 'absolute', width: 138, height: 138, borderRadius: 69,
+    right: -18, bottom: -12, backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  orbCore: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: colors.accentDark,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  orbit: {
+    position: 'absolute', width: 112, height: 112, borderRadius: 56,
+    borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.48)',
+  },
+  orbStar: { position: 'absolute', top: 17, right: 23 },
+  sparkleSmall: {
+    position: 'absolute', width: 7, height: 7, borderRadius: 4,
+    backgroundColor: colors.onPrimary, bottom: 24, left: 25,
+  },
+  topDot: {
+    position: 'absolute', width: 18, height: 18, borderRadius: 9,
+    backgroundColor: colors.salmon, right: 85, top: 25,
+  },
+  sideRing: {
+    position: 'absolute', width: 54, height: 54, borderRadius: 27,
+    borderWidth: 9, borderColor: colors.primary, right: -25, top: 25,
   },
 });

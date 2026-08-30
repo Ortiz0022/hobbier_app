@@ -1,13 +1,24 @@
 import React from 'react';
 import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
   StyleSheet,
-  View,
   Text,
   TouchableOpacity,
-  Modal,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { colors } from '../../../theme';
+
+const getActivityIcon = (title = '') => {
+  const normalizedTitle = title.toLowerCase();
+  if (normalizedTitle.includes('café') || normalizedTitle.includes('cafe')) return 'coffee';
+  if (normalizedTitle.includes('deporte') || normalizedTitle.includes('ejercicio')) return 'activity';
+  if (normalizedTitle.includes('foto')) return 'camera';
+  if (normalizedTitle.includes('escri')) return 'edit-3';
+  return 'compass';
+};
 
 export const RecommendationModal = ({
   visible,
@@ -18,229 +29,237 @@ export const RecommendationModal = ({
   onAccept,
   onReload,
   onClose,
-}) => {
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          {loading ? (
-            <View style={styles.modalLoadingBox}>
-              <ActivityIndicator size="large" color="#DF9C8E" />
-              <Text style={styles.modalLoadingText}>
-                Buscando una actividad basada en tu edad, gustos e insumos...
-              </Text>
-            </View>
-          ) : recommended ? (
-            <View>
-              <View style={styles.modalHeaderRow}>
-                <View style={styles.modalCategoryBadge}>
-                  <Feather name="star" size={12} color="#0C8AA6" />
-                  <Text style={styles.modalCategoryText}>Recomendación</Text>
-                </View>
-                <View style={styles.modalPointsBadge}>
-                  <Feather name="star" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.modalPointsText}>+{recommended.points_awarded} pts</Text>
-                </View>
-              </View>
+}) => (
+  <Modal
+    visible={visible}
+    transparent
+    animationType="slide"
+    statusBarTranslucent
+    onRequestClose={onClose}
+  >
+    <View style={styles.overlay}>
+      <View style={styles.sheet}>
+        <View style={styles.grabber} />
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar recomendación"
+        >
+          <Feather name="x" size={19} color={colors.textFaint} />
+        </TouchableOpacity>
 
-              <View style={styles.centralIconWrapper}>
+        {loading ? (
+          <View style={styles.loadingBox}>
+            <View style={styles.loadingVisual}>
+              <View style={styles.loadingOrbit} />
+              <Feather name="compass" size={38} color={colors.onPrimary} />
+            </View>
+            <ActivityIndicator color={colors.accent} style={styles.loadingIndicator} />
+            <Text style={styles.loadingTitle}>Buscando una chispa para ti…</Text>
+            <Text style={styles.loadingText}>Algo nuevo, posible y con ganas de convertirse en historia.</Text>
+          </View>
+        ) : recommended ? (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={styles.recommendationContent}
+          >
+            <View style={styles.topRow}>
+              <View style={styles.foundBadge}>
+                <Feather name="zap" size={11} color={colors.primary} />
+                <Text style={styles.foundText}>IDEA ENCONTRADA</Text>
+              </View>
+              <View style={styles.pointsBadge}>
+                <Feather name="star" size={12} color={colors.accentDark} />
+                <Text style={styles.pointsText}>+{recommended.points_awarded || 0} pts</Text>
+              </View>
+            </View>
+
+            <View style={styles.visualArea}>
+              <View style={styles.visualRing} />
+              <View style={styles.visualCircle}>
                 <Feather
-                  name={recommended.title?.toLowerCase().includes('café') ? 'coffee' : recommended.title?.toLowerCase().includes('deporte') || recommended.title?.toLowerCase().includes('ejercicio') ? 'activity' : 'zap'}
-                  size={64}
-                  color="#00DBFF"
+                  name={getActivityIcon(recommended.title)}
+                  size={44}
+                  color={colors.onPrimary}
                 />
               </View>
+              <Feather name="star" size={18} color={colors.accent} style={styles.visualStar} />
+            </View>
 
-              <Text style={styles.modalActivityTitle}>{recommended.title}</Text>
-              <Text style={styles.modalActivityDesc}>{recommended.description}</Text>
+            <Text style={styles.activityTitle}>{recommended.title}</Text>
+            <Text style={styles.activityDescription}>{recommended.description}</Text>
 
-              {/* Solo aparece cuando eligió la IA; con el respaldo por afinidad
-                  no hay explicación que mostrar y el bloque desaparece. */}
-              {reason ? (
-                <View style={styles.reasonBox}>
-                  <Feather name="zap" size={13} color="#0C8AA6" style={{ marginTop: 2 }} />
-                  <Text style={styles.reasonText}>{reason}</Text>
-                </View>
-              ) : null}
-
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity
-                  style={styles.modalAcceptBtn}
-                  onPress={onAccept}
-                  disabled={accepting}
-                >
-                  {accepting ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <Text style={styles.modalAcceptBtnText}>Aceptar Actividad</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.modalReloadBtn}
-                  onPress={onReload}
-                  disabled={accepting}
-                >
-                  <View style={styles.reloadBtnContent}>
-                    <Feather name="refresh-cw" size={14} color="#0C8AA6" />
-                    <Text style={styles.modalReloadBtnText}>Otra Opción</Text>
-                  </View>
-                </TouchableOpacity>
+            {reason ? (
+              <View style={styles.reasonBox}>
+                <Feather name="heart" size={14} color={colors.primary} />
+                <Text style={styles.reasonText}>{reason}</Text>
               </View>
+            ) : null}
 
-              <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
-                <Text style={styles.modalCloseText}>Cerrar</Text>
-              </TouchableOpacity>
+            <Text style={styles.encouragement}>
+              No tiene que salir perfecto. Solo tiene que empezar.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.acceptButton, accepting && styles.disabledButton]}
+              onPress={onAccept}
+              disabled={accepting}
+              accessibilityRole="button"
+            >
+              {accepting ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <>
+                  <Text style={styles.acceptButtonText}>Quiero intentarlo</Text>
+                  <Feather name="arrow-right" size={17} color={colors.onPrimary} />
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.reloadButton}
+              onPress={onReload}
+              disabled={accepting}
+              accessibilityRole="button"
+            >
+              <Feather name="refresh-cw" size={14} color={colors.primary} />
+              <Text style={styles.reloadButtonText}>Muéstrame otra idea</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyBox}>
+            <View style={styles.emptyIcon}>
+              <Feather name="search" size={31} color={colors.primary} />
             </View>
-          ) : (
-            <View style={styles.modalLoadingBox}>
-              <Text style={styles.modalLoadingText}>
-                No se encontraron actividades compatibles. Modifica tus gustos o recursos en tu Perfil.
-              </Text>
-              <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
-                <Text style={styles.modalCloseText}>Cerrar</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+            <Text style={styles.emptyTitle}>Hoy no encontramos el match</Text>
+            <Text style={styles.emptyText}>Ajusta tus gustos o recursos en tu perfil y volvemos a intentarlo.</Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={onClose}>
+              <Text style={styles.emptyButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-    </Modal>
-  );
-};
+    </View>
+  </Modal>
+);
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'center',
-    padding: 20,
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(5, 31, 37, 0.58)', justifyContent: 'flex-end',
   },
-  modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 36,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+  sheet: {
+    width: '100%', maxWidth: 560, maxHeight: '92%', alignSelf: 'center',
+    backgroundColor: colors.surface, borderTopLeftRadius: 34, borderTopRightRadius: 34,
+    paddingHorizontal: 22, paddingTop: 12, paddingBottom: 24,
   },
-  modalLoadingBox: {
-    padding: 20,
-    alignItems: 'center',
+  grabber: {
+    width: 42, height: 4, borderRadius: 2, backgroundColor: '#D9DEDC',
+    alignSelf: 'center', marginBottom: 8,
   },
-  modalLoadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#121B22',
-    textAlign: 'center',
+  closeButton: {
+    position: 'absolute', zIndex: 4, top: 17, right: 18,
+    width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceMuted,
+    alignItems: 'center', justifyContent: 'center',
   },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
+  loadingBox: {
+    minHeight: 390, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center',
   },
-  modalCategoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8FA',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    gap: 4,
+  loadingVisual: {
+    width: 100, height: 100, borderRadius: 50, backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
-  modalCategoryText: {
-    color: '#0C8AA6',
-    fontWeight: '600',
-    fontSize: 12,
+  loadingOrbit: {
+    position: 'absolute', width: 76, height: 76, borderRadius: 38,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)',
   },
-  modalPointsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF8F21',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  loadingIndicator: { marginBottom: 14 },
+  loadingTitle: {
+    color: colors.text, fontSize: 20, lineHeight: 27, fontWeight: '500', textAlign: 'center',
   },
-  modalPointsText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
+  loadingText: {
+    maxWidth: 290, color: colors.textMuted, fontSize: 13, lineHeight: 19,
+    textAlign: 'center', marginTop: 7,
   },
-  centralIconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    marginTop: 10,
+  recommendationContent: { paddingTop: 24, paddingBottom: 4 },
+  topRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingRight: 40,
   },
-  modalActivityTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#121B22',
-    marginBottom: 8,
+  foundBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: colors.primarySoft, borderRadius: 999,
+    paddingHorizontal: 9, paddingVertical: 6,
   },
-  modalActivityDesc: {
-    fontSize: 14,
-    color: '#121B22',
-    lineHeight: 20,
-    marginBottom: 24,
+  foundText: {
+    color: colors.primary, fontSize: 9, fontWeight: '600', letterSpacing: 0.8,
+  },
+  pointsBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#FFF5EA', borderRadius: 999,
+    paddingHorizontal: 9, paddingVertical: 6,
+  },
+  pointsText: { color: colors.accentDark, fontSize: 11, fontWeight: '500' },
+  visualArea: {
+    height: 132, alignItems: 'center', justifyContent: 'center', position: 'relative',
+  },
+  visualCircle: {
+    width: 92, height: 92, borderRadius: 46, backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  visualRing: {
+    position: 'absolute', width: 116, height: 116, borderRadius: 58,
+    borderWidth: 1, borderColor: colors.salmonSoft,
+  },
+  visualStar: { position: 'absolute', right: '27%', top: 25 },
+  activityTitle: {
+    color: colors.text, fontSize: 24, lineHeight: 31, fontWeight: '600',
+    letterSpacing: -0.5, textAlign: 'center',
+  },
+  activityDescription: {
+    color: colors.textFaint, fontSize: 13, lineHeight: 20,
+    textAlign: 'center', marginTop: 8,
   },
   reasonBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: '#EAF7FA',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: -10,
-    marginBottom: 22,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: colors.primarySoft, borderRadius: 16,
+    paddingHorizontal: 13, paddingVertical: 11, marginTop: 15,
   },
-  reasonText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#0C8AA6',
+  reasonText: { flex: 1, color: colors.primaryDark, fontSize: 12, lineHeight: 18 },
+  encouragement: {
+    color: colors.textMuted, fontSize: 11, fontStyle: 'italic',
+    textAlign: 'center', marginTop: 15, marginBottom: 15,
   },
-  modalActionsRow: {
-    gap: 10,
-    marginBottom: 12,
+  acceptButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    minHeight: 52, backgroundColor: colors.accent, borderRadius: 18,
   },
-  modalAcceptBtn: {
-    backgroundColor: '#FF8F21',
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
+  disabledButton: { opacity: 0.65 },
+  acceptButtonText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
+  reloadButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    minHeight: 44, marginTop: 7,
   },
-  modalAcceptBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+  reloadButtonText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
+  emptyBox: {
+    minHeight: 350, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center',
   },
-  modalReloadBtn: {
-    backgroundColor: '#F0F3F5',
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
+  emptyIcon: {
+    width: 72, height: 72, borderRadius: 24, backgroundColor: colors.primarySoft,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 18,
   },
-  reloadBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  emptyTitle: {
+    color: colors.text, fontSize: 20, lineHeight: 27, fontWeight: '500', textAlign: 'center',
   },
-  modalReloadBtnText: {
-    color: '#0C8AA6',
-    fontSize: 14,
-    fontWeight: '600',
+  emptyText: {
+    color: colors.textMuted, fontSize: 13, lineHeight: 19,
+    textAlign: 'center', marginTop: 7, maxWidth: 300,
   },
-  modalCloseBtn: {
-    alignItems: 'center',
-    paddingVertical: 8,
+  emptyButton: {
+    marginTop: 22, backgroundColor: colors.primary, borderRadius: 16,
+    paddingHorizontal: 25, paddingVertical: 12,
   },
-  modalCloseText: {
-    color: '#121B22',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  emptyButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '600' },
 });
