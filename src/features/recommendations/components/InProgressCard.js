@@ -1,187 +1,113 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-} from 'react-native';
-import { Text } from '../../../components/scaledText';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { getCategoryLabel } from '../../../utils/category';
+import { colors } from '../../../theme';
 
-export const InProgressCard = ({ pendingActivity, onPress }) => {
+export const InProgressCard = ({ pendingActivity, onPress, onDiscover }) => {
+  const activity = pendingActivity?.activity;
+  const points = activity?.points_awarded || 0;
+
+  if (!pendingActivity) {
+    return (
+      <TouchableOpacity
+        style={styles.emptyCard}
+        onPress={onDiscover}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel="Revelar mi primera misión"
+      >
+        <View style={styles.emptyIcon}>
+          <Feather name="target" size={21} color={colors.accentDark} />
+        </View>
+        <View style={styles.copy}>
+          <Text style={styles.eyebrowEmpty}>MAZO VACÍO</Text>
+          <Text style={styles.title}>Añade tu primera misión</Text>
+          <Text style={styles.meta}>Revela un reto y empieza a sumar puntos.</Text>
+        </View>
+        <View style={styles.emptyAction}>
+          <Feather name="plus" size={17} color={colors.onPrimary} />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   return (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>ACTIVIDAD EN PROGRESO</Text>
+    <TouchableOpacity
+      style={styles.activeCard}
+      onPress={onPress}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={`Jugar ${activity?.title || 'misión activa'}`}
+    >
+      <View pointerEvents="none" style={styles.cardOrb} />
+      <View style={styles.activeIcon}>
+        <Feather name="compass" size={21} color={colors.primary} />
       </View>
 
-      {pendingActivity ? (
-        <TouchableOpacity
-          style={styles.progressCard}
-          onPress={onPress}
-          activeOpacity={0.9}
-        >
-          <View style={styles.progressCardTop}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={styles.categoryPill}>
-                <Text style={styles.categoryPillText}>
-                  {getCategoryLabel(pendingActivity.activity?.category)}
-                </Text>
-              </View>
-              <View style={styles.missionActivePill}>
-                <Text style={styles.missionActiveText}>Misión Activa</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.titleRow}>
-            <View style={styles.titleIconCircle}>
-              <Feather name="compass" size={18} color="#00DBFF" />
-            </View>
-            <Text style={styles.progressTitle}>
-              {pendingActivity.activity?.title || 'Actividad Asignada'}
-            </Text>
-          </View>
-          <Text style={styles.progressDesc}>
-            {pendingActivity.activity?.description || 'Completa esta tarea y sube una evidencia.'}
-          </Text>
-
-          <View style={styles.actionButtonRow}>
-            <Text style={styles.actionButtonText}>¡Ir a la misión!</Text>
-            <Feather name="arrow-right" size={16} color="#0C8AA6" />
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.emptyProgressCard}>
-          <Feather name="clock" size={32} color="#8A908B" style={styles.emptyIcon} />
-          <Text style={styles.emptyProgressTitle}>No tienes ninguna actividad en curso</Text>
-          <Text style={styles.emptyProgressSub}>
-            Toca "Sorpréndeme" arriba para que la app elija un nuevo hobby para ti.
-          </Text>
+      <View style={styles.copy}>
+        <View style={styles.eyebrowRow}>
+          <View style={styles.statusDot} />
+          <Text style={styles.eyebrow}>MISIÓN ACTIVA</Text>
         </View>
-      )}
-    </View>
+        <Text style={styles.title} numberOfLines={1}>
+          {activity?.title || 'Tu misión actual'}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          1 paso pendiente{points ? ` · +${points} pts` : ''}
+        </Text>
+      </View>
+
+      <View style={styles.playButton}>
+        <Feather name="play" size={15} color={colors.onPrimary} />
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginBottom: 28,
+  activeCard: {
+    position: 'relative', overflow: 'hidden',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.primarySoft, borderRadius: 22,
+    padding: 14, marginBottom: 26,
   },
-  sectionHeaderRow: {
-    marginBottom: 12,
+  cardOrb: {
+    position: 'absolute', width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(12, 138, 166, 0.08)', right: -28, top: -28,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#121B22',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  activeIcon: {
+    width: 44, height: 44, borderRadius: 15,
+    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
   },
-  progressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
+  copy: { flex: 1 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  statusDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
+  eyebrow: {
+    color: colors.primary, fontSize: 8, fontWeight: '600', letterSpacing: 0.8,
   },
-  progressCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  eyebrowEmpty: {
+    color: colors.accentDark, fontSize: 8, fontWeight: '600', letterSpacing: 0.8,
   },
-  categoryPill: {
-    backgroundColor: '#F0F3F5',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  title: {
+    color: colors.text, fontSize: 14, lineHeight: 19,
+    fontWeight: '600', marginTop: 2,
   },
-  categoryPillText: {
-    color: '#121B22',
-    fontSize: 12,
-    fontWeight: '500',
+  meta: { color: colors.textMuted, fontSize: 10, lineHeight: 15, marginTop: 2 },
+  playButton: {
+    width: 37, height: 37, borderRadius: 19,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
-  missionActivePill: {
-    backgroundColor: '#F0F8FA',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  missionActiveText: {
-    color: '#0C8AA6',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  titleIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F0F3F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#121B22',
-    flex: 1,
-  },
-  progressDesc: {
-    fontSize: 13,
-    color: '#666C67',
-    marginBottom: 8,
-  },
-  actionButtonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 8,
-    gap: 4,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    color: '#0C8AA6',
-    fontWeight: '600',
-  },
-  progressBarTrack: {
-    height: 8,
-    backgroundColor: '#EFEFEA',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#0C8AA6',
-    borderRadius: 4,
-  },
-  emptyProgressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
+  emptyCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#FFF5EA', borderRadius: 22,
+    padding: 14, marginBottom: 26,
   },
   emptyIcon: {
-    marginBottom: 8,
+    width: 44, height: 44, borderRadius: 15,
+    backgroundColor: '#FFE2C2', alignItems: 'center', justifyContent: 'center',
   },
-  emptyProgressTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#121B22',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  emptyProgressSub: {
-    fontSize: 12,
-    color: '#727773',
-    textAlign: 'center',
+  emptyAction: {
+    width: 37, height: 37, borderRadius: 19,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
 });

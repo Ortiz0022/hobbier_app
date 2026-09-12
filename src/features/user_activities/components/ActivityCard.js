@@ -1,195 +1,194 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-} from 'react-native';
-import { Text } from '../../../components/scaledText';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { InlineEvidenceUploader } from './InlineEvidenceUploader';
-import { getCategoryStyle, getCategoryLabel } from '../../../utils/category';
+import { colors } from '../../../theme';
 
+const getCategoryStyle = (categoryObj, title = '') => {
+  const categoryName = categoryObj?.name || '';
+  const searchKey = `${categoryName} ${title}`.toLowerCase();
 
-export const ActivityCard = ({
-  item,
-  isPending,
-  isExpanded,
-  onToggleExpand,
-  imageUri,
-  completing,
-  onPickImage,
-  onComplete,
-}) => {
+  if (searchKey.includes('arte') || searchKey.includes('pint') || searchKey.includes('cerám')) {
+    return { name: categoryName || 'Arte', icon: 'edit-2' };
+  }
+  if (searchKey.includes('tecno') || searchKey.includes('python') || searchKey.includes('program')) {
+    return { name: categoryName || 'Tecnología', icon: 'monitor' };
+  }
+  if (searchKey.includes('natura') || searchKey.includes('deport') || searchKey.includes('camin')) {
+    return { name: categoryName || 'Naturaleza', icon: 'map' };
+  }
+  if (searchKey.includes('músic') || searchKey.includes('instrum')) {
+    return { name: categoryName || 'Música', icon: 'music' };
+  }
+  if (searchKey.includes('juego') || searchKey.includes('ajedrez')) {
+    return { name: categoryName || 'Juegos', icon: 'award' };
+  }
+  if (searchKey.includes('leer') || searchKey.includes('libro')) {
+    return { name: categoryName || 'Lectura', icon: 'book-open' };
+  }
+  return { name: categoryName || 'Hobby', icon: 'compass' };
+};
+
+export const ActivityCard = ({ item, isPending, onAction }) => {
   const activity = item.activity || {};
-  const isCompleted = item.status === 'COMPLETED';
-
-  const catStyle = getCategoryStyle(activity.category, activity.title);
-  const posts = item.posts || [];
-  const totalRepetitions = posts.length > 0 ? posts.length : (isCompleted ? 1 : 0);
-  const pts = activity.points_awarded || 10;
+  const category = getCategoryStyle(activity.category, activity.title);
+  const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
+  const points = activity.points_awarded || 10;
+  const actionLabel = isPending ? 'Continuar' : 'Repetir';
 
   return (
-    <View style={[styles.cardContainer, isExpanded && styles.cardActive]}>
-      <TouchableOpacity
-        style={styles.cardHeaderArea}
-        onPress={onToggleExpand}
-        activeOpacity={0.85}
-      >
-        {/* FILA SUPERIOR: PÍLDORA DE CATEGORÍA LÚDICA + PUNTOS DORADOS + FLECHA INTERACTIVA */}
-        <View style={styles.cardTopRow}>
-          <View style={styles.categoryPill}>
-            <Feather name={catStyle.iconName} size={12} color="#0C8AA6" style={{ marginRight: 4 }} />
-            <Text style={styles.categoryText}>{catStyle.name}</Text>
+    <View style={styles.card}>
+      <View style={styles.topRow}>
+        <View style={styles.categoryGroup}>
+          <View style={styles.iconBox}>
+            <Feather name={category.icon} size={14} color={colors.primary} />
           </View>
-
-          <View style={styles.topRightRow}>
-            <View style={styles.pointsBadge}>
-              <Feather name="star" size={11} color="#08333D" />
-              <Text style={styles.pointsText}>+{pts} pts</Text>
-            </View>
-            <Feather
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color={isExpanded ? '#00C9FD' : '#8A908B'}
-              style={{ marginLeft: 6 }}
-            />
-          </View>
+          <Text style={styles.categoryText}>{category.name}</Text>
         </View>
 
-        {/* TÍTULO PRINCIPAL DE LA ACTIVIDAD */}
-        <Text style={styles.titleText}>{activity.title || 'Actividad'}</Text>
+        <View style={styles.pointsPill}>
+          <Feather name="star" size={10} color={colors.accent} />
+          <Text style={styles.pointsText}>+{points} pts</Text>
+        </View>
+      </View>
 
-        {/* SUBTÍTULO DE APOYO: RACHA CON FLAMA NARANJA / ESTADO PENDIENTE */}
-        {isCompleted ? (
-          <View style={styles.streakRow}>
-            <Feather name="zap" size={12} color="#FF5A00" style={{ marginRight: 4 }} />
-            <Text style={styles.streakText}>
-              Has completado este reto {totalRepetitions} {totalRepetitions === 1 ? 'vez' : 'veces'}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.pendingSubtitle}>Pendiente por realizar</Text>
-        )}
+      <Text style={styles.title} numberOfLines={2}>{activity.title || 'Misión'}</Text>
+      {activity.description ? (
+        <Text style={styles.description} numberOfLines={2}>{activity.description}</Text>
+      ) : null}
 
-        {/* DESCRIPCIÓN COMPACTA */}
-        {activity.description ? (
-          <Text style={styles.descText} numberOfLines={isExpanded ? undefined : 2}>
-            {activity.description}
+      <View style={styles.footer}>
+        <View style={styles.statusRow}>
+          <Feather
+            name={isPending ? 'clock' : 'check-circle'}
+            size={11}
+            color={isPending ? colors.textMuted : colors.primary}
+          />
+          <Text style={styles.statusText}>
+            {isPending
+              ? 'Lista para cuando quieras'
+              : `${repetitions} ${repetitions === 1 ? 'avance' : 'avances'}`}
           </Text>
-        ) : null}
-      </TouchableOpacity>
+        </View>
 
-      {/* ZONA DE CARGA PARA ACTIVIDADES PENDIENTES */}
-      {isPending && isExpanded && (
-        <InlineEvidenceUploader
-          imageUri={imageUri}
-          completing={completing}
-          onPickImage={onPickImage}
-          onComplete={onComplete}
-          buttonText="Completar actividad"
-          placeholderText="Sube una foto de tu creación"
-        />
-      )}
-
-      {/* ZONA DE CARGA DIRECTA Y LIMPIA PARA REPETICIONES */}
-      {isCompleted && isExpanded && (
-        <InlineEvidenceUploader
-          imageUri={imageUri}
-          completing={completing}
-          onPickImage={onPickImage}
-          onComplete={onComplete}
-          buttonText={`Registrar nuevo avance (+${pts} pts)`}
-          placeholderText="Sube la foto de tu repetición"
-        />
-      )}
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={onAction}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`${actionLabel} ${activity.title || 'misión'}`}
+        >
+          <Text style={styles.actionText}>{actionLabel}</Text>
+          <Feather name="arrow-up-right" size={13} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 10,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
-  },
-  cardActive: {
-    borderColor: '#D4F1F9',
-    shadowColor: '#08333D',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHeaderArea: {},
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderColor: '#E8ECEF',
+    paddingHorizontal: 13,
+    paddingVertical: 11,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  categoryPill: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 201, 253, 0.09)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 201, 253, 0.22)',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  categoryGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  iconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryText: {
-    fontSize: 11.5,
+    color: colors.textFaint,
+    fontSize: 9,
     fontWeight: '600',
-    color: '#08333D',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
-  topRightRow: {
+  pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  pointsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFB300',
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    gap: 4,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 999,
+    paddingHorizontal: 7,
     paddingVertical: 3,
-    gap: 3.5,
   },
   pointsText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#08333D',
+    color: colors.text,
+    fontSize: 8.5,
+    fontWeight: '600',
   },
-  titleText: {
-    fontSize: 15.5,
-    fontWeight: '700',
-    color: '#08333D',
-    lineHeight: 21,
-    marginBottom: 3,
+  title: {
+    color: colors.text,
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
-  streakRow: {
+  description: {
+    color: colors.textFaint,
+    fontSize: 9.5,
+    lineHeight: 13.5,
+    marginTop: 3,
+  },
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    gap: 7,
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-  streakText: {
-    fontSize: 12,
+  statusRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  statusText: {
+    flex: 1,
+    color: colors.textFaint,
+    fontSize: 8.5,
+    lineHeight: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  actionText: {
+    color: colors.primaryDark,
+    fontSize: 9,
     fontWeight: '600',
-    color: '#475569',
-  },
-  pendingSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  descText: {
-    fontSize: 12.5,
-    color: '#64748B',
-    fontWeight: '400',
-    lineHeight: 17,
   },
 });

@@ -86,14 +86,24 @@ const MainApp = () => {
         return (
           <PendingActivityScreen
             initialExpandedId={autoExpandId}
-            onActivityCompleted={() => {
+            onNavigateToProfile={() => {
               setAutoExpandId(null);
-              setCurrentScreen('feed');
+              setCurrentScreen('profile');
             }}
+            onNavigateToRecommendations={() => setCurrentScreen('recommendations')}
           />
         );
       case 'feed':
-        return <FeedScreen />;
+        return (
+          <FeedScreen
+            onActivityAccepted={(userActivity) => {
+              if (userActivity?.id) {
+                setAutoExpandId(userActivity.id);
+              }
+              setCurrentScreen('my_activities');
+            }}
+          />
+        );
       case 'friends':
         return <FriendsScreen />;
       case 'profile':
@@ -116,9 +126,9 @@ const MainApp = () => {
   };
 
   const navItems = [
-    { key: 'recommendations', label: 'Sugerencia', icon: 'target' },
+    { key: 'recommendations', label: 'Descubre', icon: 'gift' },
     { key: 'feed', label: 'Feed', icon: 'rss' },
-    { key: 'my_activities', label: 'Actividad', icon: 'compass' },
+    { key: 'my_activities', label: 'Misiones', icon: 'target' },
     { key: 'friends', label: 'Amigos', icon: 'users' },
     { key: 'profile', label: 'Perfil', icon: 'user' },
   ];
@@ -242,6 +252,6 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     color: '#0C8AA6',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

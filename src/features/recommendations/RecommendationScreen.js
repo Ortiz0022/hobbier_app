@@ -61,7 +61,7 @@ export const RecommendationScreen = ({
 
     if (error) {
       setModalVisible(false);
-      const msg = 'Error al consultar recomendación. Ajusta tus preferencias.';
+      const msg = 'No pudimos revelar una misión. Ajusta tus preferencias e inténtalo de nuevo.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } else {
@@ -78,13 +78,10 @@ export const RecommendationScreen = ({
     setModalVisible(false);
 
     if (error) {
-      const msg = 'No se pudo aceptar la actividad.';
+      const msg = 'No pudimos añadir esta misión a tu mazo.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } else {
-      const msg = '¡Actividad aceptada! La encontrarás en tu sección de Actividad en Progreso.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('¡Genial!', msg);
       loadHomeData();
       if (onActivityAccepted) onActivityAccepted(userActivity);
     }
@@ -92,7 +89,10 @@ export const RecommendationScreen = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <HomeHeader profile={profile} />
 
         <HeroBanner onPress={handleSorprendeme} />
@@ -100,6 +100,7 @@ export const RecommendationScreen = ({
         <InProgressCard
           pendingActivity={pendingActivity}
           onPress={onNavigateToActivities}
+          onDiscover={handleSorprendeme}
         />
 
         <RecentFriendsList
@@ -125,11 +126,14 @@ export const RecommendationScreen = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBFCFA',
   },
   scrollContent: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 14,
+    paddingBottom: 36,
   },
 });
