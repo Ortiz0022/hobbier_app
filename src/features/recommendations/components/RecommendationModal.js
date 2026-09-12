@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Text } from '../../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 
