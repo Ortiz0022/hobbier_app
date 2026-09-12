@@ -3,24 +3,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 
-const missionPalettes = [
-  {
-    background: colors.primarySoft,
-    iconBackground: '#D2F0F5',
-    accent: colors.primary,
-  },
-  {
-    background: '#FFF1E3',
-    iconBackground: '#FFDFBC',
-    accent: colors.accentDark,
-  },
-  {
-    background: '#FBEFEB',
-    iconBackground: '#F3D5CE',
-    accent: '#B86F60',
-  },
-];
-
 const getCategoryStyle = (categoryObj, title = '') => {
   const categoryName = categoryObj?.name || '';
   const searchKey = `${categoryName} ${title}`.toLowerCase();
@@ -46,20 +28,19 @@ const getCategoryStyle = (categoryObj, title = '') => {
   return { name: categoryName || 'Hobby', icon: 'compass' };
 };
 
-export const ActivityCard = ({ item, isPending, index = 0, onAction }) => {
+export const ActivityCard = ({ item, isPending, onAction }) => {
   const activity = item.activity || {};
   const category = getCategoryStyle(activity.category, activity.title);
-  const palette = missionPalettes[index % missionPalettes.length];
   const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
   const points = activity.points_awarded || 10;
   const actionLabel = isPending ? 'Continuar' : 'Repetir';
 
   return (
-    <View style={[styles.card, { backgroundColor: palette.background }]}>
+    <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.categoryGroup}>
-          <View style={[styles.iconBox, { backgroundColor: palette.iconBackground }]}>
-            <Feather name={category.icon} size={14} color={palette.accent} />
+          <View style={styles.iconBox}>
+            <Feather name={category.icon} size={14} color={colors.primary} />
           </View>
           <Text style={styles.categoryText}>{category.name}</Text>
         </View>
@@ -78,9 +59,9 @@ export const ActivityCard = ({ item, isPending, index = 0, onAction }) => {
       <View style={styles.footer}>
         <View style={styles.statusRow}>
           <Feather
-            name={isPending ? 'zap' : 'check-circle'}
+            name={isPending ? 'clock' : 'check-circle'}
             size={11}
-            color={palette.accent}
+            color={isPending ? colors.textMuted : colors.primary}
           />
           <Text style={styles.statusText}>
             {isPending
@@ -97,7 +78,7 @@ export const ActivityCard = ({ item, isPending, index = 0, onAction }) => {
           accessibilityLabel={`${actionLabel} ${activity.title || 'misión'}`}
         >
           <Text style={styles.actionText}>{actionLabel}</Text>
-          <Feather name="arrow-up-right" size={13} color={palette.accent} />
+          <Feather name="arrow-up-right" size={13} color={colors.primary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -106,51 +87,108 @@ export const ActivityCard = ({ item, isPending, index = 0, onAction }) => {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14, paddingHorizontal: 12,
-    paddingVertical: 10, marginBottom: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E8ECEF',
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   topRow: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', gap: 8, marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
   },
   categoryGroup: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
   },
   iconBox: {
-    width: 28, height: 28, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryText: {
-    flex: 1, color: colors.primaryDark,
-    fontSize: 8, fontWeight: '600', letterSpacing: 0.4,
+    color: colors.textFaint,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   pointsPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderRadius: 999, paddingHorizontal: 7, paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
-  pointsText: { color: colors.accentDark, fontSize: 8.5, fontWeight: '600' },
+  pointsText: {
+    color: colors.text,
+    fontSize: 8.5,
+    fontWeight: '600',
+  },
   title: {
-    color: colors.text, fontSize: 14.5, lineHeight: 19,
-    fontWeight: '600', letterSpacing: -0.2, paddingRight: 10,
+    color: colors.text,
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   description: {
-    color: colors.textFaint, fontSize: 9,
-    lineHeight: 13, marginTop: 3, paddingRight: 10,
+    color: colors.textFaint,
+    fontSize: 9.5,
+    lineHeight: 13.5,
+    marginTop: 3,
   },
   footer: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', gap: 7, marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 7,
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   statusRow: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  statusText: { flex: 1, color: colors.textFaint, fontSize: 8.5, lineHeight: 12 },
+  statusText: {
+    flex: 1,
+    color: colors.textFaint,
+    fontSize: 8.5,
+    lineHeight: 12,
+  },
   actionButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
-  actionText: { color: colors.primaryDark, fontSize: 9, fontWeight: '600' },
+  actionText: {
+    color: colors.primaryDark,
+    fontSize: 9,
+    fontWeight: '600',
+  },
 });

@@ -13,11 +13,15 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
+import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
 import { StarReactionButton } from '../../components/StarReactionButton';
 import { UserProfileModal } from '../../components/UserProfileModal';
+import { DoAlsoModal } from './components/DoAlsoModal';
+import { colors } from '../../theme';
 
 const getPillStyle = (title, index) => {
   const t = (title || '').toLowerCase();
@@ -53,7 +57,7 @@ const getPillStyle = (title, index) => {
   };
 };
 
-export const FeedScreen = () => {
+export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,9 +72,51 @@ export const FeedScreen = () => {
   const [submittingReport, setSubmittingReport] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
+  // Estado para 'Hacer también' (Bottom Sheet)
+  const [doAlsoModalVisible, setDoAlsoModalVisible] = useState(false);
+  const [doAlsoPost, setDoAlsoPost] = useState(null);
+  const [acceptingDoAlso, setAcceptingDoAlso] = useState(false);
+
   useEffect(() => {
     loadFeed(0, true);
   }, []);
+
+  const handleOpenDoAlso = (post) => {
+    setDoAlsoPost(post);
+    setDoAlsoModalVisible(true);
+  };
+
+  const handleAcceptDoAlso = async () => {
+    if (!user?.id || !doAlsoPost) return;
+    const targetActivityId = doAlsoPost.activityId || doAlsoPost.user_activity?.activity?.id;
+    if (!targetActivityId) {
+      const msg = 'Esta actividad no está disponible para agregar en este momento.';
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Aviso', msg);
+      return;
+    }
+
+    setAcceptingDoAlso(true);
+    try {
+      const { userActivity, error } = await acceptActivity(user.id, targetActivityId);
+      setAcceptingDoAlso(false);
+      setDoAlsoModalVisible(false);
+
+      if (error) {
+        const msg = 'No pudimos agregar la misión a tus actividades. Inténtalo de nuevo.';
+        if (Platform.OS === 'web') alert(msg);
+        else Alert.alert('Error', msg);
+        return;
+      }
+
+      if (onActivityAccepted && userActivity) {
+        onActivityAccepted(userActivity);
+      }
+    } catch (err) {
+      console.error('Error al agregar actividad desde feed:', err);
+      setAcceptingDoAlso(false);
+    }
+  };
 
   const handleToggleReaction = async (postId, newReacted) => {
     if (!user?.id) return;
@@ -271,10 +317,29 @@ export const FeedScreen = () => {
                     onToggle={(newReacted) => handleToggleReaction(post.id, newReacted)}
                   />
 
-                  <View style={styles.pointsPill}>
-                    <Text style={styles.pointsPillText}>
-                      ✪ +{pointsAwarded} puntos
-                    </Text>
+                  <View style={styles.postFooterRight}>
+                    <TouchableOpacity
+                      style={styles.doAlsoBtn}
+                      onPress={() => handleOpenDoAlso(post)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={post.user_id === user?.id ? 'Repetir este reto' : 'Hacer también este reto'}
+                    >
+                      <Feather
+                        name={post.user_id === user?.id ? 'repeat' : 'plus-circle'}
+                        size={14}
+                        color={colors.primary}
+                      />
+                      <Text style={styles.doAlsoBtnText}>
+                        {post.user_id === user?.id ? 'Repetir' : 'Hacer también'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.pointsPill}>
+                      <Text style={styles.pointsPillText}>
+                        ✪ +{pointsAwarded}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -311,6 +376,15 @@ export const FeedScreen = () => {
         visible={!!selectedUserProfile}
         userProfile={selectedUserProfile}
         onClose={() => setSelectedUserProfile(null)}
+      />
+
+      {/* BOTTOM SHEET DE HACER TAMBIÉN */}
+      <DoAlsoModal
+        visible={doAlsoModalVisible}
+        post={doAlsoPost}
+        accepting={acceptingDoAlso}
+        onAccept={handleAcceptDoAlso}
+        onClose={() => setDoAlsoModalVisible(false)}
       />
     </SafeAreaView>
   );
@@ -469,17 +543,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#ffffff',
+  },
+  postFooterRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  doAlsoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EAF7FA',
+    borderWidth: 1,
+    borderColor: '#BDECF3',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  doAlsoBtnText: {
+    color: '#0C8AA6',
+    fontWeight: '700',
+    fontSize: 12,
   },
   pointsPill: {
     backgroundColor: '#F0F3F5',
     borderRadius: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
   },
   pointsPillText: {
-    color: '#00DBFF',
+    color: '#0C8AA6',
     fontWeight: '700',
     fontSize: 13,
   },

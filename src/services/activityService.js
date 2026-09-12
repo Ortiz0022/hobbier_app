@@ -87,7 +87,7 @@ export const acceptActivity = async (userId, activityId) => {
 
     if (existing) {
       if (existing.status === 'PENDING') {
-        return { userActivity: existing, error: null };
+        return { userActivity: existing, error: null, alreadyPending: true };
       }
 
       // Si ya estaba COMPLETED, la reactivamos a PENDING con nueva fecha de asignación
@@ -103,7 +103,7 @@ export const acceptActivity = async (userId, activityId) => {
         .single();
 
       if (updateErr) throw updateErr;
-      return { userActivity: updated, error: null };
+      return { userActivity: updated, error: null, alreadyPending: false };
     }
 
     // 2. Si no existía previamente, crear el registro por primera vez
@@ -119,7 +119,7 @@ export const acceptActivity = async (userId, activityId) => {
       .single();
 
     if (error) throw error;
-    return { userActivity: data, error: null };
+    return { userActivity: data, error: null, alreadyPending: false };
   } catch (error) {
     console.error('Error al aceptar actividad:', error.message);
     return { userActivity: null, error };

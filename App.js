@@ -85,7 +85,16 @@ const MainApp = () => {
           />
         );
       case 'feed':
-        return <FeedScreen />;
+        return (
+          <FeedScreen
+            onActivityAccepted={(userActivity) => {
+              if (userActivity?.id) {
+                setAutoExpandId(userActivity.id);
+              }
+              setCurrentScreen('my_activities');
+            }}
+          />
+        );
       case 'friends':
         return <FriendsScreen />;
       case 'profile':

@@ -201,13 +201,14 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
     if (error) throw error;
 
     const enrichedPosts = (data || []).map((post, idx) => {
-      let activityTitle = post.user_activity?.activity?.title;
+      let matchedActivity = post.user_activity?.activity;
+      let activityTitle = matchedActivity?.title;
       let pointsAwarded = post.user_activity?.points_awarded;
 
       if (!activityTitle && catalogActivities && catalogActivities.length > 0) {
-        const fallbackActivity = catalogActivities[idx % catalogActivities.length];
-        activityTitle = fallbackActivity?.title;
-        pointsAwarded = pointsAwarded || fallbackActivity?.points_awarded || 20;
+        matchedActivity = catalogActivities[idx % catalogActivities.length];
+        activityTitle = matchedActivity?.title;
+        pointsAwarded = pointsAwarded || matchedActivity?.points_awarded || 20;
       }
 
       const reactions = post.post_reactions || [];
@@ -216,8 +217,11 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
 
       return {
         ...post,
+        activity: matchedActivity || null,
+        activityId: matchedActivity?.id || null,
         activityTitle: activityTitle || 'Pinta algo creativo',
-        pointsAwarded: pointsAwarded || 20,
+        activityDescription: matchedActivity?.description || '',
+        pointsAwarded: pointsAwarded || matchedActivity?.points_awarded || 20,
         likesCount,
         userReacted,
       };
