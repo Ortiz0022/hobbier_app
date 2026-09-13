@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Modal,
   Pressable,
+  Platform,
 } from 'react-native';
 import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -378,12 +379,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   photoCardTitleOverlay: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFF',
+    ...Platform.select({
+      web: {
+        textShadow: '0px 1px 3px rgba(0,0,0,0.3)',
+      },
+      default: {
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+      }
+    }),
   },
   viewerOverlay: {
     flex: 1,

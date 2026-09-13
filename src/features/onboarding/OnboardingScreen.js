@@ -660,11 +660,20 @@ const styles = StyleSheet.create({
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: TOKENS.spacing.sm,
-    backgroundColor: TOKENS.colors.primary,
-    paddingVertical: TOKENS.spacing.md,
-    borderRadius: TOKENS.radius.full,
+    marginTop: 8,
+    marginBottom: 24,
+    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 8px rgba(0,0,0,0.15)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+    }),
   },
   primaryButtonText: {
     color: TOKENS.colors.white,
