@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -28,7 +29,7 @@ const FloatingStarParticle = ({ particle, onComplete }) => {
       duration: particle.duration,
       delay: particle.delay,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start(() => {
       onComplete(particle.id);
     });
@@ -61,9 +62,9 @@ const FloatingStarParticle = ({ particle, onComplete }) => {
 
   return (
     <Animated.View
-      pointerEvents="none"
       style={[
         styles.particle,
+        { pointerEvents: 'none' },
         {
           left: particle.startX,
           bottom: particle.startY,
@@ -112,13 +113,13 @@ export const StarReactionButton = ({ initialCount = 0, initialReacted = false, o
       Animated.timing(buttonScale, {
         toValue: 0.72,
         duration: 90,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.spring(buttonScale, {
         toValue: 1,
         friction: 3.5,
         tension: 45,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
 

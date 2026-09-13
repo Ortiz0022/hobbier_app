@@ -694,11 +694,18 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
     elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 16px rgba(0,0,0,0.1)',
+      },
+      default: {
+        shadowColor: COLORS.textPrimary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+      }
+    }),
   },
   menuItem: {
     flexDirection: 'row',
@@ -862,11 +869,18 @@ const styles = StyleSheet.create({
   },
   activityCardActive: {
     borderColor: COLORS.cyanCardBorder,
-    shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 3px 8px rgba(0,0,0,0.06)',
+      },
+      default: {
+        shadowColor: COLORS.textPrimary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      }
+    }),
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -1049,11 +1063,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
     elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(0,0,0,0.08)',
+      },
+      default: {
+        shadowColor: COLORS.textPrimary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      }
+    }),
   },
   plusIconBadge: {
     position: 'absolute',
@@ -1097,11 +1118,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.orange,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
+    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 3px 6px rgba(255,107,0,0.2)',
+      },
+      default: {
+        shadowColor: COLORS.orange,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+      }
+    }),
   },
   saveBtnText: {
     color: '#ffffff',
@@ -1121,11 +1149,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 10,
+    elevation: 20,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 8px 24px rgba(0,0,0,0.2)',
+      },
+      default: {
+        shadowColor: COLORS.textPrimary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 24,
+      }
+    }),
   },
   viewerImageWrap: {
     position: 'relative',

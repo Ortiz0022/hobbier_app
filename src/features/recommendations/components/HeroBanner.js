@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 
@@ -12,12 +12,12 @@ export const HeroBanner = ({ onPress }) => {
         Animated.timing(pulse, {
           toValue: 1,
           duration: 1800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(pulse, {
           toValue: 0,
           duration: 1800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
       ])
     );
@@ -40,7 +40,7 @@ export const HeroBanner = ({ onPress }) => {
       accessibilityLabel="Revelar una misión sorpresa"
       accessibilityHint="Descubre un reto elegido para ti"
     >
-      <View pointerEvents="none" style={styles.decorations}>
+      <View style={[styles.decorations, { pointerEvents: 'none' }]}>
         <View style={styles.topDot} />
         <View style={styles.sideRing} />
         <Animated.View style={[styles.discoveryOrb, { transform: [{ scale: visualScale }] }]}>

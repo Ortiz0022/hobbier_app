@@ -39,7 +39,7 @@ export const InProgressCard = ({ pendingActivity, onPress, onDiscover }) => {
       accessibilityRole="button"
       accessibilityLabel={`Jugar ${activity?.title || 'misión activa'}`}
     >
-      <View pointerEvents="none" style={styles.cardOrb} />
+      <View style={[styles.cardOrb, { pointerEvents: 'none' }]} />
       <View style={styles.activeIcon}>
         <Feather name="compass" size={21} color={colors.primary} />
       </View>

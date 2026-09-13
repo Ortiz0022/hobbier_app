@@ -213,6 +213,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px -3px 10px rgba(0,0,0,0.05)',
+      },
+    }),
   },
   navItem: {
     alignItems: 'center',

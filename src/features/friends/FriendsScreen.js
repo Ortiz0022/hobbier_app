@@ -25,6 +25,12 @@ import {
   removeFriendship,
 } from '../../services/socialService';
 import { UserProfileModal } from '../../components/UserProfileModal';
+import { roomsService } from '../../services/roomsService';
+
+// Salas
+import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
+import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
+import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';
 
 export const FriendsScreen = () => {
   const { user } = useAuth();
@@ -42,6 +48,7 @@ export const FriendsScreen = () => {
 
   // Solicitudes
   const [requests, setRequests] = useState([]);
+  const [roomInvitations, setRoomInvitations] = useState([]);
 
   // Perfil de amigo en modal
   const [selectedFriend, setSelectedFriend] = useState(null);
@@ -50,15 +57,30 @@ export const FriendsScreen = () => {
   const [friendPosts, setFriendPosts] = useState([]);
   const [friendViewerImage, setFriendViewerImage] = useState(null);
 
+  // Salas navegación interna
+  const [roomScreen, setRoomScreen] = useState('LIST'); // 'LIST', 'CREATE', 'DETAIL'
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+
   useEffect(() => {
     loadFriends();
     loadRequests();
+    loadRoomInvitations();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'requests') loadRequests();
     if (activeTab === 'friends') loadFriends();
+    if (activeTab === 'rooms') loadRoomInvitations();
   }, [activeTab]);
+
+  const loadRoomInvitations = async () => {
+    try {
+      const invitations = await roomsService.getPendingInvitations();
+      setRoomInvitations(invitations);
+    } catch (err) {
+      console.error('Error cargando invitaciones a salas:', err);
+    }
+  };
 
   const handleSearch = async (text) => {
     setSearchQuery(text);
@@ -158,248 +180,298 @@ export const FriendsScreen = () => {
     return name.includes(q) || uname.includes(q);
   });
 
+  const showHeader = !(activeTab === 'rooms' && roomScreen !== 'LIST');
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Comunidad y Amigos</Text>
+      {showHeader && (
+        <View style={styles.header}>
+          <Text style={styles.title}>Comunidad y Amigos</Text>
 
-        {/* NAVEGACIÓN POR PESTAÑAS: 1. MIS AMIGOS | 2. BUSCAR | 3. SOLICITUDES */}
-        <View style={styles.tabsRow}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-            onPress={() => setActiveTab('friends')}
-            activeOpacity={0.8}
-          >
-            <Feather
-              name="users"
-              size={14}
-              color={activeTab === 'friends' ? '#053E4A' : '#8A908B'}
-            />
-            <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-              Mis Amigos
-            </Text>
-          </TouchableOpacity>
+          {/* NAVEGACIÓN POR PESTAÑAS: 1. MIS AMIGOS | 2. BUSCAR | 3. SOLICITUDES */}
+          <View style={styles.tabsRow}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+              onPress={() => setActiveTab('friends')}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="users"
+                size={14}
+                color={activeTab === 'friends' ? '#053E4A' : '#8A908B'}
+              />
+              <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
+                Amigos
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'search' && styles.activeTab]}
-            onPress={() => setActiveTab('search')}
-            activeOpacity={0.8}
-          >
-            <Feather
-              name="user-plus"
-              size={14}
-              color={activeTab === 'search' ? '#053E4A' : '#8A908B'}
-            />
-            <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>
-              Conectar
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'search' && styles.activeTab]}
+              onPress={() => setActiveTab('search')}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="user-plus"
+                size={14}
+                color={activeTab === 'search' ? '#053E4A' : '#8A908B'}
+              />
+              <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>
+                Conectar
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
-            onPress={() => setActiveTab('requests')}
-            activeOpacity={0.8}
-          >
-            <Feather
-              name="inbox"
-              size={14}
-              color={activeTab === 'requests' ? '#053E4A' : '#8A908B'}
-            />
-            <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
-              Solicitudes
-            </Text>
-            {requests.length > 0 && activeTab !== 'requests' && (
-              <View style={styles.badgeDot} />
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
+              onPress={() => setActiveTab('requests')}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="bell"
+                size={14}
+                color={activeTab === 'requests' ? '#053E4A' : '#8A908B'}
+              />
+              {requests.length > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{requests.length}</Text>
+                </View>
+              )}
+              <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
+                Solicitudes
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'rooms' && styles.activeTab]}
+              onPress={() => {
+                setActiveTab('rooms');
+                setRoomScreen('LIST');
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="grid"
+                size={14}
+                color={activeTab === 'rooms' ? '#053E4A' : '#8A908B'}
+              />
+              {roomInvitations.length > 0 && (
+                <View style={styles.redBadgeDot} />
+              )}
+              <Text style={[styles.tabText, activeTab === 'rooms' && styles.activeTabText]}>
+                Salas
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* TAB 1: LISTA DE AMIGOS CON BUSCADOR INTERNO */}
-        {activeTab === 'friends' && (
-          <View>
-            <View style={styles.searchBarContainer}>
-              <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Buscar entre mis amigos..."
-                placeholderTextColor="#8A908B"
-                value={friendSearchQuery}
-                onChangeText={setFriendSearchQuery}
-                autoCapitalize="none"
-              />
-            </View>
-
-            {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
-
-            {!loading && filteredFriends.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Feather name="users" size={36} color="#8A908B" style={styles.emptyIcon} />
-                <Text style={styles.emptyTitle}>
-                  {friendSearchQuery.trim() ? 'Sin coincidencias' : 'Aún no tienes amigos'}
-                </Text>
-                <Text style={styles.emptyText}>
-                  {friendSearchQuery.trim()
-                    ? 'No se encontraron amigos con ese nombre o usuario.'
-                    : 'Cambia a la pestaña "Buscar" para encontrar y agregar contactos.'}
-                </Text>
+      {activeTab === 'rooms' ? (
+        <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+          {roomScreen === 'LIST' && (
+            <RoomsListScreen
+              onNavigateToCreate={() => setRoomScreen('CREATE')}
+              onNavigateToRoom={(id) => { setSelectedRoomId(id); setRoomScreen('DETAIL'); }}
+            />
+          )}
+          {roomScreen === 'CREATE' && (
+            <CreateRoomScreen
+              onBack={() => setRoomScreen('LIST')}
+              onRoomCreated={(id) => { setSelectedRoomId(id); setRoomScreen('DETAIL'); }}
+            />
+          )}
+          {roomScreen === 'DETAIL' && (
+            <RoomDetailScreen
+              roomId={selectedRoomId}
+              onBack={() => setRoomScreen('LIST')}
+            />
+          )}
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* TAB 1: LISTA DE AMIGOS CON BUSCADOR INTERNO */}
+          {activeTab === 'friends' && (
+            <View>
+              <View style={styles.searchBarContainer}>
+                <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar entre mis amigos..."
+                  placeholderTextColor="#8A908B"
+                  value={friendSearchQuery}
+                  onChangeText={setFriendSearchQuery}
+                  autoCapitalize="none"
+                />
               </View>
-            )}
 
-            {filteredFriends.map((item) => (
-              <TouchableOpacity
-                key={item.friendshipId}
-                style={styles.userCard}
-                onPress={() => openFriendProfile(item.profile)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.avatarRing}>
-                  {item.profile?.avatar_url ? (
-                    <Image source={{ uri: item.profile.avatar_url }} style={styles.avatarCircleImage} />
-                  ) : (
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarInitial}>
-                        {(item.profile?.full_name || 'U')[0].toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
+              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+
+              {!loading && filteredFriends.length === 0 && (
+                <View style={styles.emptyCard}>
+                  <Feather name="users" size={36} color="#8A908B" style={styles.emptyIcon} />
+                  <Text style={styles.emptyTitle}>
+                    {friendSearchQuery.trim() ? 'Sin coincidencias' : 'Aún no tienes amigos'}
+                  </Text>
+                  <Text style={styles.emptyText}>
+                    {friendSearchQuery.trim()
+                      ? 'No se encontraron amigos con ese nombre o usuario.'
+                      : 'Cambia a la pestaña "Buscar" para encontrar y agregar contactos.'}
+                  </Text>
                 </View>
+              )}
 
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{item.profile?.full_name}</Text>
-                  <Text style={styles.userHandle}>@{item.profile?.username}</Text>
-                </View>
-
+              {filteredFriends.map((item) => (
                 <TouchableOpacity
-                  style={styles.removeBtn}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFriend(item.friendshipId, item.profile?.full_name);
-                  }}
-                  activeOpacity={0.8}
+                  key={item.friendshipId}
+                  style={styles.userCard}
+                  onPress={() => openFriendProfile(item.profile)}
+                  activeOpacity={0.85}
                 >
-                  <Feather name="trash-2" size={14} color="#EF4444" />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+                  <View style={styles.avatarRing}>
+                    {item.profile?.avatar_url ? (
+                      <Image source={{ uri: item.profile.avatar_url }} style={styles.avatarCircleImage} />
+                    ) : (
+                      <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarInitial}>
+                          {(item.profile?.full_name || 'U')[0].toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-        {/* TAB 2: BÚSQUEDA DE NUEVOS CONTACTOS */}
-        {activeTab === 'search' && (
-          <View>
-            <View style={styles.searchBarContainer}>
-              <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Buscar otros usuarios por @username..."
-                placeholderTextColor="#8A908B"
-                value={searchQuery}
-                onChangeText={handleSearch}
-                autoCapitalize="none"
-              />
-            </View>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{item.profile?.full_name}</Text>
+                    <Text style={styles.userHandle}>@{item.profile?.username}</Text>
+                  </View>
 
-            {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
-
-            {!loading && searchQuery.trim() !== '' && searchResults.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Feather name="user-x" size={32} color="#8A908B" style={styles.emptyIcon} />
-                <Text style={styles.emptyTitle}>Sin resultados</Text>
-                <Text style={styles.emptyText}>No se encontraron usuarios coincidentes con tu búsqueda.</Text>
-              </View>
-            )}
-
-            {searchResults.map((targetUser) => (
-              <View key={targetUser.id} style={styles.userCard}>
-                <View style={styles.avatarRing}>
-                  {targetUser.avatar_url ? (
-                    <Image source={{ uri: targetUser.avatar_url }} style={styles.avatarCircleImage} />
-                  ) : (
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarInitial}>
-                        {(targetUser.full_name || 'U')[0].toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{targetUser.full_name}</Text>
-                  <Text style={styles.userHandle}>@{targetUser.username}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.addBtn}
-                  onPress={() => handleSendRequest(targetUser.id)}
-                  disabled={sendingMap[targetUser.id]}
-                  activeOpacity={0.8}
-                >
-                  {sendingMap[targetUser.id] ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <>
-                      <Feather name="user-plus" size={14} color="#FFFFFF" />
-                      <Text style={styles.addBtnText}>Agregar</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* TAB 3: SOLICITUDES PENDIENTES */}
-        {activeTab === 'requests' && (
-          <View>
-            {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
-            {!loading && requests.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Feather name="inbox" size={36} color="#8A908B" style={styles.emptyIcon} />
-                <Text style={styles.emptyTitle}>Bandeja limpia</Text>
-                <Text style={styles.emptyText}>No tienes solicitudes de amistad pendientes por responder.</Text>
-              </View>
-            )}
-            {requests.map((req) => (
-              <View key={req.id} style={styles.userCard}>
-                <View style={styles.avatarRing}>
-                  {req.requester?.avatar_url ? (
-                    <Image source={{ uri: req.requester.avatar_url }} style={styles.avatarCircleImage} />
-                  ) : (
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarInitial}>
-                        {(req.requester?.full_name || 'U')[0].toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{req.requester?.full_name}</Text>
-                  <Text style={styles.userHandle}>@{req.requester?.username}</Text>
-                </View>
-                <View style={styles.actionGroup}>
                   <TouchableOpacity
-                    style={styles.acceptBtn}
-                    onPress={() => handleResponse(req.id, 'ACCEPTED')}
+                    style={styles.removeBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFriend(item.friendshipId, item.profile?.full_name);
+                    }}
                     activeOpacity={0.8}
                   >
-                    <Feather name="check" size={14} color="#FFFFFF" />
-                    <Text style={styles.btnText}>Aceptar</Text>
+                    <Feather name="trash-2" size={14} color="#EF4444" />
                   </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* TAB 2: BÚSQUEDA DE NUEVOS CONTACTOS */}
+          {activeTab === 'search' && (
+            <View>
+              <View style={styles.searchBarContainer}>
+                <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar otros usuarios por @username..."
+                  placeholderTextColor="#8A908B"
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+
+              {!loading && searchQuery.trim() !== '' && searchResults.length === 0 && (
+                <View style={styles.emptyCard}>
+                  <Feather name="user-x" size={32} color="#8A908B" style={styles.emptyIcon} />
+                  <Text style={styles.emptyTitle}>Sin resultados</Text>
+                  <Text style={styles.emptyText}>No se encontraron usuarios coincidentes con tu búsqueda.</Text>
+                </View>
+              )}
+
+              {searchResults.map((targetUser) => (
+                <View key={targetUser.id} style={styles.userCard}>
+                  <View style={styles.avatarRing}>
+                    {targetUser.avatar_url ? (
+                      <Image source={{ uri: targetUser.avatar_url }} style={styles.avatarCircleImage} />
+                    ) : (
+                      <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarInitial}>
+                          {(targetUser.full_name || 'U')[0].toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{targetUser.full_name}</Text>
+                    <Text style={styles.userHandle}>@{targetUser.username}</Text>
+                  </View>
                   <TouchableOpacity
-                    style={styles.rejectBtn}
-                    onPress={() => handleResponse(req.id, 'REJECTED')}
+                    style={styles.addBtn}
+                    onPress={() => handleSendRequest(targetUser.id)}
+                    disabled={sendingMap[targetUser.id]}
                     activeOpacity={0.8}
                   >
-                    <Feather name="x" size={14} color="#8A908B" />
+                    {sendingMap[targetUser.id] ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <>
+                        <Feather name="user-plus" size={14} color="#FFFFFF" />
+                        <Text style={styles.addBtnText}>Agregar</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+              ))}
+            </View>
+          )}
+
+          {/* TAB 3: SOLICITUDES PENDIENTES */}
+          {activeTab === 'requests' && (
+            <View>
+              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+              {!loading && requests.length === 0 && (
+                <View style={styles.emptyCard}>
+                  <Feather name="inbox" size={36} color="#8A908B" style={styles.emptyIcon} />
+                  <Text style={styles.emptyTitle}>Bandeja limpia</Text>
+                  <Text style={styles.emptyText}>No tienes solicitudes de amistad pendientes por responder.</Text>
+                </View>
+              )}
+              {requests.map((req) => (
+                <View key={req.id} style={styles.userCard}>
+                  <View style={styles.avatarRing}>
+                    {req.requester?.avatar_url ? (
+                      <Image source={{ uri: req.requester.avatar_url }} style={styles.avatarCircleImage} />
+                    ) : (
+                      <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarInitial}>
+                          {(req.requester?.full_name || 'U')[0].toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{req.requester?.full_name}</Text>
+                    <Text style={styles.userHandle}>@{req.requester?.username}</Text>
+                  </View>
+                  <View style={styles.actionGroup}>
+                    <TouchableOpacity
+                      style={styles.acceptBtn}
+                      onPress={() => handleResponse(req.id, 'ACCEPTED')}
+                      activeOpacity={0.8}
+                    >
+                      <Feather name="check" size={14} color="#FFFFFF" />
+                      <Text style={styles.btnText}>Aceptar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rejectBtn}
+                      onPress={() => handleResponse(req.id, 'REJECTED')}
+                      activeOpacity={0.8}
+                    >
+                      <Feather name="x" size={14} color="#8A908B" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       {/* MODAL DE PERFIL DE AMIGO */}
       <UserProfileModal
@@ -447,11 +519,18 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
     elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(0,0,0,0.05)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+    }),
   },
   tabText: {
     color: '#8A908B',
@@ -472,6 +551,15 @@ const styles = StyleSheet.create({
     top: 6,
     right: 10,
   },
+  redBadgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
+    position: 'absolute',
+    top: 6,
+    right: 10,
+  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -486,11 +574,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 14,
     marginBottom: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
+    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(0,0,0,0.05)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      }
+    }),
   },
   searchIcon: {
     marginRight: 8,

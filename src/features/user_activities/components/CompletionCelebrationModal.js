@@ -13,7 +13,7 @@ export const CompletionCelebrationModal = ({ visible, result, onProfile, onClose
   >
     <View style={styles.overlay}>
       <View style={styles.card}>
-        <View pointerEvents="none" style={styles.decorations}>
+        <View style={[styles.decorations, { pointerEvents: 'none' }]}>
           <Feather name="star" size={20} color={colors.accent} style={styles.starOne} />
           <Feather name="star" size={13} color={colors.salmon} style={styles.starTwo} />
           <View style={styles.dot} />
