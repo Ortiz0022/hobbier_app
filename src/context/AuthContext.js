@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
 
   // Obtener perfil del usuario desde Supabase PostgreSQL
   const fetchProfile = async (userId) => {
-    console.log(`[DEBUG] fetchProfile CALLED para userId: ${userId} a las ${new Date().toISOString()}`);
     try {
       const { data, error } = await supabase
         .from('profiles')

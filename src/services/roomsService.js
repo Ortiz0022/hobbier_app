@@ -116,9 +116,9 @@ export const roomsService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
+
     // Filtramos solo en las que es miembro (descartando las que solo ve por tener invitación pendiente)
-    return (data || []).filter(room => 
+    return (data || []).filter(room =>
       room.members?.some(m => m.user_id === userId)
     );
   },
@@ -185,33 +185,27 @@ export const roomsService = {
   // ----------------------------------------------------
   // STORAGE (EVIDENCIA E IMÁGENES)
   // ----------------------------------------------------
-  
+
   // Sube la foto de la portada al bucket 'room-images'
   async uploadRoomCover(roomId, localUri) {
     const { data: { session } } = await supabase.auth.getSession();
     const uid = session?.user?.id;
     if (!uid) throw new Error('No auth session');
-    
+
     // Fetch blob
     const response = await fetch(localUri);
     const blob = await response.blob();
-    
+
     // Usar cover.jpg con upsert true para no acumular indefinidamente
     const path = `${roomId}/cover.jpg`;
 
-    console.log('COVER DEBUG', {
-      userId: uid,
-      roomId,
-      path
-    });
-    
     const { data, error } = await supabase.storage
       .from('room-images')
       .upload(path, blob, {
         contentType: 'image/jpeg',
         upsert: true
       });
-      
+
     if (error) {
       console.error('ROOM COVER UPLOAD ERROR', {
         statusCode: error.statusCode,
@@ -222,9 +216,9 @@ export const roomsService = {
       });
       throw error;
     }
-    
+
     // Si se quiere bypassear caché en UI, se puede retornar path + "?t=" + Date.now() en la vista
-    return data.path; 
+    return data.path;
   },
 
   // Sube la foto de evidencia al bucket 'room-evidence'
@@ -232,13 +226,13 @@ export const roomsService = {
     const { data: { session } } = await supabase.auth.getSession();
     const uid = session?.user?.id;
     if (!uid) throw new Error('No auth session');
-    
+
     const response = await fetch(localUri);
     const blob = await response.blob();
-    
+
     // Según requerimiento: {room_id}/{auth.uid()}/{request_id}.jpg
     const path = `${roomId}/${uid}/${requestId}.jpg`;
-    
+
     const { data, error } = await supabase.storage
       .from('room-evidence')
       .upload(path, blob, {
@@ -264,7 +258,7 @@ export const roomsService = {
     const { error } = await supabase.storage
       .from('room-evidence')
       .remove([path]);
-    
+
     if (error) console.error("Error eliminando evidencia huérfana:", error);
   },
 
@@ -274,7 +268,7 @@ export const roomsService = {
     const { data, error } = await supabase.storage
       .from(bucket)
       .createSignedUrl(path, expiresIn);
-      
+
     if (error) throw error;
     return data.signedUrl;
   },
@@ -314,7 +308,7 @@ export const roomsService = {
         }
       )
       .subscribe();
-      
+
     return () => {
       supabase.removeChannel(channel);
     };
