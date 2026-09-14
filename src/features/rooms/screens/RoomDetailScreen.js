@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -39,6 +39,10 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const [activeTab, setActiveTab] = useState('RETO'); // 'RETO', 'CHAT', 'RANKING'
   const [textMessage, setTextMessage] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const chatListRef = useRef(null);
+  const highlightTimeoutRef = useRef(null);
 
   if (detailsLoading && !room) {
     return (
@@ -73,11 +77,25 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const handleSendText = async () => {
     if (!textMessage.trim() || isClosed) return;
     try {
-      await sendMessage(textMessage);
+      await sendMessage(textMessage, replyingTo?.id || null);
       setTextMessage('');
+      setReplyingTo(null);
     } catch (e) {
       alert(e.message || 'Error enviando mensaje');
     }
+  };
+
+  const handleJumpToMessage = (messageId) => {
+    const index = messages.findIndex((m) => m.id === messageId);
+    if (index === -1) {
+      alert('No se encontró el mensaje original. Desplázate hacia arriba para buscarlo.');
+      return;
+    }
+
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    setHighlightedMessageId(messageId);
+    chatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+    highlightTimeoutRef.current = setTimeout(() => setHighlightedMessageId(null), 1500);
   };
 
   const handlePickEvidence = async () => {
@@ -243,15 +261,28 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
       keyboardVerticalOffset={90}
     >
       <FlatList
+        ref={chatListRef}
         data={messages}
         keyExtractor={item => item.id}
         inverted
         contentContainerStyle={styles.chatListContent}
         onEndReached={fetchMoreMessages}
         onEndReachedThreshold={0.5}
+        onScrollToIndexFailed={(info) => {
+          // Los items tienen alturas variables (fotos vs texto); reintentamos tras dejar que midan.
+          setTimeout(() => {
+            chatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 });
+          }, 100);
+        }}
         ListFooterComponent={chatLoading ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
         renderItem={({ item }) => (
-          <RoomMessageBubble message={item} isMe={item.sender?.id === user?.id} />
+          <RoomMessageBubble
+            message={item}
+            isMe={item.sender?.id === user?.id}
+            onReply={setReplyingTo}
+            onJumpToReply={handleJumpToMessage}
+            isHighlighted={item.id === highlightedMessageId}
+          />
         )}
         ListEmptyComponent={
           !chatLoading ? (
@@ -262,22 +293,44 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         }
       />
       {!isClosed ? (
-        <View style={styles.chatInputContainer}>
-          <TextInput
-            style={styles.chatInput}
-            placeholder="Escribe un mensaje..."
-            value={textMessage}
-            onChangeText={setTextMessage}
-            placeholderTextColor={colors.textMuted}
-            onSubmitEditing={handleSendText}
-          />
-          <TouchableOpacity 
-            style={[styles.sendBtn, !textMessage.trim() && { opacity: 0.5 }]} 
-            onPress={handleSendText}
-            disabled={!textMessage.trim()}
-          >
-            <Feather name="send" size={20} color={colors.onPrimary} />
-          </TouchableOpacity>
+        <View>
+          {replyingTo && (
+            <View style={styles.replyPreviewBar}>
+              <View style={styles.replyPreviewAccent} />
+              <View style={styles.replyPreviewBody}>
+                <Text style={styles.replyPreviewAuthor}>
+                  {replyingTo.sender?.username || 'Usuario'}
+                </Text>
+                <Text style={styles.replyPreviewText} numberOfLines={1}>
+                  {replyingTo.message_type === 'EVIDENCE' ? '📷 Registró un avance' : replyingTo.content}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setReplyingTo(null)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.chatInputContainer}>
+            <TextInput
+              style={styles.chatInput}
+              placeholder="Escribe un mensaje..."
+              value={textMessage}
+              onChangeText={setTextMessage}
+              placeholderTextColor={colors.textMuted}
+              onSubmitEditing={handleSendText}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, !textMessage.trim() && { opacity: 0.5 }]}
+              onPress={handleSendText}
+              disabled={!textMessage.trim()}
+            >
+              <Feather name="send" size={20} color={colors.onPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View style={styles.chatClosedBanner}>
@@ -521,6 +574,35 @@ const styles = StyleSheet.create({
   },
   emptyChatText: {
     color: colors.textMuted,
+  },
+  replyPreviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceMuted,
+  },
+  replyPreviewAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    marginRight: spacing.sm,
+  },
+  replyPreviewBody: {
+    flex: 1,
+  },
+  replyPreviewAuthor: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  replyPreviewText: {
+    fontSize: 12.5,
+    color: colors.textMuted,
+    marginTop: 1,
   },
   chatInputContainer: {
     flexDirection: 'row',
