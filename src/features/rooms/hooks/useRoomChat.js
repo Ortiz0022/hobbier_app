@@ -56,8 +56,8 @@ export const useRoomChat = (roomId) => {
     return unsubscribe;
   }, [roomId]);
 
-  const sendMessage = async (content) => {
-    await roomsService.sendTextMessage(roomId, content);
+  const sendMessage = async (content, replyToMessageId = null) => {
+    await roomsService.sendTextMessage(roomId, content, replyToMessageId);
   };
 
   return { messages, loading, error, hasMore, fetchMoreMessages, sendMessage };

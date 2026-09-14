@@ -156,10 +156,32 @@ export const roomsService = {
 
     if (error) throw error;
     // Invertimos para que en la UI se vea cronológico (antiguo arriba, nuevo abajo) si así se requiere, o lo maneja la flatlist inverted
-    return data || [];
+    return await this._hydrateReplyPreviews(data || []);
   },
 
-  async sendTextMessage(roomId, content) {
+  // El self-join embebido de PostgREST para reply_to_message_id no resuelve de forma
+  // confiable (ambigüedad de FK), así que resolvemos los mensajes citados aparte.
+  async _hydrateReplyPreviews(messages) {
+    const replyIds = [...new Set(
+      messages.filter((m) => m.reply_to_message_id).map((m) => m.reply_to_message_id)
+    )];
+    if (replyIds.length === 0) return messages;
+
+    const { data: repliedMessages, error } = await supabase
+      .from('room_messages')
+      .select('id, content, message_type, sender:profiles(id, username)')
+      .in('id', replyIds);
+
+    if (error || !repliedMessages) return messages;
+
+    const replyMap = new Map(repliedMessages.map((m) => [m.id, m]));
+    return messages.map((m) => ({
+      ...m,
+      reply_to: m.reply_to_message_id ? replyMap.get(m.reply_to_message_id) || null : null,
+    }));
+  },
+
+  async sendTextMessage(roomId, content, replyToMessageId = null) {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
     if (!userId) throw new Error('No user authenticated');
@@ -173,7 +195,8 @@ export const roomsService = {
         room_id: roomId,
         sender_id: userId,
         message_type: 'TEXT',
-        content: trimmedContent
+        content: trimmedContent,
+        reply_to_message_id: replyToMessageId || null
       })
       .select()
       .single();
@@ -300,7 +323,8 @@ export const roomsService = {
             .single();
 
           if (!error && data) {
-            onNewMessage(data);
+            const [hydrated] = await roomsService._hydrateReplyPreviews([data]);
+            onNewMessage(hydrated);
           } else {
             // Si hay error hidratando, enviar el raw al menos
             onNewMessage(payload.new);

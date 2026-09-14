@@ -18,7 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../config/supabase';
 import { uploadAvatarImage, getUserActivities } from '../../services/activityService';
-import { getUserPosts } from '../../services/socialService';
+import { getUserPosts, getFriendsList } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
@@ -70,6 +70,8 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
+  const [friendsCount, setFriendsCount] = useState(0);
+
   const [viewerImage, setViewerImage] = useState(null);
   const [expandedActivityId, setExpandedActivityId] = useState(null);
 
@@ -88,6 +90,9 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
     const { posts: userPosts } = await getUserPosts(profile.id);
     setPosts(userPosts);
     setLoadingPosts(false);
+
+    const { friends } = await getFriendsList(profile.id);
+    setFriendsCount((friends || []).length);
   }, [profile?.id]);
 
   useEffect(() => {
@@ -342,15 +347,27 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
           <Text style={styles.profileUsername}>@{profile?.username}</Text>
 
           <View style={styles.statsRow}>
-            <View style={styles.statChip}>
-              <Feather name="star" size={13} color={COLORS.gold} />
-              <Text style={styles.statChipText}>{profile?.points || 0} puntos</Text>
-            </View>
-            <View style={styles.statChipCyan}>
-              <Feather name="check-circle" size={13} color={COLORS.cyanIcon} />
-              <Text style={styles.statChipCyanText}>
-                {loadingPosts ? '…' : `${posts.length} actividades`}
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, styles.statNumberCyan]}>
+                {profile?.points || 0}
               </Text>
+              <Text style={styles.statLabel}>Puntos</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>
+                {loadingStats ? '…' : completedActivities.length}
+              </Text>
+              <Text style={styles.statLabel}>Retos</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{friendsCount}</Text>
+              <Text style={styles.statLabel}>Amigos</Text>
             </View>
           </View>
         </View>
@@ -720,16 +737,16 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 46,
-    backgroundColor: COLORS.cyan,
+    backgroundColor: COLORS.cyanSoft,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: COLORS.cyanCardBorder,
+    borderColor: COLORS.cyanIcon,
   },
   avatarText: {
-    color: '#ffffff',
+    color: COLORS.textMuted,
     fontSize: 36,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   avatarEditOverlay: {
     position: 'absolute',
@@ -764,40 +781,36 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
-  },
-  statChip: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: COLORS.goldSoft,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: COLORS.goldBorder,
+    marginTop: 20,
+    width: '100%',
+    justifyContent: 'center',
   },
-  statChipText: {
-    fontSize: 13,
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: COLORS.border,
+  },
+  statNumber: {
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.textPrimary,
+    letterSpacing: -0.3,
   },
-  statChipCyan: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: COLORS.cyanSoft,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: COLORS.cyanBorder,
+  statNumberCyan: {
+    color: COLORS.cyanIcon,
   },
-  statChipCyanText: {
-    fontSize: 13,
+  statLabel: {
+    fontSize: 11,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.textMuted,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
   sectionLoader: {
     marginBottom: 16,
