@@ -13,6 +13,7 @@ import { HeroBanner } from './components/HeroBanner';
 import { InProgressCard } from './components/InProgressCard';
 import { RecentFriendsList } from './components/RecentFriendsList';
 import { RecommendationModal } from './components/RecommendationModal';
+import { CreateActivityModal } from '../../components/CreateActivityModal';
 
 export const RecommendationScreen = ({
   onActivityAccepted,
@@ -25,6 +26,7 @@ export const RecommendationScreen = ({
   const [accepting, setAccepting] = useState(false);
   const [recommended, setRecommended] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const [pendingActivity, setPendingActivity] = useState(null);
   const [recentFriendPosts, setRecentFriendPosts] = useState([]);
@@ -100,7 +102,7 @@ export const RecommendationScreen = ({
         <InProgressCard
           pendingActivity={pendingActivity}
           onPress={onNavigateToActivities}
-          onDiscover={handleSorprendeme}
+          onCreate={() => setCreateModalVisible(true)}
         />
 
         <RecentFriendsList
@@ -118,6 +120,26 @@ export const RecommendationScreen = ({
         onAccept={handleAcceptRecommended}
         onReload={handleSorprendeme}
         onClose={() => setModalVisible(false)}
+      />
+
+      <CreateActivityModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        forCatalog={false}
+        onCreated={async (activity) => {
+          setAccepting(true);
+          const { userActivity, error } = await acceptActivity(user.id, activity.id);
+          setAccepting(false);
+
+          if (error) {
+            const msg = 'No pudimos añadir esta misión a tu mazo.';
+            if (Platform.OS === 'web') alert(msg);
+            else Alert.alert('Error', msg);
+          } else {
+            loadHomeData();
+            if (onActivityAccepted) onActivityAccepted(userActivity);
+          }
+        }}
       />
     </SafeAreaView>
   );

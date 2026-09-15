@@ -62,7 +62,7 @@ export const PendingActivityScreen = ({
     const { activities, error } = await getUserActivities(user.id);
 
     if (!error) {
-      const pending = (activities || []).filter((activity) => activity.status === 'PENDING');
+      const pending = (activities || []).filter((activity) => ['PENDING', 'COMPLETED'].includes(activity.status));
       const completed = (activities || []).filter((activity) => activity.status === 'COMPLETED');
 
       if (initialExpandedId) {
@@ -262,9 +262,9 @@ export const PendingActivityScreen = ({
                     <ActivityCard
                       key={item.id}
                       item={item}
-                      isPending
+                      isPending={item.status === 'PENDING'}
                       index={index}
-                      onAction={() => openEvidenceFlow(item, false)}
+                      onAction={() => openEvidenceFlow(item, item.status === 'COMPLETED')}
                     />
                   ))}
                 </View>

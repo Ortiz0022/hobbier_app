@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 
-export const InProgressCard = ({ pendingActivity, onPress, onDiscover }) => {
+export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
   const activity = pendingActivity?.activity;
   const points = activity?.points_awarded || 0;
 
@@ -11,10 +11,10 @@ export const InProgressCard = ({ pendingActivity, onPress, onDiscover }) => {
     return (
       <TouchableOpacity
         style={styles.emptyCard}
-        onPress={onDiscover}
+        onPress={onCreate}
         activeOpacity={0.9}
         accessibilityRole="button"
-        accessibilityLabel="Revelar mi primera misión"
+        accessibilityLabel="Crear mi primera misión"
       >
         <View style={styles.emptyIcon}>
           <Feather name="target" size={21} color={colors.accentDark} />
@@ -22,7 +22,7 @@ export const InProgressCard = ({ pendingActivity, onPress, onDiscover }) => {
         <View style={styles.copy}>
           <Text style={styles.eyebrowEmpty}>MAZO VACÍO</Text>
           <Text style={styles.title}>Añade tu primera misión</Text>
-          <Text style={styles.meta}>Revela un reto y empieza a sumar puntos.</Text>
+          <Text style={styles.meta}>Crea un reto y empieza a sumar puntos.</Text>
         </View>
         <View style={styles.emptyAction}>
           <Feather name="plus" size={17} color={colors.onPrimary} />
