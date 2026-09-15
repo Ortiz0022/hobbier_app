@@ -62,7 +62,7 @@ export const PendingActivityScreen = ({
     const { activities, error } = await getUserActivities(user.id);
 
     if (!error) {
-      const pending = (activities || []).filter((activity) => ['PENDING', 'COMPLETED'].includes(activity.status));
+      const pending = (activities || []).filter((activity) => activity.status === 'PENDING');
       const completed = (activities || []).filter((activity) => activity.status === 'COMPLETED');
 
       if (initialExpandedId) {
