@@ -12,20 +12,8 @@ import {
 import { Text, TextInput } from './scaledText';
 import { createActivityAdmin } from '../services/adminService';
 import { fetchActivityCategories, fetchAllCatalogs } from '../services/catalogService';
-import { TOKENS } from '../theme/designTokens';
+import { colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
-
-// Alias a los tokens del sistema. Antes eran hexadecimales propios de este
-// archivo, así que el formulario iba por libre: fondo beige y botón cian claro
-// que no existían en ninguna otra pantalla.
-const COLORS = {
-  bg: TOKENS.colors.white,
-  surface: TOKENS.colors.white,
-  border: TOKENS.colors.inactiveBorder,
-  primaryDark: TOKENS.colors.active,
-  textPrimary: TOKENS.colors.textDark,
-  textSecondary: TOKENS.colors.textMuted,
-};
 
 /**
  * Formulario de creación de actividades, compartido por Perfil y Admin.
@@ -149,8 +137,8 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           <Text style={styles.label}>Título de la actividad</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ej. Pinta un cuadro abstracto"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholder={forCatalog ? "Ej. Pinta un cuadro abstracto" : "Ej. Leer un capítulo del libro"}
+            placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
           />
@@ -158,8 +146,8 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           <Text style={styles.label}>Descripción</Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
-            placeholder="Explica detalladamente qué debe hacer el usuario..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholder={forCatalog ? "Explica detalladamente qué debe hacer el usuario..." : "Describe de qué trata tu reto personal..."}
+            placeholderTextColor={colors.textMuted}
             multiline
             value={description}
             onChangeText={setDescription}
@@ -210,10 +198,12 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
             </View>
           )}
 
-          <Text style={styles.helperText}>
-            Sin gusto, la actividad se recomienda a todo el mundo por igual en vez de
-            a quien le interesa.
-          </Text>
+          {forCatalog && (
+            <Text style={styles.helperText}>
+              Sin gusto, la actividad se recomienda a todo el mundo por igual en vez de
+              a quien le interesa.
+            </Text>
+          )}
 
 
           <View style={styles.formRow}>
@@ -226,34 +216,38 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                 onChangeText={setPoints}
               />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Edad Mínima</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej. 12"
-                placeholderTextColor={COLORS.textSecondary}
-                keyboardType="number-pad"
-                value={minAge}
-                onChangeText={setMinAge}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Edad Máxima</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Sin límite"
-                placeholderTextColor={COLORS.textSecondary}
-                keyboardType="number-pad"
-                value={maxAge}
-                onChangeText={setMaxAge}
-              />
-            </View>
+            {forCatalog && (
+              <>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Edad Mínima</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej. 12"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    value={minAge}
+                    onChangeText={setMinAge}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Edad Máxima</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Sin límite"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    value={maxAge}
+                    onChangeText={setMaxAge}
+                  />
+                </View>
+              </>
+            )}
           </View>
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={creating}>
               {creating ? (
-                <ActivityIndicator color={TOKENS.colors.white} />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={styles.saveBtnText}>Guardar Actividad</Text>
               )}
@@ -277,13 +271,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   content: {
-    backgroundColor: COLORS.bg,
+    backgroundColor: colors.surface,
     borderRadius: 24,
-    // Un ScrollView dentro de un contenedor flex se estira para ocupar todo el
-    // espacio disponible aunque su contenido sea corto: de ahí el hueco blanco
-    // bajo los botones. `flexGrow: 0` lo hace medir por su contenido, y
-    // maxHeight solo entra en juego cuando el formulario crece de verdad
-    // (al desplegar los gustos).
     flexGrow: 0,
     maxHeight: '85%',
   },
@@ -293,18 +282,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.surfaceMuted,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    color: COLORS.textPrimary,
+    color: colors.text,
     fontSize: 14,
   },
   inputMultiline: {
@@ -315,31 +304,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.bg,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.surfaceMuted,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   dropdownText: {
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: colors.text,
     fontWeight: '500',
   },
   dropdownPlaceholder: {
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
     fontWeight: '400',
   },
   dropdownChevron: {
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
   },
   dropdownList: {
     marginTop: 4,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.surfaceMuted,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -347,19 +336,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.surfaceMuted,
   },
   dropdownOptionText: {
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   dropdownOptionActive: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontWeight: '700',
   },
   helperText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textMuted,
     lineHeight: 16,
     marginTop: 6,
   },
@@ -374,30 +363,25 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: TOKENS.colors.inactiveBg,
-    borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: TOKENS.colors.inactiveText,
+    color: colors.textFaint,
     fontSize: 15,
     fontWeight: '600',
   },
   saveBtn: {
     flex: 1,
-    // Naranja de acción principal (TOKENS.colors.primary), no el turquesa: en
-    // esta pantalla el turquesa ya lo llevan el desplegable y los campos, así
-    // que el botón que ejecuta se distingue del resto en vez de fundirse.
-    backgroundColor: TOKENS.colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
   },
   saveBtnText: {
-    color: TOKENS.colors.white,
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
