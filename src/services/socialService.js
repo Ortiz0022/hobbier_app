@@ -158,25 +158,33 @@ export const removeFriendship = async (friendshipId) => {
   }
 };
 
-export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
+/**
+ * Publicaciones de amigos (y propias), de la más reciente a la más antigua.
+ *
+ * Dos formas de paginar:
+ * - `page` (offset): la usa la home para pedir unas pocas publicaciones.
+ * - `options.before` (cursor por created_at): la usa el scroll infinito del feed.
+ *   Con offset, si alguien publica mientras haces scroll, todo se desplaza una
+ *   posición y la siguiente página repite una publicación que ya estaba en pantalla.
+ *
+ * `options.friendIds` evita volver a pedir la lista de amigos en cada página:
+ * el primer resultado la devuelve y el feed la reutiliza al cargar más.
+ */
+export const getFriendsFeed = async (userId, limit = 5, page = 0, options = {}) => {
   try {
-    const from = page * limit;
-    const to = from + limit - 1;
-
-    const { friends } = await getFriendsList(userId);
-    const friendIds = friends.map((f) => f.profile.id);
+    let friendIds = options.friendIds;
+    if (!friendIds) {
+      const { friends } = await getFriendsList(userId);
+      friendIds = friends.map((f) => f.profile.id);
+    }
 
     const targetUserIds = Array.from(new Set([...friendIds, userId]));
 
     if (targetUserIds.length === 0) {
-      return { posts: [], hasMore: false, error: null };
+      return { posts: [], hasMore: false, friendIds, error: null };
     }
 
-    const { data: catalogActivities } = await supabase
-      .from('activities')
-      .select('id, title, description, points_awarded, category_id');
-
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('posts')
       .select(`
         id,
@@ -192,15 +200,39 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
           activity:activities(id, title, description, category_id)
         ),
         post_reactions(user_id)
-      `, { count: 'exact' })
+      `)
       .eq('status', 'ACTIVE')
       .in('user_id', targetUserIds)
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      .order('created_at', { ascending: false });
+
+    // Se pide UNA de más para saber si hay otra página sin `count: 'exact'`, que
+    // obligaba a contar todas las publicaciones en cada carga.
+    if (options.before) {
+      query = query.lt('created_at', options.before).limit(limit + 1);
+    } else {
+      const from = page * limit;
+      query = query.range(from, from + limit);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
-    const enrichedPosts = (data || []).map((post, idx) => {
+    const hasMore = (data || []).length > limit;
+    const pagePosts = (data || []).slice(0, limit);
+
+    // El catálogo solo hace falta para publicaciones sin actividad; antes se
+    // descargaba entero en cada página aunque ninguna lo necesitara.
+    const needsCatalog = pagePosts.some((post) => !post.user_activity?.activity?.title);
+    let catalogActivities = null;
+    if (needsCatalog) {
+      const { data: catalog } = await supabase
+        .from('activities')
+        .select('id, title, description, points_awarded, category_id');
+      catalogActivities = catalog;
+    }
+
+    const enrichedPosts = pagePosts.map((post, idx) => {
       let matchedActivity = post.user_activity?.activity;
       let activityTitle = matchedActivity?.title;
       let pointsAwarded = post.user_activity?.points_awarded;
@@ -229,12 +261,13 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0) => {
 
     return {
       posts: enrichedPosts,
-      hasMore: to < (count || 0) - 1,
+      hasMore,
+      friendIds,
       error: null,
     };
   } catch (error) {
     console.error('Error obteniendo feed de amigos:', error.message);
-    return { posts: [], hasMore: false, error };
+    return { posts: [], hasMore: false, friendIds: options.friendIds || null, error };
   }
 };
 

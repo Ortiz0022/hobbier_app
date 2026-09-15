@@ -63,7 +63,7 @@ export const useChatMessages = ({ chatId, fetchPage, subscribe, send, pageSize =
       const data = await handlersRef.current.fetchPage(chatId, { limit: pageSize, offset: savedCount });
       setMessages(prev => {
         const knownIds = new Set(prev.map((m) => m.id));
-        return [...prev, ...data.filter((m) => !knownIds.has(m.id))]; // assuming flatlist inverted
+        return [...prev, ...data.filter((m) => !knownIds.has(m.id))]; // más reciente primero; ChatThread lo invierte
       });
       setHasMore(data.length === pageSize);
     } catch (err) {

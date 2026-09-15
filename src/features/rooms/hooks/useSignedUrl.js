@@ -7,6 +7,9 @@ export const useSignedUrl = (bucket, path) => {
 
   useEffect(() => {
     let mounted = true;
+    // Se vacía al cambiar de ruta: en listas que reciclan componentes (FlashList),
+    // la foto anterior se vería en otro mensaje hasta que llegara la URL nueva.
+    setUrl(null);
     const fetchUrl = async () => {
       if (!path) {
         if (mounted) setUrl(null);
