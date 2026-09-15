@@ -4,7 +4,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { colors, radii, spacing, fonts } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 
-export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted }) => {
+export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true }) => {
   const isEvidence = message.message_type === 'EVIDENCE';
   const { url: evidenceUrl } = useSignedUrl('room-evidence', message.evidence?.image_path);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -31,7 +31,8 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
       )}
 
       <View style={[styles.bubbleWrapper, isMe ? styles.bubbleWrapperMe : styles.bubbleWrapperOther]}>
-        {!isMe && (
+        {/* En un chat de dos el nombre sobra: ya está en la cabecera */}
+        {!isMe && showSenderName && (
           <Text style={styles.senderName}>{message.sender?.username}</Text>
         )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,11 +7,9 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
-  TextInput,
   FlatList,
   Alert,
   Platform,
-  KeyboardAvoidingView
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,7 +20,7 @@ import { useEvidenceUploader } from '../hooks/useEvidenceUploader';
 import { useRoomActions } from '../hooks/useRoomActions';
 import { useAuth } from '../../../context/AuthContext';
 
-import { RoomMessageBubble } from '../components/RoomMessageBubble';
+import { ChatThread } from '../components/ChatThread';
 import { RoomRankingItem } from '../components/RoomRankingItem';
 import { colors, spacing, fonts, radii, primaryButton } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
@@ -38,11 +36,6 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { url: coverUrl } = useSignedUrl('room-images', room?.image_path);
 
   const [activeTab, setActiveTab] = useState('RETO'); // 'RETO', 'CHAT', 'RANKING'
-  const [textMessage, setTextMessage] = useState('');
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
-  const chatListRef = useRef(null);
-  const highlightTimeoutRef = useRef(null);
 
   if (detailsLoading && !room) {
     return (
@@ -72,30 +65,6 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
     if (isClosed) return 'Reto finalizado';
     if (isActiveWithoutDeadline) return 'Reto activo · Sin fecha límite';
     return `Reto activo · Finaliza el ${new Date(room.end_at).toLocaleDateString()}`;
-  };
-
-  const handleSendText = async () => {
-    if (!textMessage.trim() || isClosed) return;
-    try {
-      await sendMessage(textMessage, replyingTo?.id || null);
-      setTextMessage('');
-      setReplyingTo(null);
-    } catch (e) {
-      alert(e.message || 'Error enviando mensaje');
-    }
-  };
-
-  const handleJumpToMessage = (messageId) => {
-    const index = messages.findIndex((m) => m.id === messageId);
-    if (index === -1) {
-      alert('No se encontró el mensaje original. Desplázate hacia arriba para buscarlo.');
-      return;
-    }
-
-    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-    setHighlightedMessageId(messageId);
-    chatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
-    highlightTimeoutRef.current = setTimeout(() => setHighlightedMessageId(null), 1500);
   };
 
   const handlePickEvidence = async () => {
@@ -255,89 +224,15 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   );
 
   const renderChatTab = () => (
-    <KeyboardAvoidingView 
-      style={styles.chatContainer} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
-      <FlatList
-        ref={chatListRef}
-        data={messages}
-        keyExtractor={item => item.id}
-        inverted
-        contentContainerStyle={styles.chatListContent}
-        onEndReached={fetchMoreMessages}
-        onEndReachedThreshold={0.5}
-        onScrollToIndexFailed={(info) => {
-          // Los items tienen alturas variables (fotos vs texto); reintentamos tras dejar que midan.
-          setTimeout(() => {
-            chatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 });
-          }, 100);
-        }}
-        ListFooterComponent={chatLoading ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
-        renderItem={({ item }) => (
-          <RoomMessageBubble
-            message={item}
-            isMe={item.sender?.id === user?.id}
-            onReply={setReplyingTo}
-            onJumpToReply={handleJumpToMessage}
-            isHighlighted={item.id === highlightedMessageId}
-          />
-        )}
-        ListEmptyComponent={
-          !chatLoading ? (
-            <View style={styles.emptyChatContainer}>
-              <Text style={styles.emptyChatText}>No hay mensajes aún.</Text>
-            </View>
-          ) : null
-        }
-      />
-      {!isClosed ? (
-        <View>
-          {replyingTo && (
-            <View style={styles.replyPreviewBar}>
-              <View style={styles.replyPreviewAccent} />
-              <View style={styles.replyPreviewBody}>
-                <Text style={styles.replyPreviewAuthor}>
-                  {replyingTo.sender?.username || 'Usuario'}
-                </Text>
-                <Text style={styles.replyPreviewText} numberOfLines={1}>
-                  {replyingTo.message_type === 'EVIDENCE' ? '📷 Registró un avance' : replyingTo.content}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setReplyingTo(null)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Feather name="x" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.chatInputContainer}>
-            <TextInput
-              style={styles.chatInput}
-              placeholder="Escribe un mensaje..."
-              value={textMessage}
-              onChangeText={setTextMessage}
-              placeholderTextColor={colors.textMuted}
-              onSubmitEditing={handleSendText}
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, !textMessage.trim() && { opacity: 0.5 }]}
-              onPress={handleSendText}
-              disabled={!textMessage.trim()}
-            >
-              <Feather name="send" size={20} color={colors.onPrimary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.chatClosedBanner}>
-          <Text style={styles.chatClosedText}>El reto finalizó. Chat en modo solo lectura.</Text>
-        </View>
-      )}
-    </KeyboardAvoidingView>
+    <ChatThread
+      messages={messages}
+      loading={chatLoading}
+      onEndReached={fetchMoreMessages}
+      currentUserId={user?.id}
+      onSend={sendMessage}
+      readOnly={isClosed}
+      readOnlyText="El reto finalizó. Chat en modo solo lectura."
+    />
   );
 
   const renderRankingTab = () => (
@@ -559,85 +454,6 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     color: colors.danger,
     fontWeight: 'bold',
-  },
-  chatContainer: {
-    flex: 1,
-  },
-  chatListContent: {
-    padding: spacing.md,
-  },
-  emptyChatContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ scaleY: -1 }], // Ya que la lista es inverted, invertimos el texto
-  },
-  emptyChatText: {
-    color: colors.textMuted,
-  },
-  replyPreviewBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
-  },
-  replyPreviewAccent: {
-    width: 3,
-    alignSelf: 'stretch',
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    marginRight: spacing.sm,
-  },
-  replyPreviewBody: {
-    flex: 1,
-  },
-  replyPreviewAuthor: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  replyPreviewText: {
-    fontSize: 12.5,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  chatInputContainer: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
-    alignItems: 'center',
-  },
-  chatInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 22,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.sm,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chatClosedBanner: {
-    padding: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.textFaint,
-  },
-  chatClosedText: {
-    color: colors.textFaint,
-    fontWeight: '600',
   },
   rankingFinalBanner: {
     flexDirection: 'row',

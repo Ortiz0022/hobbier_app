@@ -21,6 +21,9 @@ import { ReportModal } from '../../components/ReportModal';
 import { StarReactionButton } from '../../components/StarReactionButton';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { DoAlsoModal } from './components/DoAlsoModal';
+import { MessagesInboxScreen } from '../messages/screens/MessagesInboxScreen';
+import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
+import { useDirectUnreadCount } from '../messages/hooks/useDirectUnreadCount';
 import { colors } from '../../theme';
 
 const getPillStyle = (title, index) => {
@@ -76,6 +79,11 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [doAlsoModalVisible, setDoAlsoModalVisible] = useState(false);
   const [doAlsoPost, setDoAlsoPost] = useState(null);
   const [acceptingDoAlso, setAcceptingDoAlso] = useState(false);
+
+  // Mensajes directos: navegación interna, igual que las salas dentro de Amigos.
+  // null = feed | { screen: 'INBOX' } | { screen: 'CHAT', conversationId, friend }
+  const [messagesView, setMessagesView] = useState(null);
+  const { unreadCount, refetch: refetchUnreadCount } = useDirectUnreadCount();
 
   useEffect(() => {
     loadFeed(0, true);
@@ -223,6 +231,28 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     }
   };
 
+  if (messagesView?.screen === 'CHAT') {
+    return (
+      <DirectChatScreen
+        conversationId={messagesView.conversationId}
+        friend={messagesView.friend}
+        onBack={() => setMessagesView({ screen: 'INBOX' })}
+      />
+    );
+  }
+
+  if (messagesView?.screen === 'INBOX') {
+    return (
+      <MessagesInboxScreen
+        onBack={() => {
+          setMessagesView(null);
+          refetchUnreadCount();
+        }}
+        onOpenChat={({ conversationId, friend }) => setMessagesView({ screen: 'CHAT', conversationId, friend })}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -249,6 +279,23 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         {/* NAVBAR CON LOGO HOBBIER AL CENTRO (SE ESCONDE AL HACER SCROLL) */}
         <View style={styles.navHeader}>
           <Text style={styles.logoTitle}>Hobbier</Text>
+
+          {/* MENSAJES DIRECTOS (ESQUINA SUPERIOR DERECHA, COMO EN INSTAGRAM) */}
+          <TouchableOpacity
+            style={styles.messagesBtn}
+            onPress={() => setMessagesView({ screen: 'INBOX' })}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={unreadCount > 0 ? `Mensajes, ${unreadCount} sin leer` : 'Mensajes'}
+          >
+            <Feather name="message-circle" size={24} color="#121B22" />
+            {unreadCount > 0 && (
+              <View style={styles.messagesBadge}>
+                <Text style={styles.messagesBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* LISTA DE PUBLICACIONES DE AMIGOS */}
@@ -423,6 +470,35 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
     marginBottom: 0, // Restaurando márgenes naturales
     textAlign: 'center',
+  },
+  // Absoluto para que el logo siga centrado en la pantalla
+  messagesBtn: {
+    position: 'absolute',
+    right: 20,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  messagesBadge: {
+    position: 'absolute',
+    top: '50%',
+    right: -8,
+    marginTop: -20,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messagesBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 12,
   },
   emptyCard: {
     backgroundColor: '#ffffff',
