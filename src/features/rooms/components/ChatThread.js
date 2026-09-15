@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  FlatList,
   Alert,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { FlashList } from '@shopify/flash-list';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
 import { colors, spacing, fonts, radii } from '../../../theme';
@@ -20,11 +20,15 @@ import { colors, spacing, fonts, radii } from '../../../theme';
  * Conversación completa: lista de mensajes, responder a un mensaje concreto,
  * saltar al mensaje citado y caja de texto. Es la pestaña CHAT de la sala sacada
  * a un componente para que los mensajes directos usen exactamente el mismo chat.
+ *
+ * La lista es FlashList (solo dibuja los mensajes visibles). FlashList 2 no tiene
+ * `inverted`: los mensajes se muestran de antiguo a nuevo, la lista arranca abajo
+ * y los antiguos se cargan al llegar ARRIBA (`onLoadOlder`).
  */
 export const ChatThread = ({
   messages,
   loading,
-  onEndReached,
+  onLoadOlder,
   currentUserId,
   onSend,
   onRetry,
@@ -46,6 +50,25 @@ export const ChatThread = ({
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const chatListRef = useRef(null);
   const highlightTimeoutRef = useRef(null);
+  // Al enviar hay que bajar al final aunque el usuario estuviera leyendo arriba,
+  // pero el mensaje nuevo aún no está en la lista: se baja en el siguiente render.
+  const scrollToEndPendingRef = useRef(false);
+
+  // useChatMessages guarda el más reciente primero; en pantalla van al revés.
+  const orderedMessages = useMemo(() => [...messages].reverse(), [messages]);
+
+  // renderItem depende de esto además de `data`: sin extraData, FlashList no
+  // repintaría el resaltado al saltar a un mensaje citado.
+  const extraData = useMemo(
+    () => ({ highlightedMessageId, currentUserId, showSenderName }),
+    [highlightedMessageId, currentUserId, showSenderName]
+  );
+
+  useEffect(() => {
+    if (!scrollToEndPendingRef.current) return;
+    scrollToEndPendingRef.current = false;
+    requestAnimationFrame(() => chatListRef.current?.scrollToEnd({ animated: true }));
+  }, [orderedMessages]);
 
   useEffect(() => () => {
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
@@ -70,11 +93,12 @@ export const ChatThread = ({
     textRef.current = '';
     setTextMessage('');
     setReplyingTo(null);
+    scrollToEndPendingRef.current = true;
     onSend(content, replyingTo);
   };
 
   const handleJumpToMessage = (messageId) => {
-    const index = messages.findIndex((m) => m.id === messageId);
+    const index = orderedMessages.findIndex((m) => m.id === messageId);
     if (index === -1) {
       alert('No se encontró el mensaje original. Desplázate hacia arriba para buscarlo.');
       return;
@@ -82,7 +106,7 @@ export const ChatThread = ({
 
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
     setHighlightedMessageId(messageId);
-    chatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+    chatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })?.catch?.(() => {});
     highlightTimeoutRef.current = setTimeout(() => setHighlightedMessageId(null), 1500);
   };
 
@@ -92,36 +116,14 @@ export const ChatThread = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
-      <FlatList
-        ref={chatListRef}
-        data={messages}
-        keyExtractor={item => item.id}
-        inverted
-        contentContainerStyle={styles.chatListContent}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        onScrollToIndexFailed={(info) => {
-          // Los items tienen alturas variables (fotos vs texto); reintentamos tras dejar que midan.
-          setTimeout(() => {
-            chatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 });
-          }, 100);
-        }}
-        ListFooterComponent={loading ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
-        renderItem={({ item }) => (
-          <RoomMessageBubble
-            message={item}
-            isMe={item.sender?.id === currentUserId}
-            onReply={setReplyingTo}
-            onJumpToReply={handleJumpToMessage}
-            isHighlighted={item.id === highlightedMessageId}
-            showSenderName={showSenderName}
-            onRetry={onRetry}
-            onDiscard={onDiscard}
-          />
-        )}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyChatContainer}>
+      {orderedMessages.length === 0 ? (
+        // Fuera de la lista para poder centrarlo: FlashList no admite flexGrow
+        // en contentContainerStyle.
+        <View style={styles.emptyChatContainer}>
+          {loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <>
               {emptyIcon ? (
                 <View style={styles.emptyIconCircle}>
                   <Feather name={emptyIcon} size={26} color={colors.primary} />
@@ -133,10 +135,42 @@ export const ChatThread = ({
               {emptySubtitle ? (
                 <Text style={styles.emptyChatSubtitle}>{emptySubtitle}</Text>
               ) : null}
-            </View>
-          ) : null
-        }
-      />
+            </>
+          )}
+        </View>
+      ) : (
+        <FlashList
+          ref={chatListRef}
+          data={orderedMessages}
+          keyExtractor={item => item.id}
+          // Las fotos de avance y los textos miden muy distinto: reciclar cada uno
+          // con los de su tipo evita saltos al hacer scroll.
+          getItemType={item => (item.message_type === 'EVIDENCE' ? 'evidence' : 'text')}
+          extraData={extraData}
+          contentContainerStyle={styles.chatListContent}
+          onStartReached={onLoadOlder}
+          onStartReachedThreshold={0.5}
+          maintainVisibleContentPosition={{
+            // Con pocos mensajes, pegados abajo junto a la caja de texto.
+            startRenderingFromBottom: true,
+            // Si estás a menos de un 20% del final, baja sola con cada mensaje nuevo.
+            autoscrollToBottomThreshold: 0.2,
+          }}
+          ListHeaderComponent={loading ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
+          renderItem={({ item }) => (
+            <RoomMessageBubble
+              message={item}
+              isMe={item.sender?.id === currentUserId}
+              onReply={setReplyingTo}
+              onJumpToReply={handleJumpToMessage}
+              isHighlighted={item.id === highlightedMessageId}
+              showSenderName={showSenderName}
+              onRetry={onRetry}
+              onDiscard={onDiscard}
+            />
+          )}
+        />
+      )}
       {!readOnly ? (
         <View>
           {replyingTo && (
@@ -192,14 +226,12 @@ const styles = StyleSheet.create({
   },
   chatListContent: {
     padding: spacing.md,
-    flexGrow: 1,
   },
   emptyChatContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
-    transform: [{ scaleY: -1 }], // Ya que la lista es inverted, invertimos el texto
   },
   emptyIconCircle: {
     width: 56,

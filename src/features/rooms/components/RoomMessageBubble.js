@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { useRecyclingState } from '@shopify/flash-list';
 import { colors, radii, spacing, fonts } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 
@@ -11,7 +12,9 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
   const isSending = message._status === 'sending';
   const isFailed = message._status === 'failed';
   const { url: evidenceUrl } = useSignedUrl('room-evidence', message.evidence?.image_path);
-  const [viewerOpen, setViewerOpen] = useState(false);
+  // FlashList reutiliza esta burbuja para otros mensajes al hacer scroll: con un
+  // useState normal, el visor abierto de una foto seguiría abierto en otra.
+  const [viewerOpen, setViewerOpen] = useRecyclingState(false, [message.id]);
 
   return (
     <View style={[

@@ -86,7 +86,7 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
         <ChatThread
           messages={messages}
           loading={loading}
-          onEndReached={fetchMoreMessages}
+          onLoadOlder={fetchMoreMessages}
           currentUserId={user?.id}
           onSend={sendMessage}
           onRetry={retryMessage}

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Image,
   ActivityIndicator,
   SafeAreaView,
@@ -14,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
@@ -60,14 +60,22 @@ const getPillStyle = (title, index) => {
   };
 };
 
+// Publicaciones por página del scroll infinito.
+const FEED_PAGE_SIZE = 10;
+
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [posts, setPosts] = useState([]);
-  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+  // onEndReached puede dispararse varias veces antes de que el estado se actualice:
+  // la ref impide pedir la misma página dos veces.
+  const loadingMoreRef = useRef(false);
+  // La lista de amigos se pide una vez por carga del feed, no en cada página.
+  const friendIdsRef = useRef(null);
 
   // Estado para el modal de reportes y perfil de usuario
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -86,7 +94,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const { unreadCount, refetch: refetchUnreadCount } = useDirectUnreadCount();
 
   useEffect(() => {
-    loadFeed(0, true);
+    loadFeed();
   }, []);
 
   const handleOpenDoAlso = (post) => {
@@ -165,37 +173,58 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     }
   };
 
-  const loadFeed = async (pageNumber = 0, reset = false) => {
-    if (!user?.id) return;
-    if (reset) setLoading(true);
-    else setLoadingMore(true);
+  // Primera página (o recarga completa). Devuelve si fue bien.
+  const fetchFirstPage = async () => {
+    const { posts: newPosts, hasMore: more, friendIds, error } = await getFriendsFeed(user.id, FEED_PAGE_SIZE, 0);
+    if (error) return false;
+    setPosts(newPosts);
+    setHasMore(more);
+    setLoadMoreError(false);
+    friendIdsRef.current = friendIds;
+    return true;
+  };
 
-    const { posts: newPosts, hasMore: more, error } = await getFriendsFeed(
+  const loadFeed = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    await fetchFirstPage();
+    setLoading(false);
+  };
+
+  // Scroll infinito: la siguiente página empieza en la publicación más antigua cargada.
+  const loadMore = async () => {
+    if (!user?.id || !hasMore || loadingMoreRef.current || posts.length === 0) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setLoadMoreError(false);
+
+    const oldest = posts[posts.length - 1];
+    const { posts: newPosts, hasMore: more, friendIds, error } = await getFriendsFeed(
       user.id,
-      5,
-      pageNumber
+      FEED_PAGE_SIZE,
+      0,
+      { before: oldest.created_at, friendIds: friendIdsRef.current }
     );
 
-    if (!error) {
-      if (reset) {
-        setPosts(newPosts);
-      } else {
-        setPosts((prev) => [...prev, ...newPosts]);
-      }
+    if (error) {
+      setLoadMoreError(true);
+    } else {
+      friendIdsRef.current = friendIds;
+      // Sin ids repetidos: dos claves iguales descolocan el reciclado de FlashList.
+      setPosts((prev) => {
+        const knownIds = new Set(prev.map((p) => p.id));
+        return [...prev, ...newPosts.filter((p) => !knownIds.has(p.id))];
+      });
       setHasMore(more);
-      setPage(pageNumber);
     }
-    setLoading(false);
+    loadingMoreRef.current = false;
     setLoadingMore(false);
   };
 
   const onRefresh = async () => {
     if (!user?.id) return;
     setRefreshing(true);
-    const { posts: newPosts, hasMore: more } = await getFriendsFeed(user.id, 5, 0);
-    setPosts(newPosts);
-    setHasMore(more);
-    setPage(0);
+    await fetchFirstPage();
     setRefreshing(false);
   };
 
@@ -262,9 +291,150 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     );
   }
 
+  const renderPost = ({ item: post, index }) => {
+    const activityTitle = post.activityTitle || post.user_activity?.activity?.title || 'Pinta algo creativo';
+    const pillStyle = getPillStyle(activityTitle, index);
+    const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
+
+    return (
+      <View style={styles.postCard}>
+        {/* CABECERA DE LA PUBLICACIÓN */}
+        <View style={styles.postHeader}>
+          <View style={styles.authorRow}>
+            <TouchableOpacity
+              style={styles.authorClickArea}
+              onPress={() => setSelectedUserProfile(post.author)}
+              activeOpacity={0.8}
+            >
+              {post.author?.avatar_url ? (
+                <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
+              ) : (
+                <View style={styles.authorAvatar}>
+                  <Text style={styles.authorInitial}>
+                    {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.authorInfo}>
+                <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
+                <Text style={styles.authorAction} numberOfLines={1}>
+                  {pillStyle.emoji} {activityTitle}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionsBtn}
+              onPress={() => openReportModal(post)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.optionsIcon}>•••</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* IMAGEN DE EVIDENCIA SOBERANA (SIN MÁRGENES LATERALES, COMO INSTAGRAM) */}
+        <Image source={{ uri: post.image_url }} style={styles.postImage} resizeMode="cover" />
+
+        {/* PIE DE LA PUBLICACIÓN CON REACCIÓN DE ESTRELLA Y PUNTOS */}
+        <View style={styles.postFooter}>
+          <StarReactionButton
+            // Clave por publicación: FlashList reutiliza la tarjeta para otra publicación
+            // y el botón guarda estado propio (reacción y animación).
+            key={post.id}
+            initialCount={post.likesCount || 0}
+            initialReacted={post.userReacted || false}
+            onToggle={(newReacted) => handleToggleReaction(post.id, newReacted)}
+          />
+
+          <View style={styles.postFooterRight}>
+            <TouchableOpacity
+              style={styles.doAlsoBtn}
+              onPress={() => handleOpenDoAlso(post)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={post.user_id === user?.id ? 'Repetir este reto' : 'Hacer también este reto'}
+            >
+              <Feather
+                name={post.user_id === user?.id ? 'repeat' : 'plus-circle'}
+                size={14}
+                color={colors.primary}
+              />
+              <Text style={styles.doAlsoBtnText}>
+                {post.user_id === user?.id ? 'Repetir' : 'Hacer también'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.pointsPill}>
+              <Text style={styles.pointsPillText}>
+                ✪ +{pointsAwarded}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // NAVBAR CON LOGO HOBBIER AL CENTRO (SE ESCONDE AL HACER SCROLL)
+  const listHeader = (
+    <View style={styles.navHeader}>
+      <Text style={styles.logoTitle}>Hobbier</Text>
+
+      {/* MENSAJES DIRECTOS (ESQUINA SUPERIOR DERECHA, COMO EN INSTAGRAM) */}
+      <TouchableOpacity
+        style={styles.messagesBtn}
+        onPress={() => setMessagesView({ screen: 'INBOX' })}
+        activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={unreadCount > 0 ? `Mensajes, ${unreadCount} sin leer` : 'Mensajes'}
+      >
+        <Feather name="message-circle" size={24} color="#121B22" />
+        {unreadCount > 0 && (
+          <View style={styles.messagesBadge}>
+            <Text style={styles.messagesBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
+  const listFooter = loadingMore ? (
+    <ActivityIndicator color="#1e293b" style={styles.loadMoreSpinner} />
+  ) : loadMoreError ? (
+    <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore}>
+      <Text style={styles.loadMoreBtnText}>No se pudieron cargar más · Reintentar</Text>
+    </TouchableOpacity>
+  ) : null;
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
+      {/* LISTA DE PUBLICACIONES DE AMIGOS (SCROLL INFINITO) */}
+      <FlashList
+        data={posts}
+        keyExtractor={(post) => post.id}
+        renderItem={renderPost}
+        // renderPost depende del usuario actual (Repetir / Hacer también)
+        extraData={user?.id}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyEmoji}>📸</Text>
+            <Text style={styles.emptyTitle}>Sin publicaciones aún</Text>
+            <Text style={styles.emptySubtitle}>
+              Agrega amigos o espera a que completen actividades para ver sus fotos aquí.
+            </Text>
+            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed}>
+              <Text style={styles.refreshEmptyBtnText}>🔄 Actualizar feed</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        ListFooterComponent={listFooter}
+        onEndReached={loadMore}
+        // Una pantalla antes del final: la siguiente página llega antes de que se
+        // note el hueco y sus fotos ya van descargando.
+        onEndReachedThreshold={1}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -275,140 +445,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
             tintColor="#386756"
           />
         }
-      >
-        {/* NAVBAR CON LOGO HOBBIER AL CENTRO (SE ESCONDE AL HACER SCROLL) */}
-        <View style={styles.navHeader}>
-          <Text style={styles.logoTitle}>Hobbier</Text>
-
-          {/* MENSAJES DIRECTOS (ESQUINA SUPERIOR DERECHA, COMO EN INSTAGRAM) */}
-          <TouchableOpacity
-            style={styles.messagesBtn}
-            onPress={() => setMessagesView({ screen: 'INBOX' })}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel={unreadCount > 0 ? `Mensajes, ${unreadCount} sin leer` : 'Mensajes'}
-          >
-            <Feather name="message-circle" size={24} color="#121B22" />
-            {unreadCount > 0 && (
-              <View style={styles.messagesBadge}>
-                <Text style={styles.messagesBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* LISTA DE PUBLICACIONES DE AMIGOS */}
-        {posts.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={styles.emptyTitle}>Sin publicaciones aún</Text>
-            <Text style={styles.emptySubtitle}>
-              Agrega amigos o espera a que completen actividades para ver sus fotos aquí.
-            </Text>
-            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={() => loadFeed(0, true)}>
-              <Text style={styles.refreshEmptyBtnText}>🔄 Actualizar feed</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          posts.map((post, index) => {
-            const activityTitle = post.activityTitle || post.user_activity?.activity?.title || 'Pinta algo creativo';
-            const pillStyle = getPillStyle(activityTitle, index);
-            const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
-
-            return (
-              <View key={post.id} style={styles.postCard}>
-                {/* CABECERA DE LA PUBLICACIÓN */}
-                <View style={styles.postHeader}>
-                  <View style={styles.authorRow}>
-                    <TouchableOpacity
-                      style={styles.authorClickArea}
-                      onPress={() => setSelectedUserProfile(post.author)}
-                      activeOpacity={0.8}
-                    >
-                      {post.author?.avatar_url ? (
-                        <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
-                      ) : (
-                        <View style={styles.authorAvatar}>
-                          <Text style={styles.authorInitial}>
-                            {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={styles.authorInfo}>
-                        <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
-                        <Text style={styles.authorAction} numberOfLines={1}>
-                          {pillStyle.emoji} {activityTitle}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.optionsBtn}
-                      onPress={() => openReportModal(post)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={styles.optionsIcon}>•••</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* IMAGEN DE EVIDENCIA SOBERANA (SIN MÁRGENES LATERALES, COMO INSTAGRAM) */}
-                <Image source={{ uri: post.image_url }} style={styles.postImage} resizeMode="cover" />
-
-                {/* PIE DE LA PUBLICACIÓN CON REACCIÓN DE ESTRELLA Y PUNTOS */}
-                <View style={styles.postFooter}>
-                  <StarReactionButton
-                    initialCount={post.likesCount || 0}
-                    initialReacted={post.userReacted || false}
-                    onToggle={(newReacted) => handleToggleReaction(post.id, newReacted)}
-                  />
-
-                  <View style={styles.postFooterRight}>
-                    <TouchableOpacity
-                      style={styles.doAlsoBtn}
-                      onPress={() => handleOpenDoAlso(post)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel={post.user_id === user?.id ? 'Repetir este reto' : 'Hacer también este reto'}
-                    >
-                      <Feather
-                        name={post.user_id === user?.id ? 'repeat' : 'plus-circle'}
-                        size={14}
-                        color={colors.primary}
-                      />
-                      <Text style={styles.doAlsoBtnText}>
-                        {post.user_id === user?.id ? 'Repetir' : 'Hacer también'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.pointsPill}>
-                      <Text style={styles.pointsPillText}>
-                        ✪ +{pointsAwarded}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            );
-          })
-        )}
-
-        {/* BOTÓN DE PAGINACIÓN */}
-        {hasMore && (
-          <TouchableOpacity
-            style={styles.loadMoreBtn}
-            onPress={() => loadFeed(page + 1, false)}
-            disabled={loadingMore}
-          >
-            {loadingMore ? (
-              <ActivityIndicator color="#1e293b" />
-            ) : (
-              <Text style={styles.loadMoreBtnText}>Cargar más publicaciones</Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+      />
 
       {/* MODAL DE REPORTE DE CONTENIDO */}
       <ReportModal
@@ -676,6 +713,9 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 15,
     fontWeight: '700',
+  },
+  loadMoreSpinner: {
+    marginVertical: 24,
   },
 });
 

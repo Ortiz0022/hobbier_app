@@ -227,7 +227,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
     <ChatThread
       messages={messages}
       loading={chatLoading}
-      onEndReached={fetchMoreMessages}
+      onLoadOlder={fetchMoreMessages}
       currentUserId={user?.id}
       onSend={sendMessage}
       onRetry={retryMessage}
