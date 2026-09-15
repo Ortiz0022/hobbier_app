@@ -14,7 +14,7 @@ import {
 import Feather from '@expo/vector-icons/Feather';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
-import { colors, spacing } from '../../../theme';
+import { colors, spacing, fonts, radii } from '../../../theme';
 
 /**
  * Conversación completa: lista de mensajes, responder a un mensaje concreto,
@@ -27,13 +27,21 @@ export const ChatThread = ({
   onEndReached,
   currentUserId,
   onSend,
+  onRetry,
+  onDiscard,
   readOnly = false,
   readOnlyText = 'Chat en modo solo lectura.',
+  emptyIcon = 'message-square',
+  emptyTitle,
+  emptySubtitle,
   emptyText = 'No hay mensajes aún.',
   showSenderName = true,
   keyboardVerticalOffset = 90,
 }) => {
   const [textMessage, setTextMessage] = useState('');
+  // El texto también vive en una ref: Enter y el botón pueden disparar dos envíos
+  // en el mismo instante, y ambos leerían el mismo estado antes de que se vacíe.
+  const textRef = useRef('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const chatListRef = useRef(null);
@@ -48,15 +56,21 @@ export const ChatThread = ({
     else Alert.alert('Aviso', msg);
   };
 
-  const handleSendText = async () => {
-    if (!textMessage.trim() || readOnly) return;
-    try {
-      await onSend(textMessage, replyingTo?.id || null);
-      setTextMessage('');
-      setReplyingTo(null);
-    } catch (e) {
-      alert(e.message || 'Error enviando mensaje');
-    }
+  const handleChangeText = (text) => {
+    textRef.current = text;
+    setTextMessage(text);
+  };
+
+  // No se espera al servidor: el mensaje aparece al momento en la lista (envío
+  // optimista) y la caja queda libre para escribir el siguiente. Antes se esperaba
+  // la respuesta con el texto aún escrito, y cada toque extra lo enviaba otra vez.
+  const handleSendText = () => {
+    const content = textRef.current;
+    if (!content.trim() || readOnly) return;
+    textRef.current = '';
+    setTextMessage('');
+    setReplyingTo(null);
+    onSend(content, replyingTo);
   };
 
   const handleJumpToMessage = (messageId) => {
@@ -101,12 +115,24 @@ export const ChatThread = ({
             onJumpToReply={handleJumpToMessage}
             isHighlighted={item.id === highlightedMessageId}
             showSenderName={showSenderName}
+            onRetry={onRetry}
+            onDiscard={onDiscard}
           />
         )}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyChatContainer}>
-              <Text style={styles.emptyChatText}>{emptyText}</Text>
+              {emptyIcon ? (
+                <View style={styles.emptyIconCircle}>
+                  <Feather name={emptyIcon} size={26} color={colors.primary} />
+                </View>
+              ) : null}
+              <Text style={styles.emptyChatTitle}>
+                {emptyTitle || emptyText}
+              </Text>
+              {emptySubtitle ? (
+                <Text style={styles.emptyChatSubtitle}>{emptySubtitle}</Text>
+              ) : null}
             </View>
           ) : null
         }
@@ -138,7 +164,7 @@ export const ChatThread = ({
               style={styles.chatInput}
               placeholder="Escribe un mensaje..."
               value={textMessage}
-              onChangeText={setTextMessage}
+              onChangeText={handleChangeText}
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={handleSendText}
             />
@@ -166,12 +192,35 @@ const styles = StyleSheet.create({
   },
   chatListContent: {
     padding: spacing.md,
+    flexGrow: 1,
   },
   emptyChatContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.xl,
     transform: [{ scaleY: -1 }], // Ya que la lista es inverted, invertimos el texto
+  },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.round,
+    backgroundColor: colors.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyChatTitle: {
+    fontSize: 15,
+    fontFamily: fonts.heading,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  emptyChatSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   emptyChatText: {
     color: colors.textMuted,

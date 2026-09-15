@@ -181,7 +181,8 @@ export const roomsService = {
     }));
   },
 
-  async sendTextMessage(roomId, content, replyToMessageId = null) {
+  // `messageId` lo genera el chat antes de enviar (envío optimista e idempotente).
+  async sendTextMessage(roomId, content, replyToMessageId = null, messageId = null) {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
     if (!userId) throw new Error('No user authenticated');
@@ -192,6 +193,7 @@ export const roomsService = {
     const { data, error } = await supabase
       .from('room_messages')
       .insert({
+        ...(messageId ? { id: messageId } : {}),
         room_id: roomId,
         sender_id: userId,
         message_type: 'TEXT',
@@ -299,7 +301,9 @@ export const roomsService = {
   // ----------------------------------------------------
   // REALTIME
   // ----------------------------------------------------
-  subscribeToRoomMessages(roomId, onNewMessage) {
+  // `isKnownMessage(id)`: si el chat ya tiene ese mensaje (lo envió este mismo
+  // dispositivo), se entrega la fila tal cual sin consultar de nuevo.
+  subscribeToRoomMessages(roomId, onNewMessage, isKnownMessage = null) {
     const channel = supabase
       .channel(`room_messages_${roomId}`)
       .on(
@@ -311,6 +315,11 @@ export const roomsService = {
           filter: `room_id=eq.${roomId}`
         },
         async (payload) => {
+          if (isKnownMessage?.(payload.new.id)) {
+            onNewMessage(payload.new);
+            return;
+          }
+
           // El payload.new solo trae la fila plana, necesitamos hidratarla con las relaciones
           const { data, error } = await supabase
             .from('room_messages')

@@ -29,7 +29,7 @@ import { isRoomClosed as getIsRoomClosed } from '../utils/roomHelpers';
 export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { user } = useAuth();
   const { room, ranking, loading: detailsLoading, error: detailsError, refetch } = useRoomDetails(roomId);
-  const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage } = useRoomChat(roomId);
+  const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useRoomChat(roomId);
   const { submitEvidence, uploading: evidenceUploading } = useEvidenceUploader(roomId);
   const { closeRoom, deleteRoom, uploadCover, loading: actionLoading } = useRoomActions();
   
@@ -230,6 +230,8 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
       onEndReached={fetchMoreMessages}
       currentUserId={user?.id}
       onSend={sendMessage}
+      onRetry={retryMessage}
+      onDiscard={discardMessage}
       readOnly={isClosed}
       readOnlyText="El reto finalizó. Chat en modo solo lectura."
     />

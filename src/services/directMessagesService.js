@@ -78,7 +78,8 @@ export const directMessagesService = {
     }));
   },
 
-  async sendTextMessage(conversationId, content, replyToMessageId = null) {
+  // `messageId` lo genera el chat antes de enviar (envío optimista e idempotente).
+  async sendTextMessage(conversationId, content, replyToMessageId = null, messageId = null) {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
     if (!userId) throw new Error('No user authenticated');
@@ -89,26 +90,27 @@ export const directMessagesService = {
     const { data, error } = await supabase
       .from('direct_messages')
       .insert({
+        ...(messageId ? { id: messageId } : {}),
         conversation_id: conversationId,
         sender_id: userId,
         content: trimmedContent,
         reply_to_message_id: replyToMessageId || null,
       })
-      .select(MESSAGE_SELECT)
+      // Solo lo que el chat no sabe ya. El remitente y la cita los tiene del mensaje
+      // optimista: pedirlos otra vez era un join y, al responder, una consulta más.
+      .select('id, created_at')
       .single();
 
     if (error) throw error;
-
-    // Se devuelve hidratado para que el chat lo muestre al instante, sin depender
-    // de que llegue el evento de Realtime.
-    const [hydrated] = await this._hydrateReplyPreviews([data]);
-    return hydrated;
+    return data;
   },
 
   // ----------------------------------------------------
   // REALTIME
   // ----------------------------------------------------
-  subscribeToConversationMessages(conversationId, onNewMessage) {
+  // `isKnownMessage(id)`: si el chat ya tiene ese mensaje (lo envió este mismo
+  // dispositivo), se entrega la fila tal cual sin consultar de nuevo.
+  subscribeToConversationMessages(conversationId, onNewMessage, isKnownMessage = null) {
     const channel = supabase
       .channel(uniqueChannelName(`direct_messages_${conversationId}`))
       .on(
@@ -120,6 +122,11 @@ export const directMessagesService = {
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
+          if (isKnownMessage?.(payload.new.id)) {
+            onNewMessage(payload.new);
+            return;
+          }
+
           // payload.new solo trae la fila plana; se hidrata con remitente y cita
           const { data, error } = await supabase
             .from('direct_messages')

@@ -4,8 +4,12 @@ import Feather from '@expo/vector-icons/Feather';
 import { colors, radii, spacing, fonts } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 
-export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true }) => {
+export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true, onRetry, onDiscard }) => {
   const isEvidence = message.message_type === 'EVIDENCE';
+  // Estados locales del envío optimista (ver useChatMessages). Mientras el mensaje
+  // no esté guardado no se puede responder: la cita apuntaría a una fila inexistente.
+  const isSending = message._status === 'sending';
+  const isFailed = message._status === 'failed';
   const { url: evidenceUrl } = useSignedUrl('room-evidence', message.evidence?.image_path);
   const [viewerOpen, setViewerOpen] = useState(false);
 
@@ -93,7 +97,12 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
             </Modal>
           </View>
         ) : (
-          <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
+          <View style={[
+            styles.bubble,
+            isMe ? styles.bubbleMe : styles.bubbleOther,
+            isSending && styles.bubbleSending,
+            isFailed && styles.bubbleFailed,
+          ]}>
             {message.reply_to && (
               <TouchableOpacity
                 style={[styles.replyQuote, isMe && styles.replyQuoteMe]}
@@ -115,25 +124,46 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
         )}
 
         <View style={[styles.footerRow, isMe ? styles.footerRowMe : styles.footerRowOther]}>
-          {isMe && (
-            <Text style={[styles.time, styles.timeMe]}>
-              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          )}
+          {isFailed ? (
+            <>
+              <Feather name="alert-circle" size={12} color={colors.danger} />
+              <Text style={styles.failedText}>No se envió</Text>
+              <TouchableOpacity onPress={() => onRetry?.(message.id)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <Text style={styles.failedAction}>Reintentar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => onDiscard?.(message.id)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <Text style={styles.replyBtnText}>Descartar</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {isMe && (
+                isSending ? (
+                  <Feather name="clock" size={11} color={colors.textFaint} style={styles.timeMe} />
+                ) : (
+                  <Text style={[styles.time, styles.timeMe]}>
+                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                )
+              )}
 
-          <TouchableOpacity
-            style={styles.replyBtn}
-            onPress={() => onReply?.(message)}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <Feather name="corner-up-left" size={12} color={colors.textMuted} />
-            <Text style={styles.replyBtnText}>Responder</Text>
-          </TouchableOpacity>
+              {!isSending && (
+                <TouchableOpacity
+                  style={styles.replyBtn}
+                  onPress={() => onReply?.(message)}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Feather name="corner-up-left" size={12} color={colors.textMuted} />
+                  <Text style={styles.replyBtnText}>Responder</Text>
+                </TouchableOpacity>
+              )}
 
-          {!isMe && (
-            <Text style={[styles.time, styles.timeOther]}>
-              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
+              {!isMe && (
+                <Text style={[styles.time, styles.timeOther]}>
+                  {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              )}
+            </>
           )}
         </View>
       </View>
@@ -209,6 +239,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: colors.surfaceMuted,
+  },
+  bubbleSending: {
+    opacity: 0.65,
+  },
+  bubbleFailed: {
+    opacity: 0.5,
   },
   evidenceBubble: {
     padding: spacing.sm,
@@ -316,6 +352,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.textMuted,
+  },
+  failedText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.danger,
+  },
+  failedAction: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
   },
   viewerOverlay: {
     flex: 1,

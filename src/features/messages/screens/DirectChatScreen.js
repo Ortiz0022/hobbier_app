@@ -19,7 +19,7 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
   const [conversationId, setConversationId] = useState(initialConversationId || null);
   const [openError, setOpenError] = useState(null);
 
-  const { messages, loading, error, fetchMoreMessages, sendMessage } = useDirectChat(conversationId);
+  const { messages, loading, error, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useDirectChat(conversationId);
 
   useEffect(() => {
     if (conversationId || !friend?.id) return;
@@ -30,14 +30,16 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
     return () => { mounted = false; };
   }, [conversationId, friend?.id]);
 
-  // Se marca como leída al abrir y con cada mensaje que llega mientras está abierta.
-  const newestMessageId = messages[0]?.id;
+  // Se marca como leída al abrir y con cada mensaje del AMIGO que llega mientras
+  // está abierta. Los propios no: el trigger de la base de datos ya los deja leídos,
+  // y marcar en cada envío era una llamada extra por mensaje.
+  const newestIncomingId = messages.find((m) => (m.sender?.id || m.sender_id) !== user?.id)?.id;
   useEffect(() => {
     if (!conversationId) return;
     directMessagesService.markConversationRead(conversationId).catch((err) => {
       console.log('Error marcando conversación como leída:', err?.message);
     });
-  }, [conversationId, newestMessageId]);
+  }, [conversationId, newestIncomingId]);
 
   const displayName = friend?.full_name || friend?.username || 'Amigo';
   // Un fallo al paginar no debe tapar los mensajes que ya se ven.
@@ -87,8 +89,12 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
           onEndReached={fetchMoreMessages}
           currentUserId={user?.id}
           onSend={sendMessage}
+          onRetry={retryMessage}
+          onDiscard={discardMessage}
           showSenderName={false}
-          emptyText={`Saluda a ${displayName} 👋`}
+          emptyIcon="message-circle"
+          emptyTitle={`Saluda a ${displayName}`}
+          emptySubtitle="Envía un mensaje para iniciar la conversación"
         />
       )}
     </View>

@@ -5,6 +5,8 @@ import { useChatMessages } from '../../rooms/hooks/useChatMessages';
 export const useDirectChat = (conversationId) => useChatMessages({
   chatId: conversationId,
   fetchPage: (id, options) => directMessagesService.getMessages(id, options),
-  subscribe: (id, onNewMessage) => directMessagesService.subscribeToConversationMessages(id, onNewMessage),
-  send: (id, content, replyToMessageId) => directMessagesService.sendTextMessage(id, content, replyToMessageId),
+  subscribe: (id, onNewMessage, isKnownMessage) =>
+    directMessagesService.subscribeToConversationMessages(id, onNewMessage, isKnownMessage),
+  send: (id, content, replyToMessageId, messageId) =>
+    directMessagesService.sendTextMessage(id, content, replyToMessageId, messageId),
 });
