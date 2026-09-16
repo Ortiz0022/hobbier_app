@@ -365,3 +365,82 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
     return { report: null, error };
   }
 };
+
+export const getFriendSuggestionsByInterests = async (userId) => {
+  try {
+    // 1. Obtener los intereses del usuario actual
+    const { data: myInterestsData, error: myInterestsErr } = await supabase
+      .from('user_interests')
+      .select('interest_id')
+      .eq('user_id', userId);
+
+    if (myInterestsErr) throw myInterestsErr;
+    
+    const myInterestIds = (myInterestsData || []).map(row => row.interest_id);
+    
+    if (myInterestIds.length === 0) {
+      return { suggestions: [], error: null };
+    }
+
+    // 2. Obtener usuarios que comparten al menos uno de esos intereses
+    const { data: othersInterests, error: othersErr } = await supabase
+      .from('user_interests')
+      .select(`
+        user_id,
+        interest_id,
+        profiles!inner(id, full_name, username, avatar_url)
+      `)
+      .in('interest_id', myInterestIds)
+      .neq('user_id', userId);
+
+    if (othersErr) throw othersErr;
+
+    // 3. Agrupar por usuario y contar coincidencias
+    const userMatchCounts = {};
+    (othersInterests || []).forEach(row => {
+      const uId = row.user_id;
+      if (!userMatchCounts[uId]) {
+        userMatchCounts[uId] = {
+          profile: row.profiles,
+          sharedCount: 0
+        };
+      }
+      userMatchCounts[uId].sharedCount += 1;
+    });
+
+    // 4. Filtrar los que tienen 2 o más intereses en común
+    let potentialSuggestions = Object.values(userMatchCounts)
+      .filter(u => u.sharedCount >= 2);
+
+    if (potentialSuggestions.length === 0) {
+      return { suggestions: [], error: null };
+    }
+
+    // 5. Excluir a los que ya son amigos o hay solicitud pendiente
+    const { data: friendships, error: friendErr } = await supabase
+      .from('friendships')
+      .select('requester_id, addressee_id')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    if (friendErr) throw friendErr;
+
+    const excludedUserIds = new Set();
+    (friendships || []).forEach(f => {
+      excludedUserIds.add(f.requester_id);
+      excludedUserIds.add(f.addressee_id);
+    });
+
+    // 6. Ordenar por cantidad de intereses compartidos (descendente) y limitar a 10
+    const finalSuggestions = potentialSuggestions
+      .filter(u => !excludedUserIds.has(u.profile.id))
+      .sort((a, b) => b.sharedCount - a.sharedCount)
+      .slice(0, 10);
+
+    return { suggestions: finalSuggestions, error: null };
+
+  } catch (error) {
+    console.error('Error obteniendo sugerencias de amigos:', error.message);
+    return { suggestions: [], error };
+  }
+};
+
