@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 // Envoltorio con tope de escalado: sin él, la letra grande del sistema
 // desbordaría la tarjeta. Ver la sección de accesibilidad del README.
@@ -99,11 +99,18 @@ const styles = StyleSheet.create({
   cardSelected: {
     backgroundColor: TOKENS.colors.white,
     borderColor: TOKENS.colors.active,
-    shadowColor: TOKENS.colors.active,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
     elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 3px 8px rgba(12, 138, 166, 0.22)',
+      },
+      default: {
+        shadowColor: TOKENS.colors.active,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.22,
+        shadowRadius: 8,
+      },
+    }),
   },
   check: {
     position: 'absolute',

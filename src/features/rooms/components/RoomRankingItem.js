@@ -1,11 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors, radii, spacing, fonts } from '../../../theme';
+import { usePresence } from '../../../context/PresenceContext';
 
 
 
 export const RoomRankingItem = ({ user, position, isFinal }) => {
+  const { isUserOnline } = usePresence();
+  const isOnline = isUserOnline(user.id);
+
   const isFirst = position === 1;
   const isSecond = position === 2;
   const isThird = position === 3;
@@ -41,15 +45,18 @@ export const RoomRankingItem = ({ user, position, isFinal }) => {
       </View>
 
       <View style={styles.avatarContainer}>
-        {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={getAvatarStyle()} />
-        ) : (
-          <View style={[styles.avatarPlaceholder, getAvatarStyle()]}>
-            <Text style={styles.avatarPlaceholderText}>
-              {user.username?.charAt(0)?.toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <View style={styles.avatarWrapper}>
+          {user.avatar_url ? (
+            <Image source={{ uri: user.avatar_url }} style={getAvatarStyle()} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, getAvatarStyle()]}>
+              <Text style={styles.avatarPlaceholderText}>
+                {user.username?.charAt(0)?.toUpperCase()}
+              </Text>
+            </View>
+          )}
+          {isOnline && <View style={styles.onlineDot} />}
+        </View>
       </View>
 
       <View style={styles.infoContainer}>
@@ -81,19 +88,35 @@ const styles = StyleSheet.create({
   firstPlaceContainer: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 18, 
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
     elevation: 4,
     borderWidth: 0,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+      },
+    }),
   },
   podiumContainer: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
     elevation: 2,
     borderWidth: 0,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.04)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+      },
+    }),
   },
   defaultContainer: {
     backgroundColor: '#FFFFFF',
@@ -208,4 +231,18 @@ const styles = StyleSheet.create({
   pointsTextDefault: {
     color: colors.text,
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  }
 });

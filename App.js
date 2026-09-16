@@ -16,6 +16,7 @@ import {
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { PresenceProvider } from './src/context/PresenceContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { SplashScreen } from './src/features/auth/SplashScreen';
 import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
@@ -202,7 +203,9 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <MainApp />
+      <PresenceProvider>
+        <MainApp />
+      </PresenceProvider>
     </AuthProvider>
   );
 }
@@ -239,14 +242,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: 'space-around',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
     elevation: 8,
     ...Platform.select({
       web: {
         boxShadow: '0px -3px 10px rgba(0,0,0,0.05)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
       },
     }),
   },

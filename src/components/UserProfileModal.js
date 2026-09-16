@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
+import { useAuth } from '../context/AuthContext';
 import { getUserPosts } from '../services/socialService';
 import { getUserActivities } from '../services/activityService';
 import { getCategoryLabel } from '../utils/category';
 
-export const UserProfileModal = ({ visible, userProfile, onClose }) => {
+export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ points: 0, completedCount: 0 });
   const [posts, setPosts] = useState([]);
@@ -103,6 +105,24 @@ export const UserProfileModal = ({ visible, userProfile, onClose }) => {
                 </Text>
               </View>
             </View>
+
+            {userProfile.id !== user?.id && (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.messageButton}
+                  onPress={() => {
+                    if (onSendMessage) {
+                      onClose?.();
+                      onSendMessage(userProfile);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="message-circle" size={16} color="#FFFFFF" />
+                  <Text style={styles.messageButtonText}>Enviar mensaje</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <Text style={styles.sectionHeaderTitle}>PUBLICACIONES Y EVIDENCIA</Text>
@@ -294,6 +314,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '600',
+  },
+  actionRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingHorizontal: 12,
+  },
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0C8AA6',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    gap: 8,
+    width: '100%',
+    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(12, 138, 166, 0.25)',
+      },
+      default: {
+        shadowColor: '#0C8AA6',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+      },
+    }),
+  },
+  messageButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Poppins_700Bold',
+    fontWeight: '700',
   },
   sectionHeaderTitle: {
     fontSize: 12,

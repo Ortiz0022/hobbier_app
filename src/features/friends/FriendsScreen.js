@@ -27,16 +27,21 @@ import {
 import { getUserActivities } from '../../services/activityService';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { roomsService } from '../../services/roomsService';
+import { usePresence } from '../../context/PresenceContext';
 
-// Salas
 import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
 import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
 import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';
+import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 
 export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const { user } = useAuth();
+  const { isUserOnline } = usePresence();
   const [activeTab, setActiveTab] = useState(isProfileView ? 'friends' : 'search'); // 'friends', 'search', 'requests'
   const [loading, setLoading] = useState(false);
+
+  // Chat directo
+  const [directChatFriend, setDirectChatFriend] = useState(null);
 
   // Filtro interno de Mis Amigos
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
@@ -184,6 +189,15 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const showTabs = !isProfileView;
   const showHeader = isProfileView || !(activeTab === 'rooms' && roomScreen !== 'LIST');
 
+  if (directChatFriend) {
+    return (
+      <DirectChatScreen
+        friend={directChatFriend}
+        onBack={() => setDirectChatFriend(null)}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {showHeader && (
@@ -325,15 +339,18 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   activeOpacity={0.85}
                 >
                   <View style={styles.avatarRing}>
-                    {item.profile?.avatar_url ? (
-                      <Image source={{ uri: item.profile.avatar_url }} style={styles.avatarCircleImage} />
-                    ) : (
-                      <View style={styles.avatarCircle}>
-                        <Text style={styles.avatarInitial}>
-                          {(item.profile?.full_name || 'U')[0].toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
+                    <View style={styles.avatarWrapper}>
+                      {item.profile?.avatar_url ? (
+                        <Image source={{ uri: item.profile.avatar_url }} style={styles.avatarCircleImage} />
+                      ) : (
+                        <View style={styles.avatarCircle}>
+                          <Text style={styles.avatarInitial}>
+                            {(item.profile?.full_name || 'U')[0].toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      {isUserOnline(item.profile?.id) && <View style={styles.onlineDot} />}
+                    </View>
                   </View>
 
                   <View style={styles.userInfo}>
@@ -477,6 +494,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
         visible={!!selectedFriend}
         userProfile={selectedFriend}
         onClose={() => setSelectedFriend(null)}
+        onSendMessage={(friend) => {
+          setSelectedFriend(null);
+          setDirectChatFriend(friend);
+        }}
       />
     </SafeAreaView>
   );
@@ -662,6 +683,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   userInfo: {
     flex: 1,

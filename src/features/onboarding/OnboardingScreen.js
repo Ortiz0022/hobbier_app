@@ -432,9 +432,9 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
               transform: [
                 { translateY: flota.interpolate({ inputRange: [0, 1], outputRange: [0, 7] }) },
               ],
+              pointerEvents: 'box-none',
             },
           ]}
-          pointerEvents="box-none"
         >
           <TouchableOpacity
             activeOpacity={0.7}
@@ -645,11 +645,18 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.colors.white,
     // Sin borde, la sombra es lo ÚNICO que despega la flecha del fondo blanco
     // de la pantalla. Sacarla la haría desaparecer.
-    shadowColor: TOKENS.colors.textDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
     elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 6px rgba(18, 27, 34, 0.18)',
+      },
+      default: {
+        shadowColor: TOKENS.colors.textDark,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+      },
+    }),
   },
   footer: {
     paddingHorizontal: TOKENS.spacing.lg,

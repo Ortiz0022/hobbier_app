@@ -421,11 +421,18 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
     elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px -2px 10px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+    }),
   },
   filterMenuItem: {
     flexDirection: 'row',

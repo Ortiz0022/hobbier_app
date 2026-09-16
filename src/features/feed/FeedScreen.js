@@ -460,6 +460,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         visible={!!selectedUserProfile}
         userProfile={selectedUserProfile}
         onClose={() => setSelectedUserProfile(null)}
+        onSendMessage={(friend) => {
+          setSelectedUserProfile(null);
+          setMessagesView({ screen: 'CHAT', friend });
+        }}
       />
 
       {/* BOTTOM SHEET DE HACER TAMBIÉN */}
