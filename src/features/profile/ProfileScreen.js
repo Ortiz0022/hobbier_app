@@ -54,7 +54,7 @@ const COLORS = {
   dangerSoft: '#FEF2F2',
 };
 
-export const ProfileScreen = ({ onGoToPreferences }) => {
+export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const { profile, refreshProfile, signOut } = useAuth();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -365,10 +365,14 @@ export const ProfileScreen = ({ onGoToPreferences }) => {
 
             <View style={styles.statDivider} />
 
-            <View style={styles.statItem}>
+            <TouchableOpacity 
+              style={styles.statItem} 
+              onPress={onNavigateToFriends}
+              activeOpacity={0.7}
+            >
               <Text style={styles.statNumber}>{friendsCount}</Text>
               <Text style={styles.statLabel}>Amigos</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 

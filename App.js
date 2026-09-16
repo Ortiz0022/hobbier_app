@@ -106,8 +106,15 @@ const MainApp = () => {
         );
       case 'friends':
         return <FriendsScreen />;
+      case 'profile_friends':
+        return <FriendsScreen isProfileView={true} onBack={() => setCurrentScreen('profile')} />;
       case 'profile':
-        return <ProfileScreen onGoToPreferences={() => irAPreferencias('profile')} />;
+        return (
+          <ProfileScreen
+            onGoToPreferences={() => irAPreferencias('profile')}
+            onNavigateToFriends={() => setCurrentScreen('profile_friends')}
+          />
+        );
       case 'preferences':
         return (
           <OnboardingScreen
@@ -129,7 +136,7 @@ const MainApp = () => {
     { key: 'recommendations', label: 'Descubre', icon: 'gift' },
     { key: 'feed', label: 'Feed', icon: 'rss' },
     { key: 'my_activities', label: 'Misiones', icon: 'target' },
-    { key: 'friends', label: 'Amigos', icon: 'users' },
+    { key: 'friends', label: 'Comunidad', icon: 'users' },
     { key: 'profile', label: 'Perfil', icon: 'user' },
   ];
 
@@ -145,34 +152,34 @@ const MainApp = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      
+
       {/* VISTA PRINCIPAL SEGÚN PESTAÑA SELECCIONADA */}
       <View style={styles.mainContent}>{renderScreen()}</View>
 
       {/* BARRA DE NAVEGACIÓN INFERIOR DE ESTILO MINIMALISTA */}
       {pantallaCompleta ? null : (
-      <View style={styles.bottomNavContainer}>
-        <View style={styles.bottomNav}>
-          {navItems.map((item) => {
-            const isActive = currentScreen === item.key;
-            const iconColor = isActive ? '#0C8AA6' : '#121B22';
+        <View style={styles.bottomNavContainer}>
+          <View style={styles.bottomNav}>
+            {navItems.map((item) => {
+              const isActive = currentScreen === item.key;
+              const iconColor = isActive ? '#0C8AA6' : '#121B22';
 
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={styles.navItem}
-                onPress={() => setCurrentScreen(item.key)}
-                activeOpacity={0.8}
-              >
-                <Feather name={item.icon} size={20} color={iconColor} />
-                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={styles.navItem}
+                  onPress={() => setCurrentScreen(item.key)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name={item.icon} size={20} color={iconColor} />
+                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
       )}
     </SafeAreaView>
   );

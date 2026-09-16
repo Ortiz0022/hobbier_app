@@ -31,9 +31,9 @@ import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
 import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
 import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';
 
-export const FriendsScreen = () => {
+export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('friends'); // 'friends', 'search', 'requests'
+  const [activeTab, setActiveTab] = useState(isProfileView ? 'friends' : 'search'); // 'friends', 'search', 'requests'
   const [loading, setLoading] = useState(false);
 
   // Filtro interno de Mis Amigos
@@ -179,30 +179,27 @@ export const FriendsScreen = () => {
     return name.includes(q) || uname.includes(q);
   });
 
-  const showHeader = !(activeTab === 'rooms' && roomScreen !== 'LIST');
+  const showTabs = !isProfileView;
+  const showHeader = isProfileView || !(activeTab === 'rooms' && roomScreen !== 'LIST');
 
   return (
     <SafeAreaView style={styles.container}>
       {showHeader && (
         <View style={styles.header}>
-          <Text style={styles.title}>Comunidad y Amigos</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            {onBack && (
+              <TouchableOpacity onPress={onBack} style={{ marginRight: 12 }}>
+                <Feather name="arrow-left" size={24} color="#08333D" />
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.title, { marginBottom: 0 }]}>
+              {isProfileView ? 'Mis Amigos' : 'Comunidad y Amigos'}
+            </Text>
+          </View>
 
-          {/* NAVEGACIÓN POR PESTAÑAS: 1. MIS AMIGOS | 2. BUSCAR | 3. SOLICITUDES */}
-          <View style={styles.tabsRow}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-              onPress={() => setActiveTab('friends')}
-              activeOpacity={0.8}
-            >
-              <Feather
-                name="users"
-                size={14}
-                color={activeTab === 'friends' ? '#053E4A' : '#8A908B'}
-              />
-              <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-                Amigos
-              </Text>
-            </TouchableOpacity>
+          {/* NAVEGACIÓN POR PESTAÑAS: 2. BUSCAR | 3. SOLICITUDES | 4. SALAS */}
+          {showTabs && (
+            <View style={styles.tabsRow}>
 
             <TouchableOpacity
               style={[styles.tab, activeTab === 'search' && styles.activeTab]}
@@ -260,6 +257,7 @@ export const FriendsScreen = () => {
               </Text>
             </TouchableOpacity>
           </View>
+        )}
         </View>
       )}
 
