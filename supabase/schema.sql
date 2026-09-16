@@ -429,6 +429,14 @@ CREATE POLICY "Lectura activity_resources" ON public.activity_resources FOR SELE
 CREATE POLICY "Admin activity_resources" ON public.activity_resources FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN'));
 
 CREATE POLICY "Gestionar propias user_activities" ON public.user_activities FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Ver retos completados de amigos" ON public.user_activities FOR SELECT USING (
+  status = 'COMPLETED' AND EXISTS (
+    SELECT 1 FROM public.friendships f
+    WHERE f.status = 'ACCEPTED'
+      AND ((f.requester_id = auth.uid() AND f.addressee_id = user_activities.user_id)
+        OR (f.addressee_id = auth.uid() AND f.requester_id = user_activities.user_id))
+  )
+);
 
 CREATE POLICY "Ver posts en feed" ON public.posts FOR SELECT USING (
   status = 'ACTIVE' AND (
@@ -449,6 +457,28 @@ CREATE POLICY "Insertar propia reaccion" ON public.post_reactions FOR INSERT WIT
 CREATE POLICY "Eliminar propia reaccion" ON public.post_reactions FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Ver propias amistades" ON public.friendships FOR SELECT USING (auth.uid() = requester_id OR auth.uid() = addressee_id);
+
+-- Función SECURITY DEFINER: consulta friendships por fuera de RLS para que la
+-- política de abajo no se referencie a sí misma (eso causaba
+-- "infinite recursion detected in policy for relation friendships").
+CREATE OR REPLACE FUNCTION public.is_accepted_friend(a UUID, b UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.friendships
+    WHERE status = 'ACCEPTED'
+      AND ((requester_id = a AND addressee_id = b) OR (addressee_id = a AND requester_id = b))
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
+
+REVOKE ALL ON FUNCTION public.is_accepted_friend(UUID, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_accepted_friend(UUID, UUID) TO authenticated;
+
+CREATE POLICY "Ver amistades de mis amigos" ON public.friendships FOR SELECT USING (
+  status = 'ACCEPTED' AND (
+    public.is_accepted_friend(auth.uid(), requester_id) OR
+    public.is_accepted_friend(auth.uid(), addressee_id)
+  )
+);
 CREATE POLICY "Crear solicitud amistad" ON public.friendships FOR INSERT WITH CHECK (auth.uid() = requester_id);
 CREATE POLICY "Actualizar solicitud amistad" ON public.friendships FOR UPDATE USING (auth.uid() = addressee_id OR auth.uid() = requester_id);
 CREATE POLICY "Eliminar amistad" ON public.friendships FOR DELETE USING (auth.uid() = requester_id OR auth.uid() = addressee_id);

@@ -8,7 +8,6 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
-  Alert,
   Platform,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
@@ -18,6 +17,7 @@ import { StepProgressBar } from '../../components/StepProgressBar';
 import { TOKENS } from '../../theme/designTokens';
 import { getCatalogIcon, getCatalogTint } from './catalogIcons';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 // Se reutilizan las reglas de fecha del registro en lugar de escribir otras:
 // ya están probadas y así el formato pedido es el mismo en toda la app.
 import { ageFromISODate, validateBirthDate } from '../auth/validation';
@@ -56,6 +56,7 @@ const STEPS = [
 
 export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const { user } = useAuth();
+  const { notify } = useNotify();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -220,14 +221,10 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
     setSaving(false);
 
     if (result.success) {
-      const msg = 'Preferencias guardadas correctamente.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('¡Excelente!', msg);
+      notify('Preferencias guardadas correctamente.', { type: 'success', title: '¡Excelente!' });
       if (onComplete) onComplete();
     } else {
-      const msg = 'Error al guardar tus preferencias.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify('Error al guardar tus preferencias.', { type: 'error', title: 'Error' });
     }
   };
 

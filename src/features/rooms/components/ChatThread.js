@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Alert,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { FlashList } from '@shopify/flash-list';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
 import { colors, spacing, fonts, radii } from '../../../theme';
+import { useNotify } from '../../../context/NotificationContext';
 
 /**
  * Conversación completa: lista de mensajes, responder a un mensaje concreto,
@@ -53,6 +53,7 @@ export const ChatThread = ({
   // Al enviar hay que bajar al final aunque el usuario estuviera leyendo arriba,
   // pero el mensaje nuevo aún no está en la lista: se baja en el siguiente render.
   const scrollToEndPendingRef = useRef(false);
+  const { notify } = useNotify();
 
   // useChatMessages guarda el más reciente primero; en pantalla van al revés.
   const orderedMessages = useMemo(() => [...messages].reverse(), [messages]);
@@ -74,10 +75,7 @@ export const ChatThread = ({
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
   }, []);
 
-  const alert = (msg) => {
-    if (Platform.OS === 'web') window.alert(msg);
-    else Alert.alert('Aviso', msg);
-  };
+  const alert = (msg) => notify(msg, { type: 'warning', title: 'Aviso' });
 
   const handleChangeText = (text) => {
     textRef.current = text;

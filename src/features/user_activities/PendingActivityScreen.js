@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -14,6 +13,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import {
   completeActivityRPC,
   getUserActivities,
@@ -32,17 +32,14 @@ const pickerOptions = {
   quality: 0.8,
 };
 
-const showMessage = (title, message) => {
-  if (Platform.OS === 'web') alert(message);
-  else Alert.alert(title, message);
-};
-
 export const PendingActivityScreen = ({
   initialExpandedId,
   onNavigateToProfile,
   onNavigateToRecommendations,
 }) => {
   const { user, profile, refreshProfile } = useAuth();
+  const { notify } = useNotify();
+  const showMessage = (title, message) => notify(message, { type: 'error', title });
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [pendingActivities, setPendingActivities] = useState([]);

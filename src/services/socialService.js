@@ -94,6 +94,25 @@ export const getReceivedFriendRequests = async (userId) => {
   }
 };
 
+// IDs de usuarios a los que ya se les envió solicitud y sigue pendiente. Se usa
+// para pintar "Enviada" en vez de "Agregar" incluso después de recargar la
+// pantalla o volver a buscar a esa misma persona en otra sesión.
+export const getSentFriendRequests = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('friendships')
+      .select('addressee_id')
+      .eq('requester_id', userId)
+      .eq('status', 'PENDING');
+
+    if (error) throw error;
+    return { addresseeIds: (data || []).map((row) => row.addressee_id), error: null };
+  } catch (error) {
+    console.error('Error al obtener solicitudes enviadas:', error.message);
+    return { addresseeIds: [], error };
+  }
+};
+
 export const respondToFriendRequest = async (friendshipId, status) => {
   try {
     const { data, error } = await supabase
@@ -119,8 +138,8 @@ export const getFriendsList = async (userId) => {
         id,
         requester_id,
         addressee_id,
-        requester:profiles!friendships_requester_id_fkey(id, full_name, username, avatar_url),
-        addressee:profiles!friendships_addressee_id_fkey(id, full_name, username, avatar_url)
+        requester:profiles!friendships_requester_id_fkey(id, full_name, username, avatar_url, points),
+        addressee:profiles!friendships_addressee_id_fkey(id, full_name, username, avatar_url, points)
       `)
       .eq('status', 'ACCEPTED')
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
@@ -193,7 +212,7 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0, options = {}) 
         image_url,
         status,
         created_at,
-        author:profiles(id, full_name, username, avatar_url),
+        author:profiles(id, full_name, username, avatar_url, points),
         user_activity:user_activities(
           id,
           points_awarded,

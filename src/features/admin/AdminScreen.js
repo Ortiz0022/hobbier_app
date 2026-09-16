@@ -7,13 +7,12 @@ import {
   Image,
   ActivityIndicator,
   SafeAreaView,
-  Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import { getCategoryLabel } from '../../utils/category';
 import { TOKENS } from '../../theme/designTokens';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
@@ -26,6 +25,7 @@ import {
 
 export const AdminScreen = () => {
   const { isAdmin } = useAuth();
+  const { notify, confirm } = useNotify();
   const [activeTab, setActiveTab] = useState('reports'); // 'reports' | 'activities'
   const [loading, setLoading] = useState(false);
 
@@ -35,9 +35,6 @@ export const AdminScreen = () => {
   // Estado de actividades
   const [activities, setActivities] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  // Guarda el id del post pendiente de confirmar. Null = no hay confirmación abierta.
-  const [postToDelete, setPostToDelete] = useState(null);
-
 
   useEffect(() => {
     if (activeTab === 'reports') loadReports();
@@ -54,16 +51,22 @@ export const AdminScreen = () => {
   const handleResolveReport = async (postId, actionStatus) => {
     const { error } = await resolveReportedPostAdmin(postId, actionStatus);
     if (error) {
-      const msg = error.message || 'No se pudo resolver el reporte.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify(error.message || 'No se pudo resolver el reporte.', { type: 'error', title: 'Error' });
     } else {
       const actionText = actionStatus === 'ACTIVE' ? 'restaurada' : 'eliminada';
-      const msg = `La publicación fue ${actionText} correctamente.`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Éxito', msg);
+      notify(`La publicación fue ${actionText} correctamente.`, { type: 'success', title: 'Éxito' });
       loadReports();
     }
+  };
+
+  const handleDeletePost = async (postId) => {
+    const ok = await confirm({
+      title: '¿Eliminar la publicación?',
+      message: 'Dejará de verse en el feed y el autor perderá su evidencia. Esta acción no se puede deshacer.',
+      confirmLabel: 'Sí, eliminar',
+      destructive: true,
+    });
+    if (ok) handleResolveReport(postId, 'DELETED');
   };
 
   const loadActivities = async () => {
@@ -207,7 +210,7 @@ export const AdminScreen = () => {
 
                   <TouchableOpacity
                     style={[styles.btn, styles.btnDelete]}
-                    onPress={() => setPostToDelete(post.id)}
+                    onPress={() => handleDeletePost(post.id)}
                     activeOpacity={0.7}
                   >
                     <Text style={styles.btnTextDelete}>Eliminar</Text>
@@ -276,41 +279,6 @@ export const AdminScreen = () => {
       </ScrollView>
 
       {/* MODAL DE CREACIÓN DE ACTIVIDAD */}
-      {/* CONFIRMACIÓN DE BORRADO.
-          Modal propio en lugar de Alert.alert o window.confirm: ninguno de los dos
-          deja ordenar los botones, y en web Alert.alert de react-native-web ni
-          siquiera se muestra. */}
-      <Modal visible={postToDelete !== null} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>¿Eliminar la publicación?</Text>
-            <Text style={styles.confirmText}>
-              Dejará de verse en el feed y el autor perderá su evidencia. Esta acción no
-              se puede deshacer.
-            </Text>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.confirmDeleteBtn}
-                onPress={() => {
-                  handleResolveReport(postToDelete, 'DELETED');
-                  setPostToDelete(null);
-                }}
-              >
-                <Text style={styles.confirmDeleteText}>Sí, eliminar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelModalBtn}
-                onPress={() => setPostToDelete(null)}
-              >
-                <Text style={styles.cancelModalText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Mismo formulario que usa Perfil. `forCatalog` guarda la actividad con
           created_by NULL, para que entre al catálogo general en vez de quedar
           visible solo para el administrador que la creó. */}
@@ -638,58 +606,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: TOKENS.colors.inactiveText,
     fontWeight: '500',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 0,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#121B22',
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  confirmText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#8A908B',
-    marginBottom: 20,
-    marginTop: -8,
-  },
-  confirmDeleteBtn: {
-    flex: 1,
-    backgroundColor: '#A94403',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  confirmDeleteText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  cancelModalBtn: {
-    flex: 1,
-    // Cancelar no es destructivo: superficie neutra, como el botón "Mantener".
-    backgroundColor: '#F0F3F5',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  cancelModalText: {
-    color: '#121B22',
-    fontWeight: '600',
   },
 });
