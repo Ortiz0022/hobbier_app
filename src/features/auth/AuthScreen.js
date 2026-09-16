@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   SafeAreaView,
@@ -14,6 +13,7 @@ import {
 import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import { isSupabaseConfigured } from '../../config/supabase';
 import {
   validateEmail,
@@ -30,6 +30,7 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export const AuthScreen = () => {
   const { signIn, signUp, resetPassword, isUsernameTaken, loading } = useAuth();
+  const { notify } = useNotify();
   const [isRegister, setIsRegister] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -166,17 +167,9 @@ export const AuthScreen = () => {
         if (!data?.session) {
           const msg = '¡Registro recibido! Si en Supabase tienes activada la confirmación por correo, revisa tu bandeja de entrada o desactiva "Confirm email" en tu dashboard de Supabase (Authentication -> Providers -> Email).';
           setErrorMessage(msg);
-          if (Platform.OS === 'web') {
-            alert(msg);
-          } else {
-            Alert.alert('Registro en proceso', msg);
-          }
+          notify(msg, { type: 'info', title: 'Registro en proceso', duration: 6000 });
         } else {
-          if (Platform.OS === 'web') {
-            alert('¡Registro exitoso! Ya puedes usar la aplicación.');
-          } else {
-            Alert.alert('¡Éxito!', 'Cuenta creada correctamente.');
-          }
+          notify('Cuenta creada correctamente.', { type: 'success', title: '¡Éxito!' });
         }
       }
     } else {

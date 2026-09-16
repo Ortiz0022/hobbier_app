@@ -6,14 +6,13 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
-  Alert,
-  Platform,
 } from 'react-native';
 import { Text, TextInput } from './scaledText';
 import { createActivityAdmin } from '../services/adminService';
 import { fetchActivityCategories, fetchAllCatalogs } from '../services/catalogService';
 import { colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
+import { useNotify } from '../context/NotificationContext';
 
 /**
  * Formulario de creación de actividades, compartido por Perfil y Admin.
@@ -30,6 +29,7 @@ import { useAuth } from '../context/AuthContext';
  */
 export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = false }) => {
   const { user } = useAuth();
+  const { notify } = useNotify();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState('20');
@@ -89,9 +89,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
 
   const handleCreate = async () => {
     if (!title.trim() || !description.trim()) {
-      const msg = 'Por favor completa el título y la descripción.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Campos requeridos', msg);
+      notify('Por favor completa el título y la descripción.', { type: 'warning', title: 'Campos requeridos' });
       return;
     }
 
@@ -109,9 +107,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     setCreating(false);
 
     if (error) {
-      const msg = error.message || 'Error al crear la actividad.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify(error.message || 'Error al crear la actividad.', { type: 'error', title: 'Error' });
       return;
     }
 
@@ -119,9 +115,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     onClose();
     if (onCreated) onCreated(activity);
 
-    const msg = '¡Actividad creada correctamente!';
-    if (Platform.OS === 'web') alert(msg);
-    else Alert.alert('Éxito', msg);
+    notify('¡Actividad creada correctamente!', { type: 'success', title: 'Éxito' });
   };
 
   return (

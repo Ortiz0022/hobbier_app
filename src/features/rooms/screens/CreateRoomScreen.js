@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
   ActivityIndicator,
   Image,
-  Alert,
   Platform,
   Switch
 } from 'react-native';
@@ -18,10 +17,12 @@ import { useRoomActions } from '../hooks/useRoomActions';
 import { supabase } from '../../../config/supabase';
 import { getFriendsList } from '../../../services/socialService';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotify } from '../../../context/NotificationContext';
 import { colors, spacing, fonts, radii, input, primaryButton, card } from '../../../theme';
 
 export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   const { user } = useAuth();
+  const { notify } = useNotify();
   const { createRoom, uploadCover, inviteFriend } = useRoomActions();
   
   const [name, setName] = useState('');
@@ -134,17 +135,12 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
       // 4. Finalizar
       if (coverUploadError) {
-        if (Platform.OS !== 'web') {
-          Alert.alert('Aviso', 'La sala fue creada, pero no pudimos subir la portada. Podrás reintentarlo después.', [
-            { text: 'Aceptar', onPress: () => onRoomCreated(roomId) }
-          ]);
-        } else {
-          window.alert('La sala fue creada, pero no pudimos subir la portada. Podrás reintentarlo después.');
-          onRoomCreated(roomId);
-        }
-      } else {
-        onRoomCreated(roomId);
+        notify('La sala fue creada, pero no pudimos subir la portada. Podrás reintentarlo después.', {
+          type: 'warning',
+          title: 'Aviso',
+        });
       }
+      onRoomCreated(roomId);
 
     } catch (err) {
       console.error(err);
@@ -154,10 +150,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
     }
   };
 
-  const alert = (msg) => {
-    if (Platform.OS === 'web') window.alert(msg);
-    else Alert.alert('Aviso', msg);
-  };
+  const alert = (msg) => notify(msg, { type: 'error', title: 'Aviso' });
 
   if (loadingData) {
     return (

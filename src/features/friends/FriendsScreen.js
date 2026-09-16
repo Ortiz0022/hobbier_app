@@ -7,7 +7,6 @@ import {
   Image,
   ActivityIndicator,
   SafeAreaView,
-  Alert,
   Platform,
   Modal,
   Pressable,
@@ -15,10 +14,12 @@ import {
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import {
   searchUsersByUsername,
   sendFriendRequest,
   getReceivedFriendRequests,
+  getSentFriendRequests,
   respondToFriendRequest,
   getFriendsList,
   removeFriendship,
@@ -37,6 +38,7 @@ import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 
 export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const { user } = useAuth();
+  const { notify, confirm } = useNotify();
   const { isUserOnline } = usePresence();
   const [activeTab, setActiveTab] = useState(isProfileView ? 'friends' : 'search'); // 'friends', 'search', 'requests'
   const [loading, setLoading] = useState(false);
@@ -52,6 +54,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [sendingMap, setSendingMap] = useState({});
+  const [sentMap, setSentMap] = useState({});
 
   // Solicitudes
   const [requests, setRequests] = useState([]);
@@ -76,15 +79,33 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     loadFriends();
     loadRequests();
     loadRoomInvitations();
-    if (activeTab === 'search') loadSuggestions();
+    if (activeTab === 'search') {
+      loadSuggestions();
+      loadSentRequests();
+    }
   }, []);
 
   useEffect(() => {
     if (activeTab === 'requests') loadRequests();
     if (activeTab === 'friends') loadFriends();
     if (activeTab === 'rooms') loadRoomInvitations();
-    if (activeTab === 'search') loadSuggestions();
+    if (activeTab === 'search') {
+      loadSuggestions();
+      loadSentRequests();
+    }
   }, [activeTab]);
+
+  // Precarga quién ya tiene una solicitud pendiente de mi parte, para pintar
+  // "Enviada" en vez de "Agregar" aunque se recargue la pantalla o se repita
+  // la búsqueda en otra sesión.
+  const loadSentRequests = async () => {
+    const { addresseeIds } = await getSentFriendRequests(user.id);
+    setSentMap((prev) => {
+      const next = { ...prev };
+      addresseeIds.forEach((id) => { next[id] = true; });
+      return next;
+    });
+  };
 
   const loadSuggestions = async () => {
     setSuggestionsLoading(true);
@@ -120,13 +141,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     setSendingMap((prev) => ({ ...prev, [targetUserId]: false }));
 
     if (error) {
-      const msg = error.message || 'No se pudo enviar la solicitud.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Aviso', msg);
+      notify(error.message || 'No se pudo enviar la solicitud.', { type: 'error', title: 'Aviso' });
     } else {
-      const msg = 'Solicitud de amistad enviada correctamente.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('¡Éxito!', msg);
+      setSentMap((prev) => ({ ...prev, [targetUserId]: true }));
+      notify('Solicitud de amistad enviada correctamente.', { type: 'success', title: '¡Éxito!' });
     }
   };
 
@@ -138,9 +156,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const handleResponse = async (friendshipId, status) => {
     const { error } = await respondToFriendRequest(friendshipId, status);
     if (error) {
-      const msg = 'Error al responder a la solicitud.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify('Error al responder a la solicitud.', { type: 'error', title: 'Error' });
     } else {
       loadRequests();
       loadFriends();
@@ -155,17 +171,13 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   };
 
   const handleRemoveFriend = async (friendshipId, friendName) => {
-    const confirm = () => removeFriendship(friendshipId).then(loadFriends);
-    if (Platform.OS === 'web') {
-      if (window.confirm(`¿Estás seguro de eliminar a ${friendName} de tus amigos?`)) {
-        confirm();
-      }
-    } else {
-      Alert.alert('Eliminar amigo', `¿Deseas eliminar a ${friendName}?`, [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: confirm },
-      ]);
-    }
+    const ok = await confirm({
+      title: 'Eliminar amigo',
+      message: `¿Deseas eliminar a ${friendName} de tus amigos?`,
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (ok) removeFriendship(friendshipId).then(loadFriends);
   };
 
   const openFriendProfile = async (friendProfile) => {
@@ -430,21 +442,28 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                     <Text style={styles.userName}>{targetUser.full_name}</Text>
                     <Text style={styles.userHandle}>@{targetUser.username}</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={() => handleSendRequest(targetUser.id)}
-                    disabled={sendingMap[targetUser.id]}
-                    activeOpacity={0.8}
-                  >
-                    {sendingMap[targetUser.id] ? (
-                      <ActivityIndicator color="#0C8AA6" size="small" />
-                    ) : (
-                      <>
-                        <Feather name="user-plus" size={16} color="#0C8AA6" />
-                        <Text style={styles.addBtnText}>Agregar</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+                  {sentMap[targetUser.id] ? (
+                    <View style={styles.sentBadge}>
+                      <Feather name="check" size={14} color="#8A908B" />
+                      <Text style={styles.sentBadgeText}>Enviada</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.addBtn}
+                      onPress={() => handleSendRequest(targetUser.id)}
+                      disabled={sendingMap[targetUser.id]}
+                      activeOpacity={0.8}
+                    >
+                      {sendingMap[targetUser.id] ? (
+                        <ActivityIndicator color="#0C8AA6" size="small" />
+                      ) : (
+                        <>
+                          <Feather name="user-plus" size={16} color="#0C8AA6" />
+                          <Text style={styles.addBtnText}>Agregar</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))}
 
@@ -490,21 +509,28 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                             </Text>
                           </View>
                         </View>
-                        <TouchableOpacity
-                          style={styles.addBtn}
-                          onPress={() => handleSendRequest(sug.profile.id)}
-                          disabled={sendingMap[sug.profile.id]}
-                          activeOpacity={0.8}
-                        >
-                          {sendingMap[sug.profile.id] ? (
-                            <ActivityIndicator color="#0C8AA6" size="small" />
-                          ) : (
-                            <>
-                              <Feather name="user-plus" size={16} color="#0C8AA6" />
-                              <Text style={styles.addBtnText}>Agregar</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
+                        {sentMap[sug.profile.id] ? (
+                          <View style={styles.sentBadge}>
+                            <Feather name="check" size={14} color="#8A908B" />
+                            <Text style={styles.sentBadgeText}>Enviada</Text>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.addBtn}
+                            onPress={() => handleSendRequest(sug.profile.id)}
+                            disabled={sendingMap[sug.profile.id]}
+                            activeOpacity={0.8}
+                          >
+                            {sendingMap[sug.profile.id] ? (
+                              <ActivityIndicator color="#0C8AA6" size="small" />
+                            ) : (
+                              <>
+                                <Feather name="user-plus" size={16} color="#0C8AA6" />
+                                <Text style={styles.addBtnText}>Agregar</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
                       </View>
                     ))
                   )}
@@ -789,6 +815,21 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     color: '#0C8AA6',
+    fontSize: 13,
+    fontFamily: 'Poppins_700Bold',
+    fontWeight: '700',
+  },
+  sentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F3F5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  sentBadgeText: {
+    color: '#8A908B',
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',

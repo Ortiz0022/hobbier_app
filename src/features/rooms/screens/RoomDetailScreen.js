@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   FlatList,
-  Alert,
   Platform,
   Modal,
   Pressable
@@ -22,6 +21,7 @@ import { useRoomChat } from '../hooks/useRoomChat';
 import { useEvidenceUploader } from '../hooks/useEvidenceUploader';
 import { useRoomActions } from '../hooks/useRoomActions';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotify } from '../../../context/NotificationContext';
 
 import { ChatThread } from '../components/ChatThread';
 import { RoomRankingItem } from '../components/RoomRankingItem';
@@ -31,6 +31,7 @@ import { isRoomClosed as getIsRoomClosed } from '../utils/roomHelpers';
 
 export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { user } = useAuth();
+  const { notify, confirm } = useNotify();
   const { room, ranking, loading: detailsLoading, error: detailsError, refetch } = useRoomDetails(roomId);
   const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useRoomChat(roomId);
   const { submitEvidence, uploading: evidenceUploading } = useEvidenceUploader(roomId);
@@ -106,36 +107,27 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
     }
   };
 
-  const confirmClose = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.')) {
-        closeRoom(roomId).then(refetch);
-      }
-    } else {
-      Alert.alert('Cerrar sala', '¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar sala', style: 'destructive', onPress: () => closeRoom(roomId).then(refetch) }
-      ]);
-    }
+  const confirmClose = async () => {
+    const ok = await confirm({
+      title: 'Cerrar sala',
+      message: '¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.',
+      confirmLabel: 'Cerrar sala',
+      destructive: true,
+    });
+    if (ok) closeRoom(roomId).then(refetch);
   };
 
-  const confirmDelete = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('¿Eliminar la sala? Esta acción no se puede deshacer.')) {
-        deleteRoom(roomId).then(onBack);
-      }
-    } else {
-      Alert.alert('Eliminar sala', '¿Eliminar la sala? Esta acción no se puede deshacer.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: () => deleteRoom(roomId).then(onBack) }
-      ]);
-    }
+  const confirmDelete = async () => {
+    const ok = await confirm({
+      title: 'Eliminar sala',
+      message: '¿Eliminar la sala? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (ok) deleteRoom(roomId).then(onBack);
   };
 
-  const alert = (msg) => {
-    if (Platform.OS === 'web') window.alert(msg);
-    else Alert.alert('Aviso', msg);
-  };
+  const alert = (msg) => notify(msg, { type: 'error', title: 'Aviso' });
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>

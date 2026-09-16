@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   SafeAreaView,
@@ -14,6 +13,7 @@ import {
 import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import {
   validateNewPassword,
   validatePasswordConfirmation,
@@ -28,6 +28,7 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 // nueva; no se le vuelve a pedir la anterior.
 export const ResetPasswordScreen = () => {
   const { updatePassword, signOut, loading } = useAuth();
+  const { notify } = useNotify();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -84,9 +85,7 @@ export const ResetPasswordScreen = () => {
       return;
     }
 
-    const msg = 'Contraseña actualizada. Ya puedes seguir usando la app.';
-    if (Platform.OS === 'web') alert(msg);
-    else Alert.alert('¡Listo!', msg);
+    notify('Contraseña actualizada. Ya puedes seguir usando la app.', { type: 'success', title: '¡Listo!' });
   };
 
   return (

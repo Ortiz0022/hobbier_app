@@ -17,6 +17,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { PresenceProvider } from './src/context/PresenceContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { SplashScreen } from './src/features/auth/SplashScreen';
 import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
@@ -202,11 +203,13 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <PresenceProvider>
-        <MainApp />
-      </PresenceProvider>
-    </AuthProvider>
+    <NotificationProvider>
+      <AuthProvider>
+        <PresenceProvider>
+          <MainApp />
+        </PresenceProvider>
+      </AuthProvider>
+    </NotificationProvider>
   );
 }
 

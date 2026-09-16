@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, SafeAreaView, Alert, Platform } from 'react-native';
+import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import {
   getRecommendedActivity,
   acceptActivity,
@@ -22,6 +23,7 @@ export const RecommendationScreen = ({
   onNavigateToActivities,
 }) => {
   const { user, profile } = useAuth();
+  const { notify } = useNotify();
   const [loadingRec, setLoadingRec] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [recommended, setRecommended] = useState(null);
@@ -63,9 +65,7 @@ export const RecommendationScreen = ({
 
     if (error) {
       setModalVisible(false);
-      const msg = 'No pudimos revelar una misión. Ajusta tus preferencias e inténtalo de nuevo.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify('No pudimos revelar una misión. Ajusta tus preferencias e inténtalo de nuevo.', { type: 'error', title: 'Error' });
     } else {
       setRecommended(activity);
     }
@@ -80,9 +80,7 @@ export const RecommendationScreen = ({
     setModalVisible(false);
 
     if (error) {
-      const msg = 'No pudimos añadir esta misión a tu mazo.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify('No pudimos añadir esta misión a tu mazo.', { type: 'error', title: 'Error' });
     } else {
       loadHomeData();
       if (onActivityAccepted) onActivityAccepted(userActivity);
@@ -132,9 +130,7 @@ export const RecommendationScreen = ({
           setAccepting(false);
 
           if (error) {
-            const msg = 'No pudimos añadir esta misión a tu mazo.';
-            if (Platform.OS === 'web') alert(msg);
-            else Alert.alert('Error', msg);
+            notify('No pudimos añadir esta misión a tu mazo.', { type: 'error', title: 'Error' });
           } else {
             loadHomeData();
             if (onActivityAccepted) onActivityAccepted(userActivity);

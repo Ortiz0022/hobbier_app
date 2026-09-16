@@ -8,13 +8,13 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Modal,
-  Alert,
   Platform,
   RefreshControl,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
@@ -65,6 +65,7 @@ const FEED_PAGE_SIZE = 10;
 
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
+  const { notify } = useNotify();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -106,9 +107,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     if (!user?.id || !doAlsoPost) return;
     const targetActivityId = doAlsoPost.activityId || doAlsoPost.user_activity?.activity?.id;
     if (!targetActivityId) {
-      const msg = 'Esta actividad no está disponible para agregar en este momento.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Aviso', msg);
+      notify('Esta actividad no está disponible para agregar en este momento.', { type: 'warning', title: 'Aviso' });
       return;
     }
 
@@ -119,9 +118,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
       setDoAlsoModalVisible(false);
 
       if (error) {
-        const msg = 'No pudimos agregar la misión a tus actividades. Inténtalo de nuevo.';
-        if (Platform.OS === 'web') alert(msg);
-        else Alert.alert('Error', msg);
+        notify('No pudimos agregar la misión a tus actividades. Inténtalo de nuevo.', { type: 'error', title: 'Error' });
         return;
       }
 
@@ -248,15 +245,14 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     setReportModalVisible(false);
 
     if (error) {
-      const msg = error.message || 'No se pudo procesar el reporte.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify(error.message || 'No se pudo procesar el reporte.', { type: 'error', title: 'Error' });
     } else {
       // Ocultar inmediatamente del feed local (ACTIVE -> REPORTED)
       setPosts((prev) => prev.filter((p) => p.id !== selectedPost.id));
-      const msg = 'La publicación ha sido reportada y fue ocultada inmediatamente del feed.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Reporte Enviado', msg);
+      notify('La publicación ha sido reportada y fue ocultada inmediatamente del feed.', {
+        type: 'success',
+        title: 'Reporte enviado',
+      });
     }
   };
 

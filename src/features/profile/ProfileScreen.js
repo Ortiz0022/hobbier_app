@@ -7,7 +7,6 @@ import {
   Image,
   ActivityIndicator,
   SafeAreaView,
-  Alert,
   Platform,
   Modal,
   Pressable,
@@ -16,6 +15,7 @@ import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
+import { useNotify } from '../../context/NotificationContext';
 import { supabase } from '../../config/supabase';
 import { uploadAvatarImage, getUserActivities } from '../../services/activityService';
 import { getUserPosts, getFriendsList } from '../../services/socialService';
@@ -56,6 +56,7 @@ const COLORS = {
 
 export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const { profile, refreshProfile, signOut } = useAuth();
+  const { notify } = useNotify();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -103,9 +104,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        const msg = 'Se requiere permiso para acceder a tus fotos.';
-        if (Platform.OS === 'web') alert(msg);
-        else Alert.alert('Permiso requerido', msg);
+        notify('Se requiere permiso para acceder a tus fotos.', { type: 'warning', title: 'Permiso requerido' });
         return;
       }
 
@@ -153,13 +152,9 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
       setEditing(false);
       setNewImageUri(null);
 
-      const msg = 'Perfil actualizado correctamente con tu nueva foto.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Éxito', msg);
+      notify('Perfil actualizado correctamente con tu nueva foto.', { type: 'success', title: 'Éxito' });
     } catch (err) {
-      const msg = err.message || 'Error al actualizar perfil.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      notify(err.message || 'Error al actualizar perfil.', { type: 'error', title: 'Error' });
     } finally {
       setSaving(false);
     }
