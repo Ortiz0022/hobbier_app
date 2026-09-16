@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Feather from '@expo/vector-icons/Feather';
@@ -47,6 +48,7 @@ export const PendingActivityScreen = ({
   const [pendingActivities, setPendingActivities] = useState([]);
   const [completedActivities, setCompletedActivities] = useState([]);
   const [activeTab, setActiveTab] = useState('now');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [evidenceTarget, setEvidenceTarget] = useState(null);
   const [evidenceImageUri, setEvidenceImageUri] = useState(null);
   const [isRepeating, setIsRepeating] = useState(false);
@@ -203,44 +205,43 @@ export const PendingActivityScreen = ({
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ActivitiesHeader profile={profile} />
 
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'now' && styles.activeTab]}
-            onPress={() => setActiveTab('now')}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === 'now' }}
+        <View style={styles.filterRow}>
+          <Text style={styles.filterLabel}>Mostrando:</Text>
+          <TouchableOpacity 
+            style={styles.filterDropdownBtn} 
+            onPress={() => setShowFilterDropdown(true)}
+            activeOpacity={0.7}
           >
-            <Feather
-              name="target"
-              size={14}
-              color={activeTab === 'now' ? colors.primary : colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'now' && styles.activeTabText]}>Misiones</Text>
-            <View style={[styles.tabCount, activeTab === 'now' && styles.activeTabCount]}>
-              <Text style={[styles.tabCountText, activeTab === 'now' && styles.activeTabCountText]}>
-                {pendingActivities.length}
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-            onPress={() => setActiveTab('history')}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === 'history' }}
-          >
-            <Feather
-              name="award"
-              size={14}
-              color={activeTab === 'history' ? colors.accentDark : colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Logros</Text>
-            <View style={[styles.tabCount, activeTab === 'history' && styles.activeTabCount]}>
-              <Text style={[styles.tabCountText, activeTab === 'history' && styles.activeTabCountText]}>
-                {completedActivities.length}
-              </Text>
-            </View>
+            <Text style={styles.filterDropdownText}>
+              {activeTab === 'now' ? 'Misiones pendientes' : 'Misiones completadas'}
+            </Text>
+            <Feather name="chevron-down" size={14} color={colors.primaryDark} />
           </TouchableOpacity>
         </View>
+
+        <Modal 
+          visible={showFilterDropdown} 
+          transparent 
+          animationType="slide" 
+          onRequestClose={() => setShowFilterDropdown(false)}
+        >
+          <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilterDropdown(false)}>
+            <View style={styles.filterMenu}>
+              <View style={styles.grabber} />
+              <Text style={styles.filterModalTitle}>Ordenar por</Text>
+
+              <TouchableOpacity style={styles.filterMenuItem} onPress={() => { setActiveTab('now'); setShowFilterDropdown(false); }}>
+                <Text style={[styles.filterMenuText, activeTab === 'now' && styles.filterMenuTextActive]}>Misiones pendientes</Text>
+                <Feather name={activeTab === 'now' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'now' ? colors.primary : colors.textMuted} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.filterMenuItem} onPress={() => { setActiveTab('history'); setShowFilterDropdown(false); }}>
+                <Text style={[styles.filterMenuText, activeTab === 'history' && styles.filterMenuTextActive]}>Misiones completadas</Text>
+                <Feather name={activeTab === 'history' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'history' ? colors.primary : colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         {activeTab === 'now' ? (
           <View>
@@ -380,25 +381,82 @@ const styles = StyleSheet.create({
     width: '100%', maxWidth: 560, alignSelf: 'center',
     paddingHorizontal: 20, paddingTop: 14, paddingBottom: 38,
   },
-  tabs: {
-    flexDirection: 'row', gap: 4, backgroundColor: colors.surfaceMuted,
-    borderRadius: 17, padding: 4, marginBottom: 18,
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
-  tab: {
-    flex: 1, minHeight: 38, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', gap: 7, borderRadius: 13,
+  filterLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginRight: 8,
   },
-  activeTab: { backgroundColor: colors.surface },
-  tabText: { color: colors.textMuted, fontSize: 13, fontWeight: '500' },
-  activeTabText: { color: colors.primaryDark },
-  tabCount: {
-    minWidth: 20, height: 20, borderRadius: 10,
-    backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 5,
+  filterDropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  activeTabCount: { backgroundColor: colors.primarySoft },
-  tabCountText: { color: colors.textMuted, fontSize: 9, fontWeight: '600' },
-  activeTabCountText: { color: colors.primary },
+  filterDropdownText: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: '500',
+    marginRight: 6,
+  },
+  filterOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  filterMenu: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    width: '100%',
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  filterMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  filterMenuText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  filterMenuTextActive: {
+    color: colors.primaryDark,
+    fontWeight: '500',
+  },
+  grabber: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#D1D5DB',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  filterModalTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primaryDark,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   boardHeading: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', gap: 12,

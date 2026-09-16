@@ -22,7 +22,9 @@ import {
   respondToFriendRequest,
   getFriendsList,
   removeFriendship,
+  getUserPosts,
 } from '../../services/socialService';
+import { getUserActivities } from '../../services/activityService';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { roomsService } from '../../services/roomsService';
 
