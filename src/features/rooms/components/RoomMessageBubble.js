@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   bubbleWrapper: {
-    maxWidth: '75%',
+    maxWidth: '85%',
   },
   bubbleWrapperMe: {
     alignItems: 'flex-end',
@@ -281,13 +281,13 @@ const styles = StyleSheet.create({
   },
   evidenceImage: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 0.75,
     borderRadius: radii.input,
     backgroundColor: colors.surfaceMuted,
   },
   evidenceImagePlaceholder: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 0.75,
     borderRadius: radii.input,
     backgroundColor: colors.surfaceMuted,
   },

@@ -10,6 +10,8 @@ import {
   FlatList,
   Alert,
   Platform,
+  Modal,
+  Pressable
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
@@ -36,6 +38,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { url: coverUrl } = useSignedUrl('room-images', room?.image_path);
 
   const [activeTab, setActiveTab] = useState('RETO'); // 'RETO', 'CHAT', 'RANKING'
+  const [adminModalVisible, setAdminModalVisible] = useState(false);
 
   if (detailsLoading && !room) {
     return (
@@ -186,7 +189,8 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
           <Text style={styles.challengeDesc}>{room.challenge?.description}</Text>
         )}
         <View style={styles.pointsPill}>
-          <Text style={styles.pointsPillText}>+{room.challenge?.points_awarded || 0} pts por avance</Text>
+          <Feather name="star" size={12} color={colors.primaryDark} style={{ marginRight: 4 }} />
+          <Text style={styles.pointsPillText}>+{room.challenge?.points_awarded || 0} pts</Text>
         </View>
       </View>
 
@@ -207,19 +211,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         </TouchableOpacity>
       )}
 
-      {isOwner && (
-        <View style={styles.adminActions}>
-          <Text style={styles.sectionTitle}>Administración</Text>
-          {!isClosed && (
-            <TouchableOpacity style={styles.closeBtn} onPress={confirmClose} disabled={actionLoading}>
-              <Text style={styles.closeBtnText}>Cerrar Reto</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete} disabled={actionLoading}>
-            <Text style={styles.deleteBtnText}>Eliminar Sala</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+
     </ScrollView>
   );
 
@@ -266,7 +258,13 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{room.name}</Text>
-        <View style={{ width: 24 }} />
+        {isOwner ? (
+          <TouchableOpacity onPress={() => setAdminModalVisible(true)} style={{ width: 24, alignItems: 'center' }}>
+            <Feather name="more-horizontal" size={24} color={colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
       
       {renderTabs()}
@@ -276,6 +274,40 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         {activeTab === 'CHAT' && renderChatTab()}
         {activeTab === 'RANKING' && renderRankingTab()}
       </View>
+
+      <Modal
+        visible={adminModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAdminModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setAdminModalVisible(false)}>
+          <Pressable style={styles.modalContent}>
+            <View style={styles.modalGrabber} />
+            <Text style={styles.modalTitle}>Administración de Sala</Text>
+            
+            {!isClosed && (
+              <TouchableOpacity 
+                style={styles.modalActionBtn} 
+                onPress={() => { setAdminModalVisible(false); confirmClose(); }} 
+                disabled={actionLoading}
+              >
+                <Feather name="x-circle" size={18} color={colors.text} style={{marginRight: 10}} />
+                <Text style={styles.modalActionText}>Cerrar Reto</Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity 
+              style={[styles.modalActionBtn, styles.modalDeleteBtn]} 
+              onPress={() => { setAdminModalVisible(false); confirmDelete(); }} 
+              disabled={actionLoading}
+            >
+              <Feather name="trash-2" size={18} color={colors.danger} style={{marginRight: 10}} />
+              <Text style={styles.modalDeleteText}>Eliminar Sala</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -310,27 +342,21 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
-    backgroundColor: colors.surface,
+    flexDirection: 'row', gap: 4, backgroundColor: colors.surfaceMuted,
+    borderRadius: 17, padding: 4, marginHorizontal: 16, marginBottom: 8, marginTop: 8,
   },
   tabButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+    flex: 1, minHeight: 38, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', borderRadius: 13,
   },
   tabButtonActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: colors.textMuted,
+    color: colors.textMuted, fontSize: 13, fontWeight: '500',
   },
   tabTextActive: {
-    color: colors.primary,
+    color: colors.primaryDark,
   },
   contentArea: {
     flex: 1,
@@ -385,8 +411,8 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
   },
   challengeBox: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.card,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 24,
     padding: spacing.lg,
     marginBottom: spacing.xl,
   },
@@ -410,19 +436,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   pointsPill: {
-    backgroundColor: colors.accentSoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radii.pill,
+    marginTop: spacing.xs,
   },
   pointsPillText: {
-    color: colors.danger,
+    color: colors.primaryDark,
     fontWeight: 'bold',
     fontSize: 12,
   },
   submitEvidenceBtn: {
     ...primaryButton,
+    backgroundColor: colors.accent,
+    borderRadius: 999,
     flexDirection: 'row',
   },
   submitEvidenceBtnText: {
@@ -476,5 +507,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textMuted,
     marginTop: spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalGrabber: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: fonts.heading,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: colors.surfaceMuted,
+    borderRadius: 999, // Pill shape
+    marginBottom: 12,
+  },
+  modalActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  modalDeleteBtn: {
+    backgroundColor: 'rgba(255, 59, 48, 0.05)', // pastel salmon
+    borderColor: 'rgba(255, 59, 48, 0.3)', // subtle red border
+  },
+  modalDeleteText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.danger,
   }
 });

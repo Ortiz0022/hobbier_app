@@ -3,22 +3,37 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors, radii, spacing, fonts } from '../../../theme';
 
+
+
 export const RoomRankingItem = ({ user, position, isFinal }) => {
-  const getMedalColor = () => {
-    switch(position) {
-      case 1: return '#FFD700'; // Oro
-      case 2: return '#C0C0C0'; // Plata
-      case 3: return '#CD7F32'; // Bronce
-      default: return colors.surfaceMuted;
-    }
+  const isFirst = position === 1;
+  const isSecond = position === 2;
+  const isThird = position === 3;
+  const isTop3 = position <= 3;
+
+  const getContainerStyle = () => {
+    if (isFirst) return [styles.container, styles.firstPlaceContainer];
+    if (isSecond || isThird) return [styles.container, styles.podiumContainer];
+    return [styles.container, styles.defaultContainer];
+  };
+
+  const getAvatarStyle = () => {
+    if (isFirst) return [styles.avatar, { borderWidth: 2, borderColor: colors.accent }];
+    if (isSecond) return [styles.avatar, { borderWidth: 2, borderColor: colors.primaryDark }];
+    return styles.avatar;
   };
 
   return (
-    <View style={styles.container}>
+    <View style={getContainerStyle()}>
       <View style={styles.positionContainer}>
-        {position <= 3 ? (
-          <View style={[styles.medal, { backgroundColor: getMedalColor() }]}>
-            <Text style={styles.medalText}>{position}</Text>
+        {isFirst ? (
+          <View style={styles.firstPlaceMedal}>
+            <Feather name="star" size={12} color={colors.accent} style={{ marginRight: 2 }} />
+            <Text style={[styles.medalText, { color: colors.accent }]}>1</Text>
+          </View>
+        ) : isTop3 ? (
+          <View style={[styles.medal, isSecond ? styles.secondMedal : styles.thirdMedal]}>
+            <Text style={[styles.medalText, { color: isSecond ? colors.primaryDark : colors.textMuted }]}>{position}</Text>
           </View>
         ) : (
           <Text style={styles.positionText}>{position}</Text>
@@ -27,9 +42,9 @@ export const RoomRankingItem = ({ user, position, isFinal }) => {
 
       <View style={styles.avatarContainer}>
         {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+          <Image source={{ uri: user.avatar_url }} style={getAvatarStyle()} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View style={[styles.avatarPlaceholder, getAvatarStyle()]}>
             <Text style={styles.avatarPlaceholderText}>
               {user.username?.charAt(0)?.toUpperCase()}
             </Text>
@@ -43,8 +58,11 @@ export const RoomRankingItem = ({ user, position, isFinal }) => {
       </View>
 
       <View style={styles.pointsContainer}>
-        <Text style={styles.points}>{user.total_points}</Text>
-        <Text style={styles.pointsLabel}>pts</Text>
+        <View style={[styles.pointsBadge, isFirst ? styles.pointsBadgeFirst : isSecond ? styles.pointsBadgeSecond : styles.pointsBadgeDefault]}>
+          <Text style={[styles.pointsBadgeText, isFirst ? styles.pointsTextFirst : isSecond ? styles.pointsTextSecond : styles.pointsTextDefault]}>
+            +{user.total_points} pts
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -54,12 +72,37 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: radii.card,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  firstPlaceContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 18, 
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 0,
+  },
+  podiumContainer: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 0,
+  },
+  defaultContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.surfaceMuted,
+    elevation: 0,
   },
   positionContainer: {
-    width: 40,
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -68,15 +111,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textMuted,
   },
+  firstPlaceMedal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: '#FFFFFF',
+  },
   medal: {
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+  },
+  secondMedal: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.primaryDark,
+  },
+  thirdMedal: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.textMuted,
   },
   medalText: {
-    color: '#FFF',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -84,51 +145,67 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: colors.surfaceMuted,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarPlaceholderText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: colors.textMuted,
+    color: colors.text,
   },
   infoContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: colors.text,
     fontFamily: fonts.heading,
+    color: colors.text,
   },
   username: {
-    fontSize: 13,
-    color: colors.textMuted,
+    fontSize: 12,
     marginTop: 2,
+    color: colors.textMuted,
   },
   pointsContainer: {
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  points: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: fonts.heading,
+  pointsBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+  },
+  pointsBadgeFirst: {
+    backgroundColor: colors.accent,
+  },
+  pointsBadgeSecond: {
+    backgroundColor: colors.primarySoft,
+  },
+  pointsBadgeDefault: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  pointsBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  pointsTextFirst: {
+    color: '#FFFFFF',
+  },
+  pointsTextSecond: {
     color: colors.primaryDark,
   },
-  pointsLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '500',
+  pointsTextDefault: {
+    color: colors.text,
   },
 });
