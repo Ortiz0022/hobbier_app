@@ -1,10 +1,10 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import React from "react";
+import { StyleSheet, TouchableOpacity, View, Platform } from "react-native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 // Envoltorio con tope de escalado: sin él, la letra grande del sistema
 // desbordaría la tarjeta. Ver la sección de accesibilidad del README.
-import { Text } from './scaledText';
-import { TOKENS } from '../theme/designTokens';
+import { Text } from "./scaledText";
+import { TOKENS } from "../theme/designTokens";
 
 interface SelectableCardProps {
   label: string;
@@ -23,16 +23,17 @@ interface SelectableCardProps {
 /**
  * Tarjeta seleccionable para gustos, objetivos y recursos.
  *
- * Elegida, la tarjeta se queda BLANCA con borde cian y un tilde en la esquina,
- * en vez de rellenarse de color. Así el círculo pastel del icono se sigue
- * viendo (con relleno pleno quedaba tapado) y, sobre todo, la selección no
- * depende solo del color: el tilde la marca también por forma, que es lo que
- * necesita quien no distingue bien el cian del gris.
+ * Es una pastilla ALARGADA horizontal: icono a la izquierda, nombre al lado y
+ * el tilde en la esquina derecha. Ocupa la fila entera, así que la lista se lee
+ * como un formulario y no como una rejilla de cuadros.
  *
- * NO trae ancho propio a propósito. Crece para llenar la fila (`flexGrow`) con
- * un ancho mínimo, así que el contenedor decide cuántas columnas caben: dos en
- * un teléfono, más en pantallas anchas, y una sola opción suelta al final ocupa
- * la fila entera en vez de quedar a media pantalla.
+ * Elegida, la tarjeta se queda BLANCA con borde cian, en vez de rellenarse de
+ * color. Así el círculo pastel del icono se sigue viendo y, sobre todo, la
+ * selección no depende solo del color: el tilde la marca también por forma, que
+ * es lo que necesita quien no distingue bien el cian del gris.
+ *
+ * Trae flexBasis '100%' a propósito: cada opción ocupa una fila completa y el
+ * contenedor no decide cuántas columnas caben.
  */
 export const SelectableCard: React.FC<SelectableCardProps> = ({
   label,
@@ -44,7 +45,10 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
   <TouchableOpacity
     activeOpacity={0.85}
     onPress={onPress}
-    style={[styles.card, isSelected ? styles.cardSelected : styles.cardUnselected]}
+    style={[
+      styles.card,
+      isSelected ? styles.cardSelected : styles.cardUnselected,
+    ]}
     // Una opción es un interruptor, no un botón: quien use lector de pantalla
     // necesita oír si está activada, no solo su nombre.
     accessibilityRole="switch"
@@ -53,7 +57,11 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
   >
     {isSelected ? (
       <View style={styles.check}>
-        <MaterialCommunityIcons name="check" size={14} color={TOKENS.colors.white} />
+        <MaterialCommunityIcons
+          name="check"
+          size={14}
+          color={TOKENS.colors.white}
+        />
       </View>
     ) : null}
 
@@ -67,26 +75,23 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
       </View>
     ) : null}
 
-    <Text style={[styles.label, isSelected ? styles.labelSelected : null]}>{label}</Text>
+    <Text style={[styles.label, isSelected ? styles.labelSelected : null]}>
+      {label}
+    </Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   card: {
-    // flexBasis 0 + flexGrow 1: el corte de fila lo decide `minWidth`, y luego
-    // las tarjetas de esa fila se reparten el ancho a partes iguales.
-    flexBasis: 0,
-    flexGrow: 1,
-    minWidth: 140,
-    // Alto mínimo para que la rejilla llene la pantalla en vez de amontonarse
-    // arriba dejando un hueco muerto sobre el botón.
-    minHeight: 132,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: TOKENS.spacing.sm + 4,
-    paddingVertical: TOKENS.spacing.lg,
-    paddingHorizontal: TOKENS.spacing.sm + 2,
-    borderRadius: TOKENS.radius.card,
+    // Fila completa: una opción por renglón, en pastilla alargada.
+    flexBasis: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: TOKENS.spacing.md,
+    paddingVertical: TOKENS.spacing.md,
+    paddingRight: TOKENS.spacing.lg + 4,
+    paddingLeft: TOKENS.spacing.md + 2,
+    borderRadius: TOKENS.radius.full,
     // El grosor es el MISMO en los dos estados y solo cambia el color: si
     // creciera al seleccionar, la tarjeta se movería medio píxel y la fila
     // entera daría un tirón al tocarla.
@@ -102,7 +107,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     ...Platform.select({
       web: {
-        boxShadow: '0px 3px 8px rgba(12, 138, 166, 0.22)',
+        boxShadow: "0px 3px 8px rgba(12, 138, 166, 0.22)",
       },
       default: {
         shadowColor: TOKENS.colors.active,
@@ -113,31 +118,32 @@ const styles = StyleSheet.create({
     }),
   },
   check: {
-    position: 'absolute',
+    position: "absolute",
     top: TOKENS.spacing.sm,
     right: TOKENS.spacing.sm,
     width: 22,
     height: 22,
     borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: TOKENS.colors.active,
   },
   iconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TOKENS.colors.inactiveText,
-    textAlign: 'center',
+    textAlign: "left",
+    flexShrink: 1,
   },
   labelSelected: {
     color: TOKENS.colors.textDark,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

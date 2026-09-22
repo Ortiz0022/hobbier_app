@@ -43,6 +43,10 @@ export const AuthScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [sendingReset, setSendingReset] = useState(false);
+  // Indicador del envío del formulario (login o registro), local a esta pantalla.
+  // El `loading` del contexto remonta toda la app; este solo cambia el botón y así
+  // un intento fallido NO borra los mensajes de error ni lo que escribió el usuario.
+  const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
 
   // Al escribir se borra el error de ESE campo. Mantenerlo mientras el usuario
@@ -190,6 +194,17 @@ export const AuthScreen = () => {
       if (error) {
         setErrorMessage(describeAuthError(error));
       }
+    }
+  };
+
+  // Envolvente del envío en modos LOGIN y REGISTRO: activa el indicador local
+  // alrededor del intento y SIEMPRE lo apaga al terminar, haya fallado o no.
+  const runSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await handleSubmit();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -373,10 +388,10 @@ export const AuthScreen = () => {
 
           <TouchableOpacity
             style={[styles.primaryButton, isRegister && !isForgot && styles.registerButton]}
-            onPress={isForgot ? handleForgotPassword : handleSubmit}
-            disabled={loading || sendingReset}
+            onPress={isForgot ? handleForgotPassword : runSubmit}
+            disabled={loading || sendingReset || submitting}
           >
-            {loading || sendingReset ? (
+            {loading || sendingReset || submitting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.primaryButtonText}>

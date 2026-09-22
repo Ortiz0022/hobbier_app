@@ -65,9 +65,11 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Registrar un nuevo usuario
+  // Registrar un nuevo usuario.
+  // Igual que en signIn: NO toca el `loading` global, que sustituye toda la app
+  // por "Cargando..."; un registro fallido remontaría el formulario en blanco y
+  // perdería el mensaje de error.
   const signUp = async ({ email, password, fullName, username, birthDate }) => {
-    setLoading(true);
     try {
       const cleanEmail = email.trim().toLowerCase();
       const cleanUsername = username.trim().toLowerCase();
@@ -96,14 +98,13 @@ export const AuthProvider = ({ children }) => {
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
-
-  // Iniciar sesión
+  // NO toca el `loading` global: ese solo es para restaurar la sesión al arrancar,
+  // y la app completa se sustituye por "Cargando..." mientras esté activo. Si
+  // encendiéramos aquí, un intento fallido desmontaría el formulario de login y lo
+  // remontaría en blanco ("recarga la página"), borrando el mensaje de error.
   const signIn = async ({ email, password }) => {
-    setLoading(true);
     try {
       const cleanEmail = email.trim().toLowerCase();
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -119,8 +120,6 @@ export const AuthProvider = ({ children }) => {
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
 

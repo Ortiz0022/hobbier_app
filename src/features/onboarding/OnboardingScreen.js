@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -75,6 +76,12 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   // Paso actual del asistente (0 = fecha de nacimiento).
   const [step, setStep] = useState(0);
 
+  // Quien ya eligió preferencias alguna vez viene a EDITARLAS: no tiene sentido
+  // pasarle otra vez por cuatro pantallas para cambiar un gusto. Ve todo junto
+  // en una sola, con un único botón de guardar. La primera vez sigue siendo el
+  // asistente paso a paso.
+  const [modoEdicion, setModoEdicion] = useState(false);
+
   // Progreso de la transición de entrada del paso: 0 = recién montado (corrido
   // y transparente), 1 = en su sitio.
   const entrada = useRef(new Animated.Value(1)).current;
@@ -112,6 +119,11 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       setSelectedLikes(prefs.userLikes);
       setSelectedInterests(prefs.userInterests);
       setSelectedResources(prefs.userResources);
+      // La fecha no sirve para saberlo: el registro ya la pide, así que todos la
+      // tienen. Lo que marca que ya pasó por aquí es haber guardado alguna opción.
+      setModoEdicion(
+        prefs.userLikes.length + prefs.userInterests.length + prefs.userResources.length > 0,
+      );
       // Se muestra en dd/mm/aaaa aunque la base la guarde como YYYY-MM-DD.
       if (prefs.birthDate) {
         const [y, m, d] = prefs.birthDate.split('-');
@@ -202,6 +214,27 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const handleSave = async () => {
     if (!user?.id) return;
 
+    setSaving(true);
+
+    // En edición la fecha no se toca ni se valida: no está en la pantalla y
+    // validarla igual bloquearía el guardado si viniera con formato viejo.
+    if (modoEdicion) {
+      const result = await saveUserPreferences(
+        user.id,
+        selectedLikes,
+        selectedInterests,
+        selectedResources,
+      );
+      setSaving(false);
+      if (result.success) {
+        notify('Preferencias guardadas correctamente.', { type: 'success', title: '¡Excelente!' });
+        if (onComplete) onComplete();
+      } else {
+        notify('Error al guardar tus preferencias.', { type: 'error', title: 'Error' });
+      }
+      return;
+    }
+
     // La fecha se valida ANTES de tocar la red: si está mal, no tiene sentido
     // guardar preferencias a medias.
     const birth = validateBirthDate(birthDate);
@@ -210,8 +243,6 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       return;
     }
     setBirthDateError('');
-
-    setSaving(true);
 
     const [result] = await Promise.all([
       saveUserPreferences(user.id, selectedLikes, selectedInterests, selectedResources),
@@ -292,184 +323,254 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
     return isoDate ? ageFromISODate(isoDate) : null;
   })();
 
+  // Bloque de la fecha. `compacto` en la pantalla de edición: allí el icono
+  // grande y la insignia ocupaban media pantalla antes de llegar a los gustos.
+  const renderFecha = (compacto = false) => (
+    <View style={compacto ? styles.dateBlockCompact : styles.dateBlock}>
+      {!compacto ? (
+        <>
+          <View style={styles.dateIconCircle}>
+            <Feather name="calendar" size={38} color={TOKENS.colors.active} />
+          </View>
+
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>OBLIGATORIO</Text>
+          </View>
+        </>
+      ) : null}
+
+      <View
+        style={[styles.dateInputBox, birthDateError ? styles.dateInputBoxInvalid : null]}
+      >
+        <TextInput
+          style={styles.dateInput}
+          placeholder="dd/mm/aaaa"
+          placeholderTextColor={TOKENS.colors.inactiveBorder}
+          value={birthDate}
+          onChangeText={(value) => {
+            setBirthDate(value);
+            if (birthDateError) setBirthDateError('');
+          }}
+          keyboardType="numbers-and-punctuation"
+        />
+      </View>
+
+      {/* Siempre hay una línea aquí (error, edad o pista) para que el
+        bloque no cambie de alto y salte al escribir. */}
+      {birthDateError ? (
+        <View style={[styles.dateFeedback, styles.dateFeedbackError]}>
+          <Feather name="alert-circle" size={14} color={TOKENS.colors.alertText} />
+          <Text style={styles.dateFeedbackErrorText}>{birthDateError}</Text>
+        </View>
+      ) : edad !== null ? (
+        <View style={[styles.dateFeedback, styles.dateFeedbackOk]}>
+          <Feather name="check-circle" size={14} color={TOKENS.colors.badgeInfoText} />
+          <Text style={styles.dateFeedbackOkText}>Tienes {edad} años</Text>
+        </View>
+      ) : (
+        <Text style={styles.dateHint}>Por ejemplo: 09/03/2003</Text>
+      )}
+    </View>
+  );
+
+  const renderOpciones = (key) => (
+    <View style={styles.optionsGrid}>
+      {sectionData[key].catalog.map((item) => (
+        <SelectableCard
+          key={item.id}
+          label={item.name}
+          icon={getCatalogIcon(item.name)}
+          tint={getCatalogTint(item.name)}
+          isSelected={sectionData[key].selected.includes(item.id)}
+          onPress={() =>
+            toggleItem(
+              item.id,
+              sectionData[key].selected,
+              sectionData[key].setSelected,
+            )
+          }
+        />
+      ))}
+    </View>
+  );
+
+  // Pantalla de edición: las cuatro secciones seguidas, con el título a la
+  // izquierda como encabezado de sección en lugar del título centrado del paso.
+  const renderEdicion = () =>
+    // La fecha NO aparece en edición: el registro ya la pidió y nadie viene
+    // aquí a cambiarla; dejarla solo generaba errores de validación que
+    // bloqueaban el guardado.
+    STEPS.filter((paso) => paso.key !== 'birthDate').map((paso) => {
+      const elegidas = sectionData[paso.key].selected.length;
+      return (
+        <View key={paso.key} style={styles.editSection}>
+          <View style={styles.editSectionHeader}>
+            <Text style={styles.editSectionTitle}>{paso.title}</Text>
+            <Text style={styles.editSectionCount}>
+              {elegidas === 1 ? '1 elegida' : `${elegidas} elegidas`}
+            </Text>
+          </View>
+          <Text style={styles.editSectionDescription}>{paso.description}</Text>
+          {renderOpciones(paso.key)}
+        </View>
+      );
+    });
+
   return (
     <SafeAreaView style={styles.screen}>
-      {/* CABECERA: volver arriba y la barra de progreso a todo lo ancho */}
-      <View style={styles.header}>
-        {step > 0 || onCancel ? (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={step > 0 ? anterior : onCancel}
-            accessibilityRole="button"
-            accessibilityLabel={step > 0 ? 'Volver al paso anterior' : 'Salir sin guardar'}
-          >
-            <Feather name="arrow-left" size={20} color={TOKENS.colors.textDark} />
-          </TouchableOpacity>
-        ) : (
-          // Hueco del mismo tamaño que el botón: sin él, la cabecera cambiaría
-          // de alto entre el primer paso y los demás y todo daría un salto.
-          <View style={styles.headerSpacer} />
-        )}
-      </View>
-
-      <View style={styles.progressWrap}>
-        <StepProgressBar currentStep={step + 1} totalSteps={STEPS.length} />
-      </View>
-
-      <Animated.View
-        style={[
-          styles.stepBody,
-          {
-            opacity: entrada,
-            transform: [
-              {
-                translateX: entrada.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [direccion.current * 34, 0],
-                }),
-              },
-            ],
-          },
-        ]}
+      {/* En iOS el teclado de la fecha taparía el botón del pie. */}
+      <KeyboardAvoidingView
+        style={styles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onLayout={(e) => {
-            alturaVisible.current = e.nativeEvent.layout.height;
-            revisarSobrante();
-          }}
-          onContentSizeChange={(_, alto) => {
-            alturaContenido.current = alto;
-            revisarSobrante();
-          }}
-          onScroll={(e) => {
-            desplazamiento.current = e.nativeEvent.contentOffset.y;
-            revisarSobrante(desplazamiento.current);
-          }}
-        >
-          <Text style={styles.stepTitle}>{seccion.title}</Text>
-          <Text style={styles.stepSubtitle}>{seccion.description}</Text>
-
-          {seccion.key === 'birthDate' ? (
-            <View style={styles.dateBlock}>
-              <View style={styles.dateIconCircle}>
-                <Feather name="calendar" size={38} color={TOKENS.colors.active} />
-              </View>
-
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>OBLIGATORIO</Text>
-              </View>
-
-              <View
-                style={[styles.dateInputBox, birthDateError ? styles.dateInputBoxInvalid : null]}
+        {/* CABECERA: volver arriba y la barra de progreso a todo lo ancho */}
+        <View style={styles.header}>
+          {modoEdicion ? (
+            onCancel ? (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onCancel}
+                accessibilityRole="button"
+                accessibilityLabel="Salir sin guardar"
               >
-                <TextInput
-                  style={styles.dateInput}
-                  placeholder="dd/mm/aaaa"
-                  placeholderTextColor={TOKENS.colors.inactiveBorder}
-                  value={birthDate}
-                  onChangeText={(value) => {
-                    setBirthDate(value);
-                    if (birthDateError) setBirthDateError('');
-                  }}
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
-
-              {/* Siempre hay una línea aquí (error, edad o pista) para que el
-                bloque no cambie de alto y salte al escribir. */}
-              {birthDateError ? (
-                <View style={[styles.dateFeedback, styles.dateFeedbackError]}>
-                  <Feather name="alert-circle" size={14} color={TOKENS.colors.alertText} />
-                  <Text style={styles.dateFeedbackErrorText}>{birthDateError}</Text>
-                </View>
-              ) : edad !== null ? (
-                <View style={[styles.dateFeedback, styles.dateFeedbackOk]}>
-                  <Feather name="check-circle" size={14} color={TOKENS.colors.badgeInfoText} />
-                  <Text style={styles.dateFeedbackOkText}>Tienes {edad} años</Text>
-                </View>
-              ) : (
-                <Text style={styles.dateHint}>Por ejemplo: 09/03/2003</Text>
-              )}
-            </View>
+                <Feather name="arrow-left" size={20} color={TOKENS.colors.textDark} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerSpacer} />
+            )
+          ) : step > 0 || onCancel ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={step > 0 ? anterior : onCancel}
+              accessibilityRole="button"
+              accessibilityLabel={step > 0 ? 'Volver al paso anterior' : 'Salir sin guardar'}
+            >
+              <Feather name="arrow-left" size={20} color={TOKENS.colors.textDark} />
+            </TouchableOpacity>
           ) : (
-            <View style={styles.optionsGrid}>
-              {sectionData[seccion.key].catalog.map((item) => (
-                <SelectableCard
-                  key={item.id}
-                  label={item.name}
-                  icon={getCatalogIcon(item.name)}
-                  tint={getCatalogTint(item.name)}
-                  isSelected={sectionData[seccion.key].selected.includes(item.id)}
-                  onPress={() =>
-                    toggleItem(
-                      item.id,
-                      sectionData[seccion.key].selected,
-                      sectionData[seccion.key].setSelected,
-                    )
-                  }
-                />
-              ))}
-            </View>
+            // Hueco del mismo tamaño que el botón: sin él, la cabecera cambiaría
+            // de alto entre el primer paso y los demás y todo daría un salto.
+            <View style={styles.headerSpacer} />
           )}
-        </ScrollView>
 
-        {/* PISTA DE SCROLL: aparece solo si queda contenido por debajo.
-            box-none en el contenedor: ocupa todo el ancho para centrar la
-            flecha, pero solo la flecha recibe el toque; si no, se comería el
-            de las tarjetas que tiene detrás. */}
+          {modoEdicion ? (
+            <>
+              <Text style={styles.headerTitle}>Editar preferencias</Text>
+              {/* Contrapeso del botón de volver para que el título quede centrado */}
+              <View style={styles.headerSpacer} />
+            </>
+          ) : null}
+        </View>
+
+        {/* La barra de progreso solo tiene sentido en el asistente */}
+        {!modoEdicion ? (
+          <View style={styles.progressWrap}>
+            <StepProgressBar currentStep={step + 1} totalSteps={STEPS.length} />
+          </View>
+        ) : null}
+
         <Animated.View
           style={[
-            styles.scrollHint,
+            styles.stepBody,
             {
-              opacity: pista,
+              opacity: entrada,
               transform: [
-                { translateY: flota.interpolate({ inputRange: [0, 1], outputRange: [0, 7] }) },
+                {
+                  translateX: entrada.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [direccion.current * 34, 0],
+                  }),
+                },
               ],
-              pointerEvents: 'box-none',
             },
           ]}
         >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={bajarUnaPantalla}
-            style={styles.scrollHintCircle}
-            accessibilityRole="button"
-            accessibilityLabel="Ver más opciones"
-            // Zona de toque mayor que el círculo: 34 px se queda corto para un
-            // dedo, y esto la agranda sin agrandar el dibujo.
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[styles.contentContainer, modoEdicion && styles.editContentContainer]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onLayout={(e) => {
+              alturaVisible.current = e.nativeEvent.layout.height;
+              revisarSobrante();
+            }}
+            onContentSizeChange={(_, alto) => {
+              alturaContenido.current = alto;
+              revisarSobrante();
+            }}
+            onScroll={(e) => {
+              desplazamiento.current = e.nativeEvent.contentOffset.y;
+              revisarSobrante(desplazamiento.current);
+            }}
           >
-            <Feather name="chevron-down" size={20} color={TOKENS.colors.active} />
-          </TouchableOpacity>
-        </Animated.View>
-      </Animated.View>
+            {modoEdicion ? (
+              renderEdicion()
+            ) : (
+              <>
+                <Text style={styles.stepTitle}>{seccion.title}</Text>
+                <Text style={styles.stepSubtitle}>{seccion.description}</Text>
 
-      {/* PIE: fuera del ScrollView, para que la acción principal siempre se vea */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.primaryButton}
-          onPress={siguiente}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color={TOKENS.colors.white} />
-          ) : (
-            <>
-              <Text style={styles.primaryButtonText}>
-                {esUltimo ? 'Guardar Preferencias' : 'Continuar'}
-              </Text>
-              {!esUltimo ? (
-                <Feather name="arrow-right" size={18} color={TOKENS.colors.white} />
-              ) : null}
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+                {seccion.key === 'birthDate' ? renderFecha() : renderOpciones(seccion.key)}
+              </>
+            )}
+          </ScrollView>
+
+          {/* PISTA DE SCROLL: aparece solo si queda contenido por debajo.
+              box-none en el contenedor: ocupa todo el ancho para centrar la
+              flecha, pero solo la flecha recibe el toque; si no, se comería el
+              de las tarjetas que tiene detrás. */}
+          <Animated.View
+            style={[
+              styles.scrollHint,
+              {
+                opacity: pista,
+                transform: [
+                  { translateY: flota.interpolate({ inputRange: [0, 1], outputRange: [0, 7] }) },
+                ],
+                pointerEvents: 'box-none',
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={bajarUnaPantalla}
+              style={styles.scrollHintCircle}
+              accessibilityRole="button"
+              accessibilityLabel="Ver más opciones"
+              // Zona de toque mayor que el círculo: 34 px se queda corto para un
+              // dedo, y esto la agranda sin agrandar el dibujo.
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="chevron-down" size={20} color={TOKENS.colors.active} />
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+
+        {/* PIE: fuera del ScrollView, para que la acción principal siempre se vea */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.primaryButton}
+            onPress={modoEdicion ? handleSave : siguiente}
+            disabled={saving}
+            accessibilityRole="button"
+          >
+            {saving ? (
+              <ActivityIndicator color={TOKENS.colors.white} />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>
+                  {modoEdicion ? 'Guardar cambios' : esUltimo ? 'Guardar Preferencias' : 'Continuar'}
+                </Text>
+                {!modoEdicion && !esUltimo ? (
+                  <Feather name="arrow-right" size={18} color={TOKENS.colors.white} />
+                ) : null}
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -516,6 +617,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: TOKENS.colors.textDark,
+  },
   contentContainer: {
     // flexGrow + center: cuando el paso tiene pocas opciones queda centrado en
     // la pantalla en vez de amontonado arriba con un hueco vacío debajo. Si el
@@ -525,6 +633,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: TOKENS.spacing.lg,
     paddingTop: TOKENS.spacing.md,
     paddingBottom: TOKENS.spacing.lg,
+  },
+  editContentContainer: {
+    // Pantalla larga de edición: arriba del todo, no centrada en vertical.
+    justifyContent: 'flex-start',
+    // Hueco para la flecha de "hay más abajo", que flota sobre el final.
+    paddingBottom: TOKENS.spacing.lg * 2,
+  },
+  editSection: {
+    marginBottom: TOKENS.spacing.lg + TOKENS.spacing.sm,
+  },
+  editSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: TOKENS.spacing.sm,
+  },
+  editSectionTitle: {
+    flexShrink: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: TOKENS.colors.textDark,
+  },
+  editSectionCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: TOKENS.colors.badgeInfoText,
+  },
+  editSectionDescription: {
+    fontSize: 13,
+    color: TOKENS.colors.textMuted,
+    marginTop: 2,
+    marginBottom: TOKENS.spacing.md,
   },
   stepTitle: {
     fontSize: 26,
@@ -546,6 +686,10 @@ const styles = StyleSheet.create({
   dateBlock: {
     alignItems: 'center',
     gap: TOKENS.spacing.md,
+  },
+  dateBlockCompact: {
+    alignItems: 'center',
+    gap: TOKENS.spacing.sm,
   },
   dateIconCircle: {
     width: 96,
@@ -662,10 +806,16 @@ const styles = StyleSheet.create({
     backgroundColor: TOKENS.colors.white,
   },
   primaryButton: {
+    // El fondo, el relleno y el radio se perdieron al resolver el merge de
+    // features-ange (d739432): quedaba texto blanco sobre el pie blanco y el
+    // botón, aunque estaba ahí y respondía, no se veía en ningún paso.
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
+    justifyContent: 'center',
+    gap: TOKENS.spacing.sm,
+    backgroundColor: TOKENS.colors.primary,
+    paddingVertical: TOKENS.spacing.md,
+    borderRadius: TOKENS.radius.full,
     elevation: 4,
     ...Platform.select({
       web: {
