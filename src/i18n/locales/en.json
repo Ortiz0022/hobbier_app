@@ -273,7 +273,15 @@
     "preferences_saved": "Preferences saved successfully.",
     "error_saving": "Error saving your preferences.",
     "excellent": "Excellent!",
-    "scroll_more": "See more options"
+    "scroll_more": "See more options",
+    "search_placeholder": "Search...",
+    "search_clear": "Clear search",
+    "selected_heading": "Selected",
+    "suggestions": "Suggestions",
+    "search_results": "Results",
+    "no_results": "We couldn't find anything with that name.",
+    "all_selected": "You already picked every suggestion. Search to see more.",
+    "catalog_error": "We couldn't load the options."
   },
   "rooms": {
     "title": "Rooms",

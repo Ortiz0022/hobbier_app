@@ -273,7 +273,15 @@
     "preferences_saved": "Preferencias guardadas correctamente.",
     "error_saving": "Error al guardar tus preferencias.",
     "excellent": "¡Excelente!",
-    "scroll_more": "Ver más opciones"
+    "scroll_more": "Ver más opciones",
+    "search_placeholder": "Buscar...",
+    "search_clear": "Borrar la búsqueda",
+    "selected_heading": "Elegidos",
+    "suggestions": "Sugerencias",
+    "search_results": "Resultados",
+    "no_results": "No encontramos nada con ese nombre.",
+    "all_selected": "Ya elegiste todas las sugerencias. Busca para ver más.",
+    "catalog_error": "No pudimos cargar las opciones."
   },
   "rooms": {
     "title": "Salas",
