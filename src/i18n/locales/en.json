@@ -383,7 +383,8 @@
     "error_create": "Error creating the activity.",
     "required_fields": "Please complete the title and description.",
     "success": "Success",
-    "warning": "Required fields"
+    "warning": "Required fields",
+    "inappropriate_content": "Inappropriate Content"
   },
   "splash": {
     "subtitle": "Find something new to do."
@@ -398,5 +399,13 @@
     "cancel_and_exit": "cancel and exit",
     "password_updated": "Password updated. You can continue using the app.",
     "ready": "Done!"
+  },
+  "likes": {
+    "arte": "Art",
+    "cocina": "Cooking",
+    "deportes": "Sports",
+    "lectura": "Reading",
+    "música": "Music",
+    "naturaleza": "Nature"
   }
 }

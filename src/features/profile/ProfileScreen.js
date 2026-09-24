@@ -221,15 +221,102 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 style={styles.menuItem}
                 onPress={() => {
                   setMenuOpen(false);
+                  setLanguageModalOpen(true);
+                }}
+              >
+                <Feather name="globe" size={16} color={COLORS.cyanIcon} />
+                <Text style={styles.menuItemText}>
+                  {t('language.title')} ({language === 'es' ? '🇪🇸 ES' : '🇺🇸 EN'})
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setCreateActivityOpen(true);
+                }}
+              >
+                <Feather name="plus-circle" size={16} color={COLORS.orange} />
+                <Text style={styles.menuItemText}>{t('profile.create_own_activity')}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
                   signOut();
                 }}
               >
                 <Feather name="log-out" size={16} color={COLORS.danger} />
-                <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Cerrar Sesión</Text>
+                <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>{t('profile.logout')}</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
         </Modal>
+
+        {/* MODAL PARA CAMBIAR IDIOMA (ESPAÑOL / ENGLISH) */}
+        <Modal
+          visible={languageModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setLanguageModalOpen(false)}
+        >
+          <Pressable style={styles.menuOverlay} onPress={() => setLanguageModalOpen(false)}>
+            <View style={styles.langModalCard}>
+              <View style={styles.langModalHeader}>
+                <Feather name="globe" size={20} color={COLORS.cyanIcon} />
+                <Text style={styles.langModalTitle}>{t('language.select')}</Text>
+              </View>
+
+              <View style={styles.langOptionsList}>
+                {languages.map((item) => {
+                  const isSelected = language === item.code;
+                  return (
+                    <TouchableOpacity
+                      key={item.code}
+                      style={[styles.langOptionItem, isSelected && styles.langOptionItemActive]}
+                      onPress={() => {
+                        setLanguage(item.code);
+                        setLanguageModalOpen(false);
+                        notify(
+                          item.code === 'es' ? 'Idioma cambiado a Español 🇪🇸' : 'Language changed to English 🇺🇸',
+                          { type: 'success' }
+                        );
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.langOptionLeft}>
+                        <Text style={styles.langFlag}>{item.flag}</Text>
+                        <Text style={[styles.langOptionLabel, isSelected && styles.langOptionLabelActive]}>
+                          {item.label}
+                        </Text>
+                      </View>
+                      {isSelected && <Feather name="check" size={18} color={COLORS.cyanIcon} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                style={styles.langCloseBtn}
+                onPress={() => setLanguageModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.langCloseBtnText}>{t('common.close')}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        <CreateActivityModal
+          visible={createActivityOpen}
+          onClose={() => setCreateActivityOpen(false)}
+        />
 
         <Modal
           visible={!!viewerImage}

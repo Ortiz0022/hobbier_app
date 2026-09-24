@@ -30,11 +30,12 @@ const getCategoryStyle = (categoryObj, title = '') => {
 };
 
 export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
+  const { t } = useLanguage();
   const activity = item.activity || {};
   const category = getCategoryStyle(activity.category, activity.title);
   const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
   const points = activity.points_awarded || 10;
-  const actionLabel = isPending ? 'Continuar' : 'Repetir';
+  const actionLabel = isPending ? t('missions.continue') || 'Continuar' : t('missions.repeat') || 'Repetir';
   const isMine = currentUserId && activity.created_by === currentUserId;
 
   return (

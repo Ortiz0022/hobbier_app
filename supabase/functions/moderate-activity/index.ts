@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return json({ error: "Usuario no encontrado" }, 401);
 
-    const { title, description } = await req.json();
+    const { title, description, language = 'es' } = await req.json();
     if (!title) return json({ error: "Falta el título" }, 400);
 
     let isSafe = true;
@@ -96,7 +96,7 @@ Debes rechazar actividades que promuevan o contengan explícita o implícitament
 
 Responde ÚNICAMENTE con un objeto JSON con dos propiedades:
 - "is_safe": booleano (true si es segura, false si es inapropiada)
-- "reason": string (si es false, explica brevemente por qué fue rechazada en español. Si es true, deja vacío "")
+- "reason": string (si es false, explica brevemente por qué fue rechazada en el idioma '${language}'. Si es true, deja vacío "")
 `;
 
       const userPrompt = `Título: ${title}\nDescripción: ${description || "Sin descripción"}`;
@@ -115,7 +115,9 @@ Responde ÚNICAMENTE con un objeto JSON con dos propiedades:
       
       if (hasBadWords) {
         isSafe = false;
-        reason = "El contenido contiene palabras no permitidas por nuestras reglas comunitarias.";
+        reason = language === 'en' 
+          ? "The content contains words not allowed by our community guidelines."
+          : "El contenido contiene palabras no permitidas por nuestras reglas comunitarias.";
       }
     }
 

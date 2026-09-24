@@ -254,10 +254,10 @@ export const uploadAvatarImage = async (userId, imageUri) => {
 };
 
 // 7. Moderación de contenido generada por el usuario (llama a la Edge Function moderate-activity)
-export const moderateActivityContent = async (title, description) => {
+export const moderateActivityContent = async (title, description, language = 'es') => {
   try {
     const { data, error } = await supabase.functions.invoke('moderate-activity', {
-      body: { title, description },
+      body: { title, description, language },
     });
 
     if (error) throw error;

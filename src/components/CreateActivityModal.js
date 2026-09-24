@@ -15,6 +15,7 @@ import { acceptActivity, moderateActivityContent } from '../services/activitySer
 import { colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../context/NotificationContext';
+import { useLanguage } from '../context/LanguageContext';
 
 /**
  * Formulario de creación de actividades, compartido por Perfil y Admin.
@@ -32,6 +33,7 @@ import { useNotify } from '../context/NotificationContext';
 export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = false }) => {
   const { user } = useAuth();
   const { notify } = useNotify();
+  const { t, language } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState('20');
@@ -95,14 +97,14 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
   const handleCreate = async () => {
     setModerationError('');
     if (!title.trim() || !description.trim()) {
-      notify('Por favor completa el título y la descripción.', { type: 'warning', title: 'Campos requeridos' });
+      notify(t('create_activity.required_fields') || 'Por favor completa el título y la descripción.', { type: 'warning', title: t('create_activity.warning') || 'Campos requeridos' });
       return;
     }
 
     setCreating(true);
 
     // 1. Moderación con IA: Si es contenido indebido, se bloquea.
-    const { isSafe, reason } = await moderateActivityContent(title, description);
+    const { isSafe, reason } = await moderateActivityContent(title, description, language);
     if (!isSafe) {
       setCreating(false);
       setModerationError(reason || 'El contenido de la actividad no está permitido según nuestras reglas de comunidad.');
@@ -122,7 +124,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     setCreating(false);
 
     if (error) {
-      notify(error.message || 'Error al crear la actividad.', { type: 'error', title: 'Error' });
+      notify(error.message || t('create_activity.error_create') || 'Error al crear la actividad.', { type: 'error', title: t('common.error') || 'Error' });
       return;
     }
 
@@ -139,7 +141,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     onClose();
     if (onCreated) onCreated(activity);
 
-    notify('¡Actividad creada correctamente!', { type: 'success', title: 'Éxito' });
+    notify(t('create_activity.activity_created') || '¡Actividad creada correctamente!', { type: 'success', title: t('create_activity.success') || 'Éxito' });
   };
 
   return (
@@ -154,38 +156,40 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
         >
           {moderationError ? (
             <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerTitle}>Contenido Inapropiado</Text>
+              <Text style={styles.errorBannerTitle}>
+                {t('create_activity.inappropriate_content') || (language === 'en' ? 'Inappropriate Content' : 'Contenido Inapropiado')}
+              </Text>
               <Text style={styles.errorBannerText}>{moderationError}</Text>
             </View>
           ) : null}
 
-          <Text style={styles.label}>Título de la actividad</Text>
+          <Text style={styles.label}>{t('create_activity.title') || 'Título de la actividad'}</Text>
           <TextInput
             style={styles.input}
-            placeholder={forCatalog ? "Ej. Pinta un cuadro abstracto" : "Ej. Leer un capítulo del libro"}
+            placeholder={forCatalog ? (t('create_activity.placeholder_title_catalog') || "Ej. Pinta un cuadro abstracto") : (t('create_activity.placeholder_title_personal') || "Ej. Leer un capítulo del libro")}
             placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
           />
 
-          <Text style={styles.label}>Descripción</Text>
+          <Text style={styles.label}>{t('create_activity.description') || 'Descripción'}</Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
-            placeholder={forCatalog ? "Explica detalladamente qué debe hacer el usuario..." : "Describe de qué trata tu reto personal..."}
+            placeholder={forCatalog ? (t('create_activity.placeholder_desc_catalog') || "Explica detalladamente qué debe hacer el usuario...") : (t('create_activity.placeholder_desc_personal') || "Describe de qué trata tu reto personal...")}
             placeholderTextColor={colors.textMuted}
             multiline
             value={description}
             onChangeText={setDescription}
           />
 
-          <Text style={styles.label}>¿A qué gusto corresponde?</Text>
+          <Text style={styles.label}>{t('create_activity.what_like') || '¿A qué gusto corresponde?'}</Text>
           <TouchableOpacity
             style={styles.dropdown}
             onPress={() => setLikeOpen(!likeOpen)}
             activeOpacity={0.7}
           >
             <Text style={[styles.dropdownText, !likeSeleccionado && styles.dropdownPlaceholder]}>
-              {likeSeleccionado ? likeSeleccionado.name : 'Sin gusto asignado'}
+              {likeSeleccionado ? (t(`likes.${likeSeleccionado.name.toLowerCase()}`) || likeSeleccionado.name) : (t('create_activity.no_like_assigned') || 'Sin gusto asignado')}
             </Text>
             <Text style={styles.dropdownChevron}>{likeOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -202,7 +206,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                 }}
               >
                 <Text style={[styles.dropdownOptionText, likeId === null && styles.dropdownOptionActive]}>
-                  Sin gusto asignado
+                  {t('create_activity.no_like_assigned') || 'Sin gusto asignado'}
                 </Text>
               </TouchableOpacity>
 
@@ -216,7 +220,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                   }}
                 >
                   <Text style={[styles.dropdownOptionText, likeId === l.id && styles.dropdownOptionActive]}>
-                    {l.name}
+                    {t(`likes.${l.name.toLowerCase()}`) || l.name}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -225,15 +229,14 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
 
           {forCatalog && (
             <Text style={styles.helperText}>
-              Sin gusto, la actividad se recomienda a todo el mundo por igual en vez de
-              a quien le interesa.
+              {t('create_activity.helper_no_like') || 'Sin gusto, la actividad se recomienda a todo el mundo por igual en vez de a quien le interesa.'}
             </Text>
           )}
 
 
           <View style={styles.formRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Puntos</Text>
+              <Text style={styles.label}>{t('create_activity.points') || 'Puntos'}</Text>
               <TextInput
                 style={styles.input}
                 keyboardType="number-pad"
@@ -244,10 +247,10 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
             {forCatalog && (
               <>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Edad Mínima</Text>
+                  <Text style={styles.label}>{t('create_activity.min_age') || 'Edad Mínima'}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Ej. 12"
+                    placeholder={t('create_activity.placeholder_min_age') || "Ej. 12"}
                     placeholderTextColor={colors.textMuted}
                     keyboardType="number-pad"
                     value={minAge}
@@ -255,10 +258,10 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Edad Máxima</Text>
+                  <Text style={styles.label}>{t('create_activity.max_age') || 'Edad Máxima'}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Sin límite"
+                    placeholder={t('create_activity.placeholder_max_age') || "Sin límite"}
                     placeholderTextColor={colors.textMuted}
                     keyboardType="number-pad"
                     value={maxAge}
@@ -274,12 +277,12 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
               {creating ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
-                <Text style={styles.saveBtnText}>Guardar Actividad</Text>
+                <Text style={styles.saveBtnText}>{t('create_activity.save_activity') || 'Guardar Actividad'}</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} disabled={creating}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
+              <Text style={styles.cancelBtnText}>{t('create_activity.cancel') || 'Cancelar'}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
