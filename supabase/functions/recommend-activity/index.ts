@@ -12,7 +12,7 @@
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b";
 const CANDIDATE_LIMIT = 10;
 const GROQ_TIMEOUT_MS = 8000; // el usuario está esperando: mejor respaldo que colgarse
 const MAX_REASON = 140;

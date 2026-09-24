@@ -252,3 +252,21 @@ export const uploadAvatarImage = async (userId, imageUri) => {
     return { publicUrl: null, error };
   }
 };
+
+// 7. Moderación de contenido generada por el usuario (llama a la Edge Function moderate-activity)
+export const moderateActivityContent = async (title, description) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('moderate-activity', {
+      body: { title, description },
+    });
+
+    if (error) throw error;
+    
+    // data.is_safe y data.reason
+    return { isSafe: data?.is_safe ?? true, reason: data?.reason || '', error: null };
+  } catch (error) {
+    console.warn('Moderación de contenido no disponible:', error.message);
+    // Si falla la edge function, por seguridad bloqueamos la creación temporalmente.
+    return { isSafe: false, reason: 'El sistema de moderación está verificando esta acción. Intenta de nuevo en unos segundos.', error: null };
+  }
+};

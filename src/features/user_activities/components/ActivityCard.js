@@ -28,12 +28,13 @@ const getCategoryStyle = (categoryObj, title = '') => {
   return { name: categoryName || 'Hobby', icon: 'compass' };
 };
 
-export const ActivityCard = ({ item, isPending, onAction }) => {
+export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
   const activity = item.activity || {};
   const category = getCategoryStyle(activity.category, activity.title);
   const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
   const points = activity.points_awarded || 10;
   const actionLabel = isPending ? 'Continuar' : 'Repetir';
+  const isMine = currentUserId && activity.created_by === currentUserId;
 
   return (
     <View style={styles.card}>
@@ -43,6 +44,11 @@ export const ActivityCard = ({ item, isPending, onAction }) => {
             <Feather name={category.icon} size={14} color={colors.primary} />
           </View>
           <Text style={styles.categoryText}>{category.name}</Text>
+          {isMine && (
+            <View style={styles.myActivityPill}>
+              <Text style={styles.myActivityText}>Mi actividad</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.pointsPill}>

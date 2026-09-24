@@ -6,10 +6,12 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
+  Platform,
 } from 'react-native';
 import { Text, TextInput } from './scaledText';
 import { createActivityAdmin } from '../services/adminService';
 import { fetchActivityCategories, fetchAllCatalogs } from '../services/catalogService';
+import { acceptActivity, moderateActivityContent } from '../services/activityService';
 import { colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../context/NotificationContext';
@@ -40,6 +42,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
   // null = sin categoría. Es el valor POR DEFECTO: la categoría es opcional, y
   // obligar a elegir una empujaría a encasillar actividades que no encajan.
   const [categories, setCategories] = useState([]);
+  const [moderationError, setModerationError] = useState('');
 
   // Gusto con el que se etiqueta la actividad. Es lo que decide a quién se le
   // recomienda: sin gusto, la actividad sale para cualquiera por igual.
@@ -80,20 +83,32 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     setMaxAge('');
     setLikeId(null);
     setLikeOpen(false);
+    setModerationError('');
   };
 
   const handleClose = () => {
     if (creating) return;
+    setModerationError('');
     onClose();
   };
 
   const handleCreate = async () => {
+    setModerationError('');
     if (!title.trim() || !description.trim()) {
       notify('Por favor completa el título y la descripción.', { type: 'warning', title: 'Campos requeridos' });
       return;
     }
 
     setCreating(true);
+
+    // 1. Moderación con IA: Si es contenido indebido, se bloquea.
+    const { isSafe, reason } = await moderateActivityContent(title, description);
+    if (!isSafe) {
+      setCreating(false);
+      setModerationError(reason || 'El contenido de la actividad no está permitido según nuestras reglas de comunidad.');
+      return;
+    }
+
     const { error, activity } = await createActivityAdmin({
       title,
       description,
@@ -109,6 +124,15 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
     if (error) {
       notify(error.message || 'Error al crear la actividad.', { type: 'error', title: 'Error' });
       return;
+    }
+
+    // Si se creó de forma personal (no para catálogo), asignarla como PENDING
+    if (!forCatalog && activity && user?.id) {
+      try {
+        await acceptActivity(user.id, activity.id);
+      } catch (err) {
+        console.error('Error al autocompletar la actividad en pendientes:', err);
+      }
     }
 
     resetForm();
@@ -128,6 +152,13 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           contentContainerStyle={styles.contentInner}
           keyboardShouldPersistTaps="handled"
         >
+          {moderationError ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerTitle}>Contenido Inapropiado</Text>
+              <Text style={styles.errorBannerText}>{moderationError}</Text>
+            </View>
+          ) : null}
+
           <Text style={styles.label}>Título de la actividad</Text>
           <TextInput
             style={styles.input}
@@ -261,17 +292,39 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    justifyContent: 'center',
-    padding: 24,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   content: {
     backgroundColor: colors.surface,
-    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    width: '100%',
     flexGrow: 0,
     maxHeight: '85%',
   },
   contentInner: {
     padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  errorBanner: {
+    backgroundColor: '#FFF0F0',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.danger,
+  },
+  errorBannerTitle: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  errorBannerText: {
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 18,
   },
   label: {
     fontSize: 15,

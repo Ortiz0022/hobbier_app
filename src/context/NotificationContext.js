@@ -195,8 +195,8 @@ export const NotificationProvider = ({ children }) => {
     <NotificationContext.Provider value={{ notify, confirm }}>
       {children}
 
-      <SafeAreaView style={toastStyles.overlay} pointerEvents="box-none">
-        <View style={toastStyles.stack} pointerEvents="box-none">
+      <SafeAreaView style={[toastStyles.overlay, { pointerEvents: 'box-none' }]}>
+        <View style={[toastStyles.stack, { pointerEvents: 'box-none' }]}>
           {toasts.map((toast) => (
             <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
           ))}

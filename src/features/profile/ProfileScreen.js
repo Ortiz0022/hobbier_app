@@ -214,18 +214,6 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setCreateActivityOpen(true);
-                }}
-              >
-                <Feather name="plus-circle" size={16} color={COLORS.orange} />
-                <Text style={styles.menuItemText}>Crea tu propia actividad</Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
 
               <TouchableOpacity
                 style={styles.menuItem}
@@ -240,11 +228,6 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
             </View>
           </Pressable>
         </Modal>
-
-        <CreateActivityModal
-          visible={createActivityOpen}
-          onClose={() => setCreateActivityOpen(false)}
-        />
 
         <Modal
           visible={!!viewerImage}

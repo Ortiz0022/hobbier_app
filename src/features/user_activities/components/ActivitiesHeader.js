@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 
-export const ActivitiesHeader = ({ profile }) => {
+export const ActivitiesHeader = ({ profile, onAddActivity }) => {
   const points = profile?.points || 0;
 
   return (
@@ -11,9 +11,16 @@ export const ActivitiesHeader = ({ profile }) => {
       <View style={styles.topRow}>
         <Text style={styles.brand}>hobbier.</Text>
 
-        <View style={styles.pointsPill}>
-          <Feather name="star" size={13} color={colors.accent} />
-          <Text style={styles.pointsText}>{points} pts</Text>
+        <View style={styles.rightActions}>
+          {onAddActivity && (
+            <TouchableOpacity onPress={onAddActivity} style={styles.addBtn}>
+              <Feather name="plus" size={20} color={colors.primaryDark} />
+            </TouchableOpacity>
+          )}
+          <View style={styles.pointsPill}>
+            <Feather name="star" size={13} color={colors.accent} />
+            <Text style={styles.pointsText}>{points} pts</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -29,6 +36,19 @@ const styles = StyleSheet.create({
   brand: {
     fontFamily: 'DynaPuff', fontSize: 23,
     color: colors.primaryDark, letterSpacing: -0.6,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E5F6F8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pointsPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,

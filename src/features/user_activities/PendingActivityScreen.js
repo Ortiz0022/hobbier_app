@@ -24,6 +24,7 @@ import { ActivitiesHeader } from './components/ActivitiesHeader';
 import { ActivityCard } from './components/ActivityCard';
 import { ActivityEvidenceModal } from './components/ActivityEvidenceModal';
 import { CompletionCelebrationModal } from './components/CompletionCelebrationModal';
+import { CreateActivityModal } from '../../components/CreateActivityModal';
 
 const pickerOptions = {
   mediaTypes: ['images'],
@@ -50,6 +51,7 @@ export const PendingActivityScreen = ({
   const [evidenceImageUri, setEvidenceImageUri] = useState(null);
   const [isRepeating, setIsRepeating] = useState(false);
   const [celebration, setCelebration] = useState(null);
+  const [createActivityOpen, setCreateActivityOpen] = useState(false);
 
   useEffect(() => {
     loadUserActivities();
@@ -200,7 +202,10 @@ export const PendingActivityScreen = ({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <ActivitiesHeader profile={profile} />
+        <ActivitiesHeader 
+          profile={profile} 
+          onAddActivity={() => setCreateActivityOpen(true)}
+        />
 
         <View style={styles.filterRow}>
           <Text style={styles.filterLabel}>Mostrando:</Text>
@@ -262,6 +267,7 @@ export const PendingActivityScreen = ({
                       item={item}
                       isPending={item.status === 'PENDING'}
                       index={index}
+                      currentUserId={user?.id}
                       onAction={() => openEvidenceFlow(item, item.status === 'COMPLETED')}
                     />
                   ))}
@@ -320,6 +326,7 @@ export const PendingActivityScreen = ({
                       item={item}
                       isPending={false}
                       index={index}
+                      currentUserId={user?.id}
                       onAction={() => openEvidenceFlow(item, true)}
                     />
                   ))}
@@ -359,6 +366,14 @@ export const PendingActivityScreen = ({
         result={celebration}
         onProfile={handleGoToProfile}
         onClose={() => setCelebration(null)}
+      />
+
+      <CreateActivityModal
+        visible={createActivityOpen}
+        onClose={() => setCreateActivityOpen(false)}
+        onCreated={() => {
+          loadUserActivities();
+        }}
       />
     </SafeAreaView>
   );
