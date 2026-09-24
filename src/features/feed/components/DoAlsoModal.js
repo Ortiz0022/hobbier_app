@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getActivityIcon = (title = '') => {
   const normalizedTitle = title.toLowerCase();
@@ -29,16 +30,18 @@ export const DoAlsoModal = ({
   onAccept,
   onClose,
 }) => {
+  const { t } = useLanguage();
+  
   if (!post) return null;
 
-  const activityTitle = post.activityTitle || post.activity?.title || 'Actividad';
+  const activityTitle = post.activityTitle || post.activity?.title || t('feed.no_posts_yet');
   const activityDescription =
     post.activityDescription ||
     post.activity?.description ||
-    'Completa esta actividad y comparte tu momento en la comunidad.';
+    t('feed.empty_subtitle');
   const authorName = post.author?.username
     ? `@${post.author.username}`
-    : (post.author?.full_name || 'un amigo');
+    : (post.author?.full_name || t('feed.someone'));
   const points = post.pointsAwarded || post.activity?.points_awarded || 20;
 
   return (
@@ -60,7 +63,7 @@ export const DoAlsoModal = ({
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar misión"
+            accessibilityLabel={t('common.close')}
           >
             <Feather name="x" size={19} color={colors.textFaint} />
           </TouchableOpacity>
@@ -74,7 +77,7 @@ export const DoAlsoModal = ({
             <View style={styles.topRow}>
               <View style={styles.foundBadge}>
                 <Feather name="zap" size={11} color={colors.primary} />
-                <Text style={styles.foundText}>MISIÓN DE AMIGO</Text>
+                <Text style={styles.foundText}>{t('feed.friend_post')}</Text>
               </View>
               <View style={styles.pointsBadge}>
                 <Feather name="star" size={12} color={colors.accentDark} />
@@ -102,12 +105,12 @@ export const DoAlsoModal = ({
             {/* Tarjeta de inspiración */}
             <View style={styles.reasonBox}>
               <Feather name="heart" size={14} color={colors.primary} />
-              <Text style={styles.reasonText}>Inspirado por el logro de {authorName}</Text>
+              <Text style={styles.reasonText}>{t('feed.inspired_by', { author: authorName })}</Text>
             </View>
 
             {/* Frase motivacional */}
             <Text style={styles.encouragement}>
-              No tiene que salir perfecto. Solo tienes que jugar a tu manera.
+              {t('recommendations.encouragement')}
             </Text>
 
             {/* Botón principal: Añadir a mis misiones */}
@@ -121,7 +124,7 @@ export const DoAlsoModal = ({
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <>
-                  <Text style={styles.acceptButtonText}>Añadir a mis misiones</Text>
+                  <Text style={styles.acceptButtonText}>{t('feed.add_to_missions')}</Text>
                   <Feather name="arrow-right" size={17} color={colors.onPrimary} />
                 </>
               )}
@@ -134,7 +137,7 @@ export const DoAlsoModal = ({
               disabled={accepting}
               accessibilityRole="button"
             >
-              <Text style={styles.cancelButtonText}>Seguir en el feed</Text>
+              <Text style={styles.cancelButtonText}>{t('feed.stay_in_feed')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

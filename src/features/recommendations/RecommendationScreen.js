@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   getRecommendedActivity,
   acceptActivity,
@@ -24,6 +25,7 @@ export const RecommendationScreen = ({
 }) => {
   const { user, profile } = useAuth();
   const { notify } = useNotify();
+  const { t } = useLanguage();
   const [loadingRec, setLoadingRec] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [recommended, setRecommended] = useState(null);
@@ -65,7 +67,7 @@ export const RecommendationScreen = ({
 
     if (error) {
       setModalVisible(false);
-      notify('No pudimos revelar una misión. Ajusta tus preferencias e inténtalo de nuevo.', { type: 'error', title: 'Error' });
+      notify(t('recommendations.error_reveal'), { type: 'error', title: t('common.error') });
     } else {
       setRecommended(activity);
     }
@@ -80,7 +82,7 @@ export const RecommendationScreen = ({
     setModalVisible(false);
 
     if (error) {
-      notify('No pudimos añadir esta misión a tu mazo.', { type: 'error', title: 'Error' });
+      notify(t('recommendations.error_add'), { type: 'error', title: t('common.error') });
     } else {
       loadHomeData();
       if (onActivityAccepted) onActivityAccepted(userActivity);
@@ -130,7 +132,7 @@ export const RecommendationScreen = ({
           setAccepting(false);
 
           if (error) {
-            notify('No pudimos añadir esta misión a tu mazo.', { type: 'error', title: 'Error' });
+            notify(t('recommendations.error_add'), { type: 'error', title: t('common.error') });
           } else {
             loadHomeData();
             if (onActivityAccepted) onActivityAccepted(userActivity);

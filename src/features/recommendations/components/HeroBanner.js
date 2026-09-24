@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const HeroBanner = ({ onPress }) => {
+  const { t } = useLanguage();
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,8 +39,8 @@ export const HeroBanner = ({ onPress }) => {
       onPress={onPress}
       activeOpacity={0.92}
       accessibilityRole="button"
-      accessibilityLabel="Revelar una misión sorpresa"
-      accessibilityHint="Descubre un reto elegido para ti"
+      accessibilityLabel={t('recommendations.surprise_mission')}
+      accessibilityHint={t('recommendations.reveal_challenge')}
     >
       <View style={[styles.decorations, { pointerEvents: 'none' }]}>
         <View style={styles.topDot} />
@@ -56,12 +58,12 @@ export const HeroBanner = ({ onPress }) => {
       <View style={styles.content}>
         <View style={styles.eyebrowRow}>
           <Feather name="zap" size={12} color="#B9F3FF" />
-          <Text style={styles.eyebrow}>MISIÓN SORPRESA</Text>
+          <Text style={styles.eyebrow}>{t('recommendations.surprise_mission')}</Text>
         </View>
-        <Text style={styles.title}>¿Te atreves?</Text>
-        <Text style={styles.subtitle}>Revela un reto elegido para ti.</Text>
+        <Text style={styles.title}>{t('recommendations.dare_you')}</Text>
+        <Text style={styles.subtitle}>{t('recommendations.reveal_challenge')}</Text>
         <View style={styles.cta}>
-          <Text style={styles.ctaText}>Revelar misión</Text>
+          <Text style={styles.ctaText}>{t('recommendations.reveal_mission')}</Text>
           <Feather name="zap" size={15} color={colors.primaryDark} />
         </View>
       </View>

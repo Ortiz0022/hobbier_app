@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getCategoryStyle = (categoryObj, title = '') => {
   const categoryName = categoryObj?.name || '';
@@ -29,11 +30,12 @@ const getCategoryStyle = (categoryObj, title = '') => {
 };
 
 export const ActivityCard = ({ item, isPending, onAction }) => {
+  const { t } = useLanguage();
   const activity = item.activity || {};
   const category = getCategoryStyle(activity.category, activity.title);
   const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
   const points = activity.points_awarded || 10;
-  const actionLabel = isPending ? 'Continuar' : 'Repetir';
+  const actionLabel = isPending ? t('missions.continue') : t('missions.repeat');
 
   return (
     <View style={styles.card}>
@@ -51,7 +53,7 @@ export const ActivityCard = ({ item, isPending, onAction }) => {
         </View>
       </View>
 
-      <Text style={styles.title} numberOfLines={2}>{activity.title || 'Misión'}</Text>
+      <Text style={styles.title} numberOfLines={2}>{activity.title || t('recommendations.new_activity')}</Text>
       {activity.description ? (
         <Text style={styles.description} numberOfLines={2}>{activity.description}</Text>
       ) : null}
@@ -65,8 +67,8 @@ export const ActivityCard = ({ item, isPending, onAction }) => {
           />
           <Text style={styles.statusText}>
             {isPending
-              ? 'Lista para cuando quieras'
-              : `${repetitions} ${repetitions === 1 ? 'avance' : 'avances'}`}
+              ? t('missions.ready_when_you_are')
+              : `${repetitions} ${repetitions === 1 ? t('missions.advances_one') : t('missions.advances_other')}`}
           </Text>
         </View>
 
@@ -75,7 +77,7 @@ export const ActivityCard = ({ item, isPending, onAction }) => {
           onPress={onAction}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`${actionLabel} ${activity.title || 'misión'}`}
+          accessibilityLabel={`${actionLabel} ${activity.title || t('recommendations.new_activity')}`}
         >
           <Text style={styles.actionText}>{actionLabel}</Text>
           <Feather name="arrow-up-right" size={13} color={colors.primary} />
