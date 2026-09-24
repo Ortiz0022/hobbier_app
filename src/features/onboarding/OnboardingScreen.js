@@ -23,11 +23,12 @@ import { useNotify } from '../../context/NotificationContext';
 // ya están probadas y así el formato pedido es el mismo en toda la app.
 import { ageFromISODate, validateBirthDate } from '../auth/validation';
 import {
-  fetchAllCatalogs,
+  fetchResourcesCatalog,
   fetchUserPreferences,
   saveUserPreferences,
   saveUserBirthDate,
 } from '../../services/catalogService';
+import { CatalogPicker } from './components/CatalogPicker';
 
 // El asistente recorre esta lista: primero la fecha (paso propio, sin
 // catálogo) y después las tres secciones de opciones. Agregar un paso es
@@ -61,8 +62,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [likesCatalog, setLikesCatalog] = useState([]);
-  const [interestsCatalog, setInterestsCatalog] = useState([]);
+  // Gustos e intereses ya no se guardan aquí: los pide CatalogPicker.
   const [resourcesCatalog, setResourcesCatalog] = useState([]);
 
   const [selectedLikes, setSelectedLikes] = useState([]);
@@ -109,10 +109,10 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const catalogs = await fetchAllCatalogs();
-    setLikesCatalog(catalogs.likes);
-    setInterestsCatalog(catalogs.interests);
-    setResourcesCatalog(catalogs.resources);
+    // Solo los recursos: gustos e intereses los pide CatalogPicker por su cuenta,
+    // unos pocos cada vez, en lugar de bajarse el catálogo entero al dispositivo.
+    const { resources } = await fetchResourcesCatalog();
+    setResourcesCatalog(resources);
 
     if (user?.id) {
       const prefs = await fetchUserPreferences(user.id);
@@ -214,11 +214,14 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const handleSave = async () => {
     if (!user?.id) return;
 
-    setSaving(true);
+    // OJO: `saving` se activa DESPUÉS de validar. Cuando se activaba antes, la
+    // salida por fecha inválida se iba sin apagarlo y el botón se quedaba para
+    // siempre como un spinner deshabilitado, sin más salida que la flecha atrás.
 
     // En edición la fecha no se toca ni se valida: no está en la pantalla y
     // validarla igual bloquearía el guardado si viniera con formato viejo.
     if (modoEdicion) {
+      setSaving(true);
       const result = await saveUserPreferences(
         user.id,
         selectedLikes,
@@ -243,6 +246,8 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       return;
     }
     setBirthDateError('');
+
+    setSaving(true);
 
     const [result] = await Promise.all([
       saveUserPreferences(user.id, selectedLikes, selectedInterests, selectedResources),
@@ -297,12 +302,10 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
 
   const sectionData = {
     likes: {
-      catalog: likesCatalog,
       selected: selectedLikes,
       setSelected: setSelectedLikes,
     },
     interests: {
-      catalog: interestsCatalog,
       selected: selectedInterests,
       setSelected: setSelectedInterests,
     },
@@ -373,7 +376,25 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
     </View>
   );
 
-  const renderOpciones = (key) => (
+  /**
+   * Gustos e intereses se eligen con buscador (el catálogo puede crecer y no se
+   * descarga entero). Recursos sigue siendo una rejilla: son 9 opciones fijas y
+   * buscar entre ellas no aporta nada.
+   */
+  const renderOpciones = (key) => {
+    if (key === 'likes' || key === 'interests') {
+      return (
+        <CatalogPicker
+          tabla={key}
+          selectedIds={sectionData[key].selected}
+          onChange={sectionData[key].setSelected}
+        />
+      );
+    }
+    return renderRejilla(key);
+  };
+
+  const renderRejilla = (key) => (
     <View style={styles.optionsGrid}>
       {sectionData[key].catalog.map((item) => (
         <SelectableCard

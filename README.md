@@ -23,7 +23,7 @@ Por definir
 
 ## 📋 Características Principales
 
-1.  **Autenticación Segura**: Registro e inicio de sesión con correo electrónico/contraseña o mediante cuenta de Google (`Google OAuth`).
+1.  **Autenticación Segura**: Registro e inicio de sesión con correo electrónico/contraseña o mediante cuenta de Google (`Google OAuth`). Los errores de Supabase se traducen a mensajes en español (`describeAuthError`) y se muestran en un recuadro dentro del formulario, sin recargar la pantalla ni borrar lo escrito.
 2.  **Perfil Personalizado**:
     - Ingreso de datos básicos (nombre, edad, género).
     - Selección de intereses mediante un sistema de tags intuitivo.
@@ -93,6 +93,28 @@ El catálogo de metas se genera aparte, con `python supabase/generate_import.py`
 que reescribe `supabase/import_metas.sql` desde mockapi.io. También se pega a
 mano y es seguro ejecutarlo más de una vez: la identidad de cada actividad es su
 `external_id`, no su título.
+
+## 🧭 Pantalla de preferencias
+
+Es el mismo componente (`OnboardingScreen`) con dos modos:
+
+- **Primera vez**: asistente paso a paso con barra de progreso — fecha de
+  nacimiento, gustos, objetivos y recursos. La fecha se valida al salir de su
+  paso y también al guardar.
+- **Editar preferencias**: todo en una sola pantalla, sin fecha de nacimiento
+  (el registro ya la pidió) y con un único botón "Guardar cambios". Al guardar
+  no se toca ni se revalida la fecha: eso evita que un formato viejo en la base
+  bloquee el guardado de las preferencias.
+
+Las opciones (gustos, objetivos, recursos) se muestran como **pastillas
+alargadas de una fila cada una** (`SelectableCard`): icono a la izquierda, nombre
+al lado y tilde a la derecha cuando está elegida. La selección se marca con
+borde cian, fondo blanco y el tilde — nunca solo con color, y el texto no
+cambia de peso entre estados.
+
+El botón principal ("Continuar" / "Guardar Preferencias" / "Guardar cambios")
+queda fijo en el pie, fuera del `ScrollView`: se ve siempre, en cualquier paso
+y con el teclado abierto.
 
 ## ♿ Accesibilidad: tamaño de letra del sistema
 

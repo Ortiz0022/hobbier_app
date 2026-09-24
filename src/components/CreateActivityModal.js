@@ -18,6 +18,13 @@ import { useNotify } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
 
 /**
+ * Minúsculas, sin espacios sobrantes y sin tildes, para comparar nombres.
+ * Es el gemelo de `public.normalizar_nombre(TEXT)` en la base de datos.
+ */
+const normalizarNombre = (texto) =>
+  (texto || '').trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+/**
  * Formulario de creación de actividades, compartido por Perfil y Admin.
  *
  * `forCatalog` marca la diferencia de fondo entre ambos usos:
@@ -64,16 +71,21 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
    * Categoría deducida del gusto elegido.
    *
    * Se usa la misma regla que get_recommended_activity en SQL: la categoría
-   * corresponde al gusto si su nombre EMPIEZA por él (Deportes -> Deportes y
-   * Salud). Así el admin elige una sola vez y ambos campos quedan coherentes.
+   * corresponde al gusto si su PRIMER SEGMENTO —lo anterior a " y "— coincide
+   * exactamente (Deportes -> Deportes y Salud). Así el admin elige una sola vez
+   * y ambos campos quedan coherentes.
+   *
+   * Antes era `startsWith`, que empareja de más en cuanto el catálogo crece: el
+   * gusto "Arte" casaría también con "Artesanía" y ganaba la primera de la lista.
+   * El equivalente en SQL vive en supabase/unificar_regla_gusto_categoria.sql.
    *
    * Si el gusto no tiene categoría equivalente, queda NULL y la interfaz la
    * muestra como "Libre", que es un estado válido.
    */
   const categoryId = (() => {
     if (!likeSeleccionado) return null;
-    const gusto = likeSeleccionado.name.trim().toLowerCase();
-    const cat = categories.find((c) => c.name.trim().toLowerCase().startsWith(gusto));
+    const gusto = normalizarNombre(likeSeleccionado.name);
+    const cat = categories.find((c) => normalizarNombre(c.name).split(' y ')[0] === gusto);
     return cat ? cat.id : null;
   })();
 

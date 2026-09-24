@@ -144,6 +144,5 @@ const styles = StyleSheet.create({
   },
   labelSelected: {
     color: TOKENS.colors.textDark,
-    fontWeight: "700",
   },
 });
