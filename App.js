@@ -7,6 +7,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Text } from './src/components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -18,6 +19,7 @@ import {
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { PresenceProvider } from './src/context/PresenceContext';
 import { NotificationProvider } from './src/context/NotificationContext';
+import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { SplashScreen } from './src/features/auth/SplashScreen';
 import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
@@ -31,6 +33,10 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 
 const MainApp = () => {
   const { user, loading, isAdmin, passwordRecovery } = useAuth();
+  const { t } = useLanguage();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   const [currentScreen, setCurrentScreen] = useState('recommendations');
   const [autoExpandId, setAutoExpandId] = useState(null);
   // A qué pestaña volver si se sale de preferencias sin guardar. Se recuerda
@@ -44,7 +50,7 @@ const MainApp = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#386756" />
-        <Text style={styles.loadingText}>Cargando Hobbier...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -135,15 +141,15 @@ const MainApp = () => {
   };
 
   const navItems = [
-    { key: 'recommendations', label: 'Descubre', icon: 'gift' },
-    { key: 'feed', label: 'Feed', icon: 'rss' },
-    { key: 'my_activities', label: 'Misiones', icon: 'target' },
-    { key: 'friends', label: 'Comunidad', icon: 'users' },
-    { key: 'profile', label: 'Perfil', icon: 'user' },
+    { key: 'recommendations', label: t('nav.discover'), icon: 'gift' },
+    { key: 'feed', label: t('nav.feed'), icon: 'rss' },
+    { key: 'my_activities', label: t('nav.missions'), icon: 'target' },
+    { key: 'friends', label: t('nav.community'), icon: 'users' },
+    { key: 'profile', label: t('nav.profile'), icon: 'user' },
   ];
 
   if (isAdmin) {
-    navItems.push({ key: 'admin', label: 'Admin', icon: 'shield' });
+    navItems.push({ key: 'admin', label: t('nav.admin'), icon: 'shield' });
   }
 
   // El asistente de preferencias ocupa la pantalla entera: es un flujo con sus
@@ -152,14 +158,50 @@ const MainApp = () => {
   const pantallaCompleta = currentScreen === 'preferences';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isDesktop && styles.safeAreaDesktop]}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* VISTA PRINCIPAL SEGÚN PESTAÑA SELECCIONADA */}
-      <View style={styles.mainContent}>{renderScreen()}</View>
+      <View style={[styles.rootContainer, isDesktop && styles.rootContainerDesktop]}>
+        {/* BARRA LATERAL (SIDEBAR) TIPO INSTAGRAM PARA ESCRITORIO / WEB */}
+        {isDesktop && !pantallaCompleta && (
+          <View style={styles.sidebar}>
+            <View style={styles.sidebarHeader}>
+              <Text style={styles.brandTitle}>Hobbier</Text>
+            </View>
 
-      {/* BARRA DE NAVEGACIÓN INFERIOR DE ESTILO MINIMALISTA */}
-      {pantallaCompleta ? null : (
+            <View style={styles.sidebarNav}>
+              {navItems.map((item) => {
+                const isActive = currentScreen === item.key;
+                const iconColor = isActive ? '#0C8AA6' : '#64748b';
+
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[styles.sidebarItem, isActive && styles.sidebarItemActive]}
+                    onPress={() => setCurrentScreen(item.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name={item.icon} size={22} color={iconColor} />
+                    <Text style={[styles.sidebarLabel, isActive && styles.sidebarLabelActive]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* CONTENEDOR PRINCIPAL: CENTRADO EN DESKTOP */}
+        <View style={[styles.mainContent, isDesktop && styles.mainContentDesktop]}>
+          <View style={[styles.contentInner, isDesktop && styles.contentInnerDesktop]}>
+            {renderScreen()}
+          </View>
+        </View>
+      </View>
+
+      {/* BARRA DE NAVEGACIÓN INFERIOR PARA MÓVIL */}
+      {!isDesktop && !pantallaCompleta && (
         <View style={styles.bottomNavContainer}>
           <View style={styles.bottomNav}>
             {navItems.map((item) => {
@@ -203,13 +245,15 @@ export default function App() {
   }
 
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <PresenceProvider>
-          <MainApp />
-        </PresenceProvider>
-      </AuthProvider>
-    </NotificationProvider>
+    <LanguageProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <PresenceProvider>
+            <MainApp />
+          </PresenceProvider>
+        </AuthProvider>
+      </NotificationProvider>
+    </LanguageProvider>
   );
 }
 
@@ -218,6 +262,78 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  safeAreaDesktop: {
+    backgroundColor: '#f8fafc',
+  },
+  rootContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  rootContainerDesktop: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    height: '100%',
+  },
+  sidebar: {
+    width: 240,
+    backgroundColor: '#ffffff',
+    borderRightWidth: 1,
+    borderRightColor: '#f1f5f9',
+    paddingVertical: 28,
+    paddingHorizontal: 16,
+    justifyContent: 'flex-start',
+  },
+  sidebarHeader: {
+    paddingHorizontal: 12,
+    marginBottom: 28,
+  },
+  brandTitle: {
+    fontFamily: 'DynaPuff',
+    fontSize: 26,
+    color: '#0C8AA6',
+    letterSpacing: 0.5,
+  },
+  sidebarNav: {
+    gap: 6,
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    gap: 14,
+  },
+  sidebarItemActive: {
+    backgroundColor: '#f0fdfa',
+  },
+  sidebarLabel: {
+    fontSize: 15,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  sidebarLabelActive: {
+    color: '#0C8AA6',
+    fontWeight: '700',
+  },
+  mainContent: {
+    flex: 1,
+  },
+  mainContentDesktop: {
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+  },
+  contentInner: {
+    flex: 1,
+    width: '100%',
+  },
+  contentInnerDesktop: {
+    maxWidth: 640,
+    backgroundColor: '#ffffff',
+    borderRightWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: '#f1f5f9',
   },
   loadingContainer: {
     flex: 1,
@@ -229,9 +345,6 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginTop: 12,
     fontSize: 14,
-  },
-  mainContent: {
-    flex: 1,
   },
   bottomNavContainer: {
     backgroundColor: '#ffffff',
@@ -275,3 +388,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

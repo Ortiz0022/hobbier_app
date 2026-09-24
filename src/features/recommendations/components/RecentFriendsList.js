@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const placeholderColors = [colors.salmonSoft, '#BDECF3', '#FFE2C2'];
 
@@ -20,114 +21,117 @@ const formatRelativeTime = (dateValue) => {
   return days === 1 ? 'Ayer' : `Hace ${days} días`;
 };
 
-export const RecentFriendsList = ({ recentFriendPosts = [], onNavigateToFeed }) => (
-  <View style={styles.sectionContainer}>
-    <View style={styles.sectionHeaderRow}>
-      <View style={styles.headingCopy}>
-        <Text style={styles.sectionTitle}>La comunidad se mueve</Text>
-        <Text style={styles.sectionSubtitle}>Pequeños logros que también inspiran.</Text>
+export const RecentFriendsList = ({ recentFriendPosts = [], onNavigateToFeed }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.headingCopy}>
+          <Text style={styles.sectionTitle}>{t('recommendations.community_moving')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('recommendations.small_achievements_inspire')}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={onNavigateToFeed}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('recommendations.see_all')}
+        >
+          <Text style={styles.seeAllLink}>{t('recommendations.see_all')}</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        onPress={onNavigateToFeed}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel="Ver toda la actividad de la comunidad"
-      >
-        <Text style={styles.seeAllLink}>Ver todo</Text>
-      </TouchableOpacity>
-    </View>
 
-    {recentFriendPosts.length === 0 ? (
-      <TouchableOpacity
-        style={styles.emptyCard}
-        onPress={onNavigateToFeed}
-        activeOpacity={0.9}
-        accessibilityRole="button"
-      >
-        <View style={styles.emptyAvatars}>
-          <View style={[styles.miniAvatar, styles.miniAvatarBack]} />
-          <View style={[styles.miniAvatar, styles.miniAvatarFront]}>
-            <Feather name="users" size={18} color={colors.primary} />
+      {recentFriendPosts.length === 0 ? (
+        <TouchableOpacity
+          style={styles.emptyCard}
+          onPress={onNavigateToFeed}
+          activeOpacity={0.9}
+          accessibilityRole="button"
+        >
+          <View style={styles.emptyAvatars}>
+            <View style={[styles.miniAvatar, styles.miniAvatarBack]} />
+            <View style={[styles.miniAvatar, styles.miniAvatarFront]}>
+              <Feather name="users" size={18} color={colors.primary} />
+            </View>
           </View>
-        </View>
-        <View style={styles.emptyCopy}>
-          <Text style={styles.emptyTitle}>Inspírense juntos</Text>
-          <Text style={styles.emptyText}>Agrega amigos y celebren cada hobby que prueben.</Text>
-        </View>
-        <Feather name="arrow-up-right" size={18} color={colors.primary} />
-      </TouchableOpacity>
-    ) : (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.horizontalList}
-      >
-        {recentFriendPosts.map((post, index) => {
-          const authorName = post.author?.full_name || post.author?.username || 'Alguien';
-          const activityTitle = post.activityTitle
-            || post.user_activity?.activity?.title
-            || 'una actividad nueva';
+          <View style={styles.emptyCopy}>
+            <Text style={styles.emptyTitle}>{t('recommendations.inspire_together')}</Text>
+            <Text style={styles.emptyText}>{t('recommendations.add_friends_celebrate')}</Text>
+          </View>
+          <Feather name="arrow-up-right" size={18} color={colors.primary} />
+        </TouchableOpacity>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalList}
+        >
+          {recentFriendPosts.map((post, index) => {
+            const authorName = post.author?.full_name || post.author?.username || t('recommendations.someone');
+            const activityTitle = post.activityTitle
+              || post.user_activity?.activity?.title
+              || t('recommendations.new_activity');
 
-          return (
-            <TouchableOpacity
-              key={post.id}
-              style={styles.activityCard}
-              onPress={onNavigateToFeed}
-              activeOpacity={0.9}
-              accessibilityRole="button"
-              accessibilityLabel={`${authorName} completó ${activityTitle}`}
-            >
-              <View style={styles.mediaContainer}>
-                {post.image_url ? (
-                  <Image
-                    source={{ uri: post.image_url }}
-                    style={styles.activityImage}
-                    resizeMode="cover"
-                    accessibilityLabel={`Evidencia de ${activityTitle}`}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.imagePlaceholder,
-                      { backgroundColor: placeholderColors[index % placeholderColors.length] },
-                    ]}
-                  >
-                    <Feather name="camera" size={30} color={colors.primaryDark} />
-                    <Text style={styles.placeholderText}>Momento Hobbier</Text>
-                  </View>
-                )}
-
-                <View style={styles.pointsPill}>
-                  <Feather name="star" size={11} color={colors.accentDark} />
-                  <Text style={styles.pointsPillText}>+{post.pointsAwarded || 20}</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardBody}>
-                <View style={styles.authorRow}>
-                  {post.author?.avatar_url ? (
-                    <Image source={{ uri: post.author.avatar_url }} style={styles.avatar} />
+            return (
+              <TouchableOpacity
+                key={post.id}
+                style={styles.activityCard}
+                onPress={onNavigateToFeed}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel={`${authorName} ${t('feed.do_also')} ${activityTitle}`}
+              >
+                <View style={styles.mediaContainer}>
+                  {post.image_url ? (
+                    <Image
+                      source={{ uri: post.image_url }}
+                      style={styles.activityImage}
+                      resizeMode="cover"
+                      accessibilityLabel={`Evidencia de ${activityTitle}`}
+                    />
                   ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Text style={styles.avatarInitial}>{authorName.charAt(0).toUpperCase()}</Text>
+                    <View
+                      style={[
+                        styles.imagePlaceholder,
+                        { backgroundColor: placeholderColors[index % placeholderColors.length] },
+                      ]}
+                    >
+                      <Feather name="camera" size={30} color={colors.primaryDark} />
+                      <Text style={styles.placeholderText}>{t('recommendations.hobbier_moment')}</Text>
                     </View>
                   )}
-                  <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
+
+                  <View style={styles.pointsPill}>
+                    <Feather name="star" size={11} color={colors.accentDark} />
+                    <Text style={styles.pointsPillText}>+{post.pointsAwarded || 20}</Text>
+                  </View>
                 </View>
 
-                <Text style={styles.activityTitle} numberOfLines={2}>{activityTitle}</Text>
-                <View style={styles.cardFooter}>
-                  <Text style={styles.timeAgo}>{formatRelativeTime(post.created_at)}</Text>
-                  <Feather name="arrow-right" size={14} color={colors.primary} />
+                <View style={styles.cardBody}>
+                  <View style={styles.authorRow}>
+                    {post.author?.avatar_url ? (
+                      <Image source={{ uri: post.author.avatar_url }} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarInitial}>{authorName.charAt(0).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
+                  </View>
+
+                  <Text style={styles.activityTitle} numberOfLines={2}>{activityTitle}</Text>
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.timeAgo}>{formatRelativeTime(post.created_at)}</Text>
+                    <Feather name="arrow-right" size={14} color={colors.primary} />
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    )}
-  </View>
-);
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   sectionContainer: { marginBottom: 12 },

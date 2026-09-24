@@ -3,6 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 import { InlineEvidenceUploader } from './InlineEvidenceUploader';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const ActivityEvidenceModal = ({
   visible,
@@ -15,6 +16,7 @@ export const ActivityEvidenceModal = ({
   onComplete,
   onClose,
 }) => {
+  const { t } = useLanguage();
   const activity = item?.activity || {};
   const points = activity.points_awarded || 10;
 
@@ -35,7 +37,7 @@ export const ActivityEvidenceModal = ({
             disabled={completing}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar registro de actividad"
+            accessibilityLabel={t('missions.close_registration')}
           >
             <Feather name="x" size={19} color={colors.textFaint} />
           </TouchableOpacity>
@@ -48,14 +50,14 @@ export const ActivityEvidenceModal = ({
             <View style={styles.eyebrowRow}>
               <Feather name={isRepeating ? 'refresh-cw' : 'zap'} size={12} color={colors.primary} />
               <Text style={styles.eyebrow}>
-                {isRepeating ? 'SUMA UN NUEVO AVANCE' : 'HAZLO REAL'}
+                {isRepeating ? t('missions.sum_new_advance') : t('missions.make_it_real')}
               </Text>
             </View>
-            <Text style={styles.title}>{activity.title || 'Tu actividad'}</Text>
+            <Text style={styles.title}>{activity.title || t('recommendations.new_activity')}</Text>
             <Text style={styles.subtitle}>
               {isRepeating
-                ? 'Repite la actividad y suma un nuevo avance a tu logro.'
-                : 'Registra el último paso para superar esta misión.'}
+                ? t('missions.repeat_activity_add_advance')
+                : t('missions.register_last_step')}
             </Text>
 
             <InlineEvidenceUploader
@@ -64,7 +66,7 @@ export const ActivityEvidenceModal = ({
               onPickImage={onPickImage}
               onTakePhoto={onTakePhoto}
               onComplete={onComplete}
-              buttonText={isRepeating ? `Registrar otro avance (+${points} pts)` : 'Superar misión'}
+              buttonText={isRepeating ? t('missions.record_another_advance', { points }) : t('missions.complete_mission')}
             />
           </ScrollView>
         </View>

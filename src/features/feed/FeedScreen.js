@@ -15,6 +15,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
@@ -66,6 +67,7 @@ const FEED_PAGE_SIZE = 10;
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
   const { notify } = useNotify();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -107,7 +109,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     if (!user?.id || !doAlsoPost) return;
     const targetActivityId = doAlsoPost.activityId || doAlsoPost.user_activity?.activity?.id;
     if (!targetActivityId) {
-      notify('Esta actividad no está disponible para agregar en este momento.', { type: 'warning', title: 'Aviso' });
+      notify(t('feed.do_also_unavailable'), { type: 'warning', title: t('common.error') });
       return;
     }
 
@@ -118,7 +120,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
       setDoAlsoModalVisible(false);
 
       if (error) {
-        notify('No pudimos agregar la misión a tus actividades. Inténtalo de nuevo.', { type: 'error', title: 'Error' });
+        notify(t('feed.do_also_error'), { type: 'error', title: t('common.error') });
         return;
       }
 
@@ -245,13 +247,13 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     setReportModalVisible(false);
 
     if (error) {
-      notify(error.message || 'No se pudo procesar el reporte.', { type: 'error', title: 'Error' });
+      notify(error.message || t('feed.report_error'), { type: 'error', title: t('common.error') });
     } else {
       // Ocultar inmediatamente del feed local (ACTIVE -> REPORTED)
       setPosts((prev) => prev.filter((p) => p.id !== selectedPost.id));
-      notify('La publicación ha sido reportada y fue ocultada inmediatamente del feed.', {
+      notify(t('feed.report_sent_msg'), {
         type: 'success',
-        title: 'Reporte enviado',
+        title: t('feed.report_sent_title'),
       });
     }
   };
@@ -282,13 +284,13 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#386756" />
-        <Text style={styles.loadingText}>Cargando feed de amigos...</Text>
+        <Text style={styles.loadingText}>{t('feed.loading')}</Text>
       </View>
     );
   }
 
   const renderPost = ({ item: post, index }) => {
-    const activityTitle = post.activityTitle || post.user_activity?.activity?.title || 'Pinta algo creativo';
+    const activityTitle = post.activityTitle || post.user_activity?.activity?.title || t('recommendations.new_activity');
     const pillStyle = getPillStyle(activityTitle, index);
     const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
 
@@ -312,7 +314,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
                 </View>
               )}
               <View style={styles.authorInfo}>
-                <Text style={styles.authorHandle}>@{post.author?.username || 'usuario'}</Text>
+                <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
                 <Text style={styles.authorAction} numberOfLines={1}>
                   {pillStyle.emoji} {activityTitle}
                 </Text>
@@ -349,7 +351,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
               onPress={() => handleOpenDoAlso(post)}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel={post.user_id === user?.id ? 'Repetir este reto' : 'Hacer también este reto'}
+              accessibilityLabel={post.user_id === user?.id ? t('feed.repeat') : t('feed.do_also')}
             >
               <Feather
                 name={post.user_id === user?.id ? 'repeat' : 'plus-circle'}
@@ -357,7 +359,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
                 color={colors.primary}
               />
               <Text style={styles.doAlsoBtnText}>
-                {post.user_id === user?.id ? 'Repetir' : 'Hacer también'}
+                {post.user_id === user?.id ? t('feed.repeat') : t('feed.do_also')}
               </Text>
             </TouchableOpacity>
 
@@ -384,7 +386,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel={unreadCount > 0 ? `Mensajes, ${unreadCount} sin leer` : 'Mensajes'}
+        accessibilityLabel={unreadCount > 0 ? t('feed.messages_unread').replace('{count}', unreadCount) : t('feed.messages_label')}
       >
         <Feather name="message-circle" size={24} color="#121B22" />
         {unreadCount > 0 && (
@@ -400,7 +402,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     <ActivityIndicator color="#1e293b" style={styles.loadMoreSpinner} />
   ) : loadMoreError ? (
     <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore}>
-      <Text style={styles.loadMoreBtnText}>No se pudieron cargar más · Reintentar</Text>
+      <Text style={styles.loadMoreBtnText}>{t('feed.load_more_error')}</Text>
     </TouchableOpacity>
   ) : null;
 
@@ -417,12 +419,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         ListEmptyComponent={
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={styles.emptyTitle}>Sin publicaciones aún</Text>
-            <Text style={styles.emptySubtitle}>
-              Agrega amigos o espera a que completen actividades para ver sus fotos aquí.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('feed.empty_title')}</Text>
+            <Text style={styles.emptySubtitle}>{t('feed.empty_subtitle')}</Text>
             <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed}>
-              <Text style={styles.refreshEmptyBtnText}>🔄 Actualizar feed</Text>
+              <Text style={styles.refreshEmptyBtnText}>{t('feed.refresh')}</Text>
             </TouchableOpacity>
           </View>
         }

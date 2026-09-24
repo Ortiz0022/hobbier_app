@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, Image } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getDisplayName = (profile) => {
   const fullName = profile?.full_name?.trim();
@@ -11,6 +12,7 @@ const getDisplayName = (profile) => {
 };
 
 export const HomeHeader = ({ profile }) => {
+  const { t } = useLanguage();
   const displayName = getDisplayName(profile);
   const points = profile?.points || 0;
   const avatarInitial = displayName.charAt(0).toUpperCase();
@@ -23,7 +25,7 @@ export const HomeHeader = ({ profile }) => {
         <View style={styles.profileSummary}>
           <View style={styles.pointsBadge}>
             <Feather name="star" size={13} color={colors.accent} />
-            <Text style={styles.pointsValue}>{points} pts</Text>
+            <Text style={styles.pointsValue}>{points} {t('common.points_abbr')}</Text>
           </View>
 
           {profile?.avatar_url ? (

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getActivityIcon = (title = '') => {
   const normalizedTitle = title.toLowerCase();
@@ -30,122 +31,125 @@ export const RecommendationModal = ({
   onAccept,
   onReload,
   onClose,
-}) => (
-  <Modal
-    visible={visible}
-    transparent
-    animationType="slide"
-    statusBarTranslucent
-    onRequestClose={onClose}
-  >
-    <View style={styles.overlay}>
-      <View style={styles.sheet}>
-        <View style={styles.grabber} />
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={onClose}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar misión revelada"
-        >
-          <Feather name="x" size={19} color={colors.textFaint} />
-        </TouchableOpacity>
-
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <View style={styles.loadingVisual}>
-              <View style={styles.loadingOrbit} />
-              <Feather name="compass" size={38} color={colors.onPrimary} />
-            </View>
-            <ActivityIndicator color={colors.accent} style={styles.loadingIndicator} />
-            <Text style={styles.loadingTitle}>Barajando misiones…</Text>
-            <Text style={styles.loadingText}>Preparando un reto nuevo, posible y elegido para ti.</Text>
-          </View>
-        ) : recommended ? (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={styles.recommendationContent}
+}) => {
+  const { t } = useLanguage();
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.sheet}>
+          <View style={styles.grabber} />
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
           >
-            <View style={styles.topRow}>
-              <View style={styles.foundBadge}>
-                <Feather name="zap" size={11} color={colors.primary} />
-                <Text style={styles.foundText}>MISIÓN REVELADA</Text>
+            <Feather name="x" size={19} color={colors.textFaint} />
+          </TouchableOpacity>
+
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <View style={styles.loadingVisual}>
+                <View style={styles.loadingOrbit} />
+                <Feather name="compass" size={38} color={colors.onPrimary} />
               </View>
-              <View style={styles.pointsBadge}>
-                <Feather name="star" size={12} color={colors.accentDark} />
-                <Text style={styles.pointsText}>+{recommended.points_awarded || 0} pts</Text>
-              </View>
+              <ActivityIndicator color={colors.accent} style={styles.loadingIndicator} />
+              <Text style={styles.loadingTitle}>{t('recommendations.shuffling')}</Text>
+              <Text style={styles.loadingText}>{t('recommendations.preparing_challenge')}</Text>
             </View>
-
-            <View style={styles.visualArea}>
-              <View style={styles.visualRing} />
-              <View style={styles.visualCircle}>
-                <Feather
-                  name={getActivityIcon(recommended.title)}
-                  size={44}
-                  color={colors.onPrimary}
-                />
-              </View>
-              <Feather name="star" size={18} color={colors.accent} style={styles.visualStar} />
-            </View>
-
-            <Text style={styles.activityTitle}>{recommended.title}</Text>
-            <Text style={styles.activityDescription}>{recommended.description}</Text>
-
-            {reason ? (
-              <View style={styles.reasonBox}>
-                <Feather name="heart" size={14} color={colors.primary} />
-                <Text style={styles.reasonText}>{reason}</Text>
-              </View>
-            ) : null}
-
-            <Text style={styles.encouragement}>
-              No tiene que salir perfecto. Solo tienes que jugar a tu manera.
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.acceptButton, accepting && styles.disabledButton]}
-              onPress={onAccept}
-              disabled={accepting}
-              accessibilityRole="button"
+          ) : recommended ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              contentContainerStyle={styles.recommendationContent}
             >
-              {accepting ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <>
-                  <Text style={styles.acceptButtonText}>Añadir a mis misiones</Text>
-                  <Feather name="arrow-right" size={17} color={colors.onPrimary} />
-                </>
-              )}
-            </TouchableOpacity>
+              <View style={styles.topRow}>
+                <View style={styles.foundBadge}>
+                  <Feather name="zap" size={11} color={colors.primary} />
+                  <Text style={styles.foundText}>{t('recommendations.mission_revealed')}</Text>
+                </View>
+                <View style={styles.pointsBadge}>
+                  <Feather name="star" size={12} color={colors.accentDark} />
+                  <Text style={styles.pointsText}>+{recommended.points_awarded || 0} pts</Text>
+                </View>
+              </View>
 
-            <TouchableOpacity
-              style={styles.reloadButton}
-              onPress={onReload}
-              disabled={accepting}
-              accessibilityRole="button"
-            >
-              <Feather name="refresh-cw" size={14} color={colors.primary} />
-              <Text style={styles.reloadButtonText}>Revelar otra misión</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyBox}>
-            <View style={styles.emptyIcon}>
-              <Feather name="search" size={31} color={colors.primary} />
+              <View style={styles.visualArea}>
+                <View style={styles.visualRing} />
+                <View style={styles.visualCircle}>
+                  <Feather
+                    name={getActivityIcon(recommended.title)}
+                    size={44}
+                    color={colors.onPrimary}
+                  />
+                </View>
+                <Feather name="star" size={18} color={colors.accent} style={styles.visualStar} />
+              </View>
+
+              <Text style={styles.activityTitle}>{recommended.title}</Text>
+              <Text style={styles.activityDescription}>{recommended.description}</Text>
+
+              {reason ? (
+                <View style={styles.reasonBox}>
+                  <Feather name="heart" size={14} color={colors.primary} />
+                  <Text style={styles.reasonText}>{reason}</Text>
+                </View>
+              ) : null}
+
+              <Text style={styles.encouragement}>
+                {t('recommendations.encouragement')}
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.acceptButton, accepting && styles.disabledButton]}
+                onPress={onAccept}
+                disabled={accepting}
+                accessibilityRole="button"
+              >
+                {accepting ? (
+                  <ActivityIndicator color={colors.onPrimary} />
+                ) : (
+                  <>
+                    <Text style={styles.acceptButtonText}>{t('recommendations.add_to_my_missions')}</Text>
+                    <Feather name="arrow-right" size={17} color={colors.onPrimary} />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reloadButton}
+                onPress={onReload}
+                disabled={accepting}
+                accessibilityRole="button"
+              >
+                <Feather name="refresh-cw" size={14} color={colors.primary} />
+                <Text style={styles.reloadButtonText}>{t('recommendations.reveal_another')}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyBox}>
+              <View style={styles.emptyIcon}>
+                <Feather name="search" size={31} color={colors.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>{t('recommendations.no_compatible_mission')}</Text>
+              <Text style={styles.emptyText}>{t('recommendations.adjust_preferences')}</Text>
+              <TouchableOpacity style={styles.emptyButton} onPress={onClose}>
+                <Text style={styles.emptyButtonText}>{t('recommendations.understood')}</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.emptyTitle}>No encontramos una misión compatible</Text>
-            <Text style={styles.emptyText}>Ajusta tus gustos o recursos en tu Perfil y vuelve a intentarlo.</Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={onClose}>
-              <Text style={styles.emptyButtonText}>Entendido</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   overlay: {

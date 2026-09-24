@@ -2,8 +2,10 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
+  const { t } = useLanguage();
   const activity = pendingActivity?.activity;
   const points = activity?.points_awarded || 0;
 
@@ -14,15 +16,15 @@ export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
         onPress={onCreate}
         activeOpacity={0.9}
         accessibilityRole="button"
-        accessibilityLabel="Crear mi primera misión"
+        accessibilityLabel={t('recommendations.add_first_mission')}
       >
         <View style={styles.emptyIcon}>
           <Feather name="target" size={21} color={colors.accentDark} />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.eyebrowEmpty}>MAZO VACÍO</Text>
-          <Text style={styles.title}>Añade tu primera misión</Text>
-          <Text style={styles.meta}>Crea un reto y empieza a sumar puntos.</Text>
+          <Text style={styles.eyebrowEmpty}>{t('recommendations.empty_deck_title')}</Text>
+          <Text style={styles.title}>{t('recommendations.add_first_mission')}</Text>
+          <Text style={styles.meta}>{t('recommendations.create_challenge_start_points')}</Text>
         </View>
         <View style={styles.emptyAction}>
           <Feather name="plus" size={17} color={colors.onPrimary} />
@@ -37,7 +39,7 @@ export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
       onPress={onPress}
       activeOpacity={0.9}
       accessibilityRole="button"
-      accessibilityLabel={`Jugar ${activity?.title || 'misión activa'}`}
+      accessibilityLabel={`${t('recommendations.active_mission')} ${activity?.title || t('recommendations.your_current_mission')}`}
     >
       <View style={[styles.cardOrb, { pointerEvents: 'none' }]} />
       <View style={styles.activeIcon}>
@@ -47,13 +49,13 @@ export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
       <View style={styles.copy}>
         <View style={styles.eyebrowRow}>
           <View style={styles.statusDot} />
-          <Text style={styles.eyebrow}>MISIÓN ACTIVA</Text>
+          <Text style={styles.eyebrow}>{t('recommendations.active_mission')}</Text>
         </View>
         <Text style={styles.title} numberOfLines={1}>
-          {activity?.title || 'Tu misión actual'}
+          {activity?.title || t('recommendations.your_current_mission')}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          1 paso pendiente{points ? ` · +${points} pts` : ''}
+          {t('recommendations.step_pending')}{points ? ` · ${t('recommendations.points_pending', { points })}` : ''}
         </Text>
       </View>
 

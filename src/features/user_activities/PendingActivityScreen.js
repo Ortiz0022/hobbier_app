@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   completeActivityRPC,
   getUserActivities,
@@ -40,6 +41,7 @@ export const PendingActivityScreen = ({
 }) => {
   const { user, profile, refreshProfile } = useAuth();
   const { notify } = useNotify();
+  const { t } = useLanguage();
   const showMessage = (title, message) => notify(message, { type: 'error', title });
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -88,7 +90,7 @@ export const PendingActivityScreen = ({
       if (Platform.OS !== 'web') {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-          showMessage('Permiso requerido', 'Se requiere permiso para acceder a tus fotos.');
+          showMessage(t('missions.permission_required'), t('missions.gallery_permission'));
           return;
         }
       }
@@ -97,7 +99,7 @@ export const PendingActivityScreen = ({
       setSelectedEvidence(result);
     } catch (error) {
       console.error('Error al seleccionar imagen:', error);
-      showMessage('No pudimos abrir la galería', 'Inténtalo nuevamente en unos segundos.');
+      showMessage(t('missions.gallery_error_title'), t('missions.gallery_error_text'));
     }
   };
 
@@ -106,7 +108,7 @@ export const PendingActivityScreen = ({
       if (Platform.OS !== 'web') {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-          showMessage('Permiso requerido', 'Se requiere permiso para usar la cámara.');
+          showMessage(t('missions.permission_required'), t('missions.camera_permission'));
           return;
         }
       }
@@ -115,7 +117,7 @@ export const PendingActivityScreen = ({
       setSelectedEvidence(result);
     } catch (error) {
       console.error('Error al tomar fotografía:', error);
-      showMessage('No pudimos abrir la cámara', 'Puedes elegir una foto desde la galería.');
+      showMessage(t('missions.camera_error_title'), t('missions.camera_error_text'));
     }
   };
 
@@ -171,7 +173,7 @@ export const PendingActivityScreen = ({
         isRepeating: completedWasRepeat,
       });
     } catch (error) {
-      showMessage('No pudimos completar la actividad', error.message || 'Inténtalo nuevamente.');
+      showMessage(t('missions.complete_error_title'), error.message || t('common.retry'));
     } finally {
       setCompleting(false);
     }
@@ -189,7 +191,7 @@ export const PendingActivityScreen = ({
           <Feather name="compass" size={27} color={colors.primary} />
         </View>
         <ActivityIndicator color={colors.accent} />
-        <Text style={styles.loadingText}>Preparando tu recorrido…</Text>
+        <Text style={styles.loadingText}>{t('missions.loading')}</Text>
       </View>
     );
   }
@@ -208,14 +210,14 @@ export const PendingActivityScreen = ({
         />
 
         <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>Mostrando:</Text>
+          <Text style={styles.filterLabel}>{t('missions.showing')}</Text>
           <TouchableOpacity 
             style={styles.filterDropdownBtn} 
             onPress={() => setShowFilterDropdown(true)}
             activeOpacity={0.7}
           >
             <Text style={styles.filterDropdownText}>
-              {activeTab === 'now' ? 'Misiones pendientes' : 'Misiones completadas'}
+              {activeTab === 'now' ? t('missions.pending_tab') : t('missions.completed_tab')}
             </Text>
             <Feather name="chevron-down" size={14} color={colors.primaryDark} />
           </TouchableOpacity>
@@ -230,15 +232,15 @@ export const PendingActivityScreen = ({
           <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilterDropdown(false)}>
             <View style={styles.filterMenu}>
               <View style={styles.grabber} />
-              <Text style={styles.filterModalTitle}>Ordenar por</Text>
+              <Text style={styles.filterModalTitle}>{t('missions.sort_by')}</Text>
 
               <TouchableOpacity style={styles.filterMenuItem} onPress={() => { setActiveTab('now'); setShowFilterDropdown(false); }}>
-                <Text style={[styles.filterMenuText, activeTab === 'now' && styles.filterMenuTextActive]}>Misiones pendientes</Text>
+                <Text style={[styles.filterMenuText, activeTab === 'now' && styles.filterMenuTextActive]}>{t('missions.pending_tab')}</Text>
                 <Feather name={activeTab === 'now' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'now' ? colors.primary : colors.textMuted} />
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.filterMenuItem} onPress={() => { setActiveTab('history'); setShowFilterDropdown(false); }}>
-                <Text style={[styles.filterMenuText, activeTab === 'history' && styles.filterMenuTextActive]}>Misiones completadas</Text>
+                <Text style={[styles.filterMenuText, activeTab === 'history' && styles.filterMenuTextActive]}>{t('missions.completed_tab')}</Text>
                 <Feather name={activeTab === 'history' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'history' ? colors.primary : colors.textMuted} />
               </TouchableOpacity>
             </View>
@@ -251,12 +253,12 @@ export const PendingActivityScreen = ({
               <>
                 <View style={styles.boardHeading}>
                   <View>
-                    <Text style={styles.boardTitle}>Elige una misión</Text>
-                    <Text style={styles.boardSubtitle}>Sin orden: tú decides por cuál seguir.</Text>
+                    <Text style={styles.boardTitle}>{t('missions.choose_mission')}</Text>
+                    <Text style={styles.boardSubtitle}>{t('missions.choose_subtitle')}</Text>
                   </View>
                   <View style={styles.boardCount}>
                     <Text style={styles.boardCountValue}>{pendingActivities.length}</Text>
-                    <Text style={styles.boardCountLabel}>disponibles</Text>
+                    <Text style={styles.boardCountLabel}>{t('common.available')}</Text>
                   </View>
                 </View>
 
@@ -278,16 +280,14 @@ export const PendingActivityScreen = ({
                 <View style={styles.emptyIcon}>
                   <Feather name="sunrise" size={29} color={colors.accentDark} />
                 </View>
-                <Text style={styles.emptyTitle}>Tu próxima historia aún no empieza</Text>
-                <Text style={styles.emptyText}>
-                  Descubre una actividad y conviértela en algo que puedas recordar.
-                </Text>
+                <Text style={styles.emptyTitle}>{t('missions.empty_pending_title')}</Text>
+                <Text style={styles.emptyText}>{t('missions.empty_pending_text')}</Text>
                 <TouchableOpacity
                   style={styles.discoverButton}
                   onPress={onNavigateToRecommendations}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.discoverButtonText}>Buscar una aventura</Text>
+                  <Text style={styles.discoverButtonText}>{t('missions.find_adventure')}</Text>
                   <Feather name="arrow-right" size={16} color={colors.onPrimary} />
                 </TouchableOpacity>
               </View>
@@ -299,13 +299,13 @@ export const PendingActivityScreen = ({
               <>
                 <View style={styles.achievementBanner}>
                   <View style={styles.achievementCopy}>
-                    <Text style={styles.achievementEyebrow}>TU COLECCIÓN</Text>
+                    <Text style={styles.achievementEyebrow}>{t('missions.your_collection')}</Text>
                     <Text style={styles.achievementTitle}>
                       {completedActivities.length}{' '}
-                      {completedActivities.length === 1 ? 'misión lograda' : 'misiones logradas'}
+                      {completedActivities.length === 1 ? t('missions.missions_achieved_one') : t('missions.missions_achieved_other')}
                     </Text>
                     <Text style={styles.achievementMeta}>
-                      {totalMoments} {totalMoments === 1 ? 'avance registrado' : 'avances registrados'}
+                      {totalMoments} {totalMoments === 1 ? t('missions.moments_one') : t('missions.moments_other')}
                     </Text>
                   </View>
                   <View style={styles.achievementIcon}>
@@ -315,8 +315,8 @@ export const PendingActivityScreen = ({
 
                 <View style={styles.boardHeading}>
                   <View>
-                    <Text style={styles.boardTitle}>Tus favoritas</Text>
-                    <Text style={styles.boardSubtitle}>Puedes repetirlas; las fotos viven en tu Perfil.</Text>
+                    <Text style={styles.boardTitle}>{t('missions.favorites_title')}</Text>
+                    <Text style={styles.boardSubtitle}>{t('missions.favorites_subtitle')}</Text>
                   </View>
                 </View>
                 <View style={styles.missionBoard}>
@@ -337,12 +337,10 @@ export const PendingActivityScreen = ({
                 <View style={[styles.emptyIcon, styles.emptyHistoryIcon]}>
                   <Feather name="bookmark" size={28} color={colors.primary} />
                 </View>
-                <Text style={styles.emptyTitle}>Aquí aparecerán tus logros</Text>
-                <Text style={styles.emptyText}>
-                  Completa tu primera misión y empieza a construir tu colección.
-                </Text>
+                <Text style={styles.emptyTitle}>{t('missions.empty_history_title')}</Text>
+                <Text style={styles.emptyText}>{t('missions.empty_history_text')}</Text>
                 <TouchableOpacity style={styles.switchButton} onPress={() => setActiveTab('now')}>
-                  <Text style={styles.switchButtonText}>Ver misiones</Text>
+                  <Text style={styles.switchButtonText}>{t('missions.see_missions')}</Text>
                 </TouchableOpacity>
               </View>
             )}

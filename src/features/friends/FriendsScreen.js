@@ -30,6 +30,7 @@ import { getUserActivities } from '../../services/activityService';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { roomsService } from '../../services/roomsService';
 import { usePresence } from '../../context/PresenceContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
 import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
@@ -40,6 +41,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
   const { isUserOnline } = usePresence();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(isProfileView ? 'friends' : 'search'); // 'friends', 'search', 'requests'
   const [loading, setLoading] = useState(false);
 
@@ -141,10 +143,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     setSendingMap((prev) => ({ ...prev, [targetUserId]: false }));
 
     if (error) {
-      notify(error.message || 'No se pudo enviar la solicitud.', { type: 'error', title: 'Aviso' });
+      notify(error.message || t('friends.request_error'), { type: 'error', title: t('common.error') });
     } else {
       setSentMap((prev) => ({ ...prev, [targetUserId]: true }));
-      notify('Solicitud de amistad enviada correctamente.', { type: 'success', title: '¡Éxito!' });
+      notify(t('friends.request_sent'), { type: 'success', title: t('common.success') });
     }
   };
 
@@ -156,7 +158,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const handleResponse = async (friendshipId, status) => {
     const { error } = await respondToFriendRequest(friendshipId, status);
     if (error) {
-      notify('Error al responder a la solicitud.', { type: 'error', title: 'Error' });
+      notify(t('friends.request_error'), { type: 'error', title: t('common.error') });
     } else {
       loadRequests();
       loadFriends();
@@ -172,9 +174,9 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
 
   const handleRemoveFriend = async (friendshipId, friendName) => {
     const ok = await confirm({
-      title: 'Eliminar amigo',
-      message: `¿Deseas eliminar a ${friendName} de tus amigos?`,
-      confirmLabel: 'Eliminar',
+      title: t('friends.remove_friend_title'),
+      message: t('friends.remove_friend_confirm', { name: friendName }),
+      confirmLabel: t('friends.remove'),
       destructive: true,
     });
     if (ok) removeFriendship(friendshipId).then(loadFriends);
@@ -235,7 +237,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               </TouchableOpacity>
             )}
             <Text style={[styles.title, { marginBottom: 0 }]}>
-              {isProfileView ? 'Mis Amigos' : 'Comunidad y Amigos'}
+              {isProfileView ? t('friends.my_friends') : t('friends.community_and_friends')}
             </Text>
           </View>
 
@@ -254,7 +256,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   color={activeTab === 'search' ? '#053E4A' : '#8A908B'}
                 />
                 <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>
-                  Conectar
+                  {t('friends.connect_tab')}
                 </Text>
               </TouchableOpacity>
 
@@ -274,7 +276,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   </View>
                 )}
                 <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
-                  Solicitudes
+                  {t('friends.requests_tab')}
                 </Text>
               </TouchableOpacity>
 
@@ -295,7 +297,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   <View style={styles.redBadgeDot} />
                 )}
                 <Text style={[styles.tabText, activeTab === 'rooms' && styles.activeTabText]}>
-                  Salas
+                  {t('friends.rooms_tab')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -333,7 +335,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar entre mis amigos..."
+                  placeholder={t('friends.search_friends_placeholder')}
                   placeholderTextColor="#8A908B"
                   value={friendSearchQuery}
                   onChangeText={setFriendSearchQuery}
@@ -347,12 +349,12 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <View style={styles.emptyCard}>
                   <Feather name="users" size={36} color="#8A908B" style={styles.emptyIcon} />
                   <Text style={styles.emptyTitle}>
-                    {friendSearchQuery.trim() ? 'Sin coincidencias' : 'Aún no tienes amigos'}
+                    {friendSearchQuery.trim() ? t('friends.no_matches') : t('friends.no_friends_yet')}
                   </Text>
                   <Text style={styles.emptyText}>
                     {friendSearchQuery.trim()
-                      ? 'No se encontraron amigos con ese nombre o usuario.'
-                      : 'Cambia a la pestaña "Buscar" para encontrar y agregar contactos.'}
+                      ? t('friends.no_users_found')
+                      : t('friends.switch_to_search_tab')}
                   </Text>
                 </View>
               )}
@@ -406,7 +408,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar otros usuarios por @username..."
+                  placeholder={t('friends.search_users_placeholder')}
                   placeholderTextColor="#8A908B"
                   value={searchQuery}
                   onChangeText={handleSearch}
@@ -419,8 +421,8 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               {!loading && searchQuery.trim() !== '' && searchResults.length === 0 && (
                 <View style={styles.emptyCard}>
                   <Feather name="user-x" size={32} color="#8A908B" style={styles.emptyIcon} />
-                  <Text style={styles.emptyTitle}>Sin resultados</Text>
-                  <Text style={styles.emptyText}>No se encontraron usuarios coincidentes con tu búsqueda.</Text>
+                  <Text style={styles.emptyTitle}>{t('friends.no_results')}</Text>
+                  <Text style={styles.emptyText}>{t('friends.no_users_found')}</Text>
                 </View>
               )}
 
@@ -445,7 +447,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   {sentMap[targetUser.id] ? (
                     <View style={styles.sentBadge}>
                       <Feather name="check" size={14} color="#8A908B" />
-                      <Text style={styles.sentBadgeText}>Enviada</Text>
+                      <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -459,7 +461,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       ) : (
                         <>
                           <Feather name="user-plus" size={16} color="#0C8AA6" />
-                          <Text style={styles.addBtnText}>Agregar</Text>
+                          <Text style={styles.addBtnText}>{t('friends.add_friend')}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -471,10 +473,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               {!loading && searchQuery.trim() === '' && (
                 <View style={{ marginTop: 16 }}>
                   <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: '#08333D', marginBottom: 4 }}>
-                    Sugerencias para ti
+                    {t('friends.suggestions_for_you')}
                   </Text>
                   <Text style={{ fontSize: 13, color: '#727773', marginBottom: 16 }}>
-                    Hobbiers que comparten intereses contigo.
+                    {t('friends.hobbiers_shared_interests')}
                   </Text>
 
                   {suggestionsLoading ? (
@@ -482,8 +484,8 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                   ) : suggestions.length === 0 ? (
                     <View style={styles.emptyCard}>
                       <Feather name="smile" size={32} color="#8A908B" style={styles.emptyIcon} />
-                      <Text style={styles.emptyTitle}>Sin sugerencias</Text>
-                      <Text style={styles.emptyText}>Agrega más intereses a tu perfil para encontrar Hobbiers afines.</Text>
+                      <Text style={styles.emptyTitle}>{t('friends.no_suggestions')}</Text>
+                      <Text style={styles.emptyText}>{t('friends.add_more_interests')}</Text>
                     </View>
                   ) : (
                     suggestions.map((sug) => (
@@ -505,14 +507,14 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
                             <Feather name="users" size={12} color="#0C8AA6" />
                             <Text style={{ fontSize: 12, color: '#0C8AA6', fontWeight: '600' }}>
-                              {sug.sharedCount} intereses en común
+                              {t('friends.shared_interests', { count: sug.sharedCount })}
                             </Text>
                           </View>
                         </View>
                         {sentMap[sug.profile.id] ? (
                           <View style={styles.sentBadge}>
                             <Feather name="check" size={14} color="#8A908B" />
-                            <Text style={styles.sentBadgeText}>Enviada</Text>
+                            <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
                           </View>
                         ) : (
                           <TouchableOpacity
@@ -526,7 +528,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                             ) : (
                               <>
                                 <Feather name="user-plus" size={16} color="#0C8AA6" />
-                                <Text style={styles.addBtnText}>Agregar</Text>
+                                <Text style={styles.addBtnText}>{t('friends.add_friend')}</Text>
                               </>
                             )}
                           </TouchableOpacity>
@@ -546,8 +548,8 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               {!loading && requests.length === 0 && (
                 <View style={styles.emptyCard}>
                   <Feather name="inbox" size={36} color="#8A908B" style={styles.emptyIcon} />
-                  <Text style={styles.emptyTitle}>Bandeja limpia</Text>
-                  <Text style={styles.emptyText}>No tienes solicitudes de amistad pendientes por responder.</Text>
+                  <Text style={styles.emptyTitle}>{t('friends.inbox_clean')}</Text>
+                  <Text style={styles.emptyText}>{t('friends.no_pending_requests')}</Text>
                 </View>
               )}
               {requests.map((req) => (
@@ -575,7 +577,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       activeOpacity={0.8}
                     >
                       <Feather name="check" size={14} color="#FFFFFF" />
-                      <Text style={styles.btnText}>Aceptar</Text>
+                      <Text style={styles.btnText}>{t('friends.accept')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.rejectBtn}

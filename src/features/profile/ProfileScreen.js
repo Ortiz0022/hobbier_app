@@ -16,17 +16,12 @@ import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../config/supabase';
 import { uploadAvatarImage, getUserActivities } from '../../services/activityService';
 import { getUserPosts, getFriendsList } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
-
-const TABS = [
-  { key: 'fotos', label: 'Fotos' },
-  { key: 'actividades', label: 'Actividades' },
-];
-
 
 // Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
 // ActivityCard e InlineEvidenceUploader (pantalla "Actividad").
@@ -57,8 +52,10 @@ const COLORS = {
 export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const { profile, refreshProfile, signOut } = useAuth();
   const { notify } = useNotify();
+  const { t, language, setLanguage, languages } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [newImageUri, setNewImageUri] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -77,6 +74,11 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const [expandedActivityId, setExpandedActivityId] = useState(null);
 
   const [activeTab, setActiveTab] = useState('fotos');
+
+  const TABS = [
+    { key: 'fotos', label: t('profile.photos_tab') },
+    { key: 'actividades', label: t('profile.activities_tab') },
+  ];
 
   const loadExtras = useCallback(async () => {
     if (!profile?.id) return;
@@ -197,7 +199,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 }}
               >
                 <Feather name="edit-2" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>Editar perfil</Text>
+                <Text style={styles.menuItemText}>{t('profile.edit_profile')}</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />
@@ -210,7 +212,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 }}
               >
                 <Feather name="sliders" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>Configurar Gustos, Intereses y Recursos</Text>
+                <Text style={styles.menuItemText}>{t('profile.config_preferences')}</Text>
               </TouchableOpacity>
 
               <View style={styles.menuDivider} />
@@ -237,7 +239,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
         >
           <Pressable style={styles.viewerOverlay} onPress={() => setViewerImage(null)}>
             {viewerImage && (
-              <Pressable style={styles.viewerCard} onPress={() => {}}>
+              <Pressable style={styles.viewerCard} onPress={() => { }}>
                 <View style={styles.viewerImageWrap}>
                   <Image
                     source={{ uri: viewerImage.uri }}
@@ -316,7 +318,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
             {editing && (
               <View style={styles.avatarEditOverlay}>
                 <Feather name="camera" size={12} color="#ffffff" />
-                <Text style={styles.avatarEditOverlayText}>Cambiar</Text>
+                <Text style={styles.avatarEditOverlayText}>{t('profile.change_avatar')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -329,7 +331,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
               <Text style={[styles.statNumber, styles.statNumberCyan]}>
                 {profile?.points || 0}
               </Text>
-              <Text style={styles.statLabel}>Puntos</Text>
+              <Text style={styles.statLabel}>{t('profile.points')}</Text>
             </View>
 
             <View style={styles.statDivider} />
@@ -338,27 +340,27 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
               <Text style={styles.statNumber}>
                 {loadingStats ? '…' : completedActivities.length}
               </Text>
-              <Text style={styles.statLabel}>Retos</Text>
+              <Text style={styles.statLabel}>{t('profile.challenges')}</Text>
             </View>
 
             <View style={styles.statDivider} />
 
-            <TouchableOpacity 
-              style={styles.statItem} 
+            <TouchableOpacity
+              style={styles.statItem}
               onPress={onNavigateToFriends}
               activeOpacity={0.7}
             >
               <Text style={styles.statNumber}>{friendsCount}</Text>
-              <Text style={styles.statLabel}>Amigos</Text>
+              <Text style={styles.statLabel}>{t('profile.friends')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {editing ? (
           <View style={styles.detailsCard}>
-            <Text style={styles.detailsTitle}>Editar perfil</Text>
+            <Text style={styles.detailsTitle}>{t('profile.edit_profile')}</Text>
 
-            <Text style={styles.inputLabel}>Nombre Completo</Text>
+            <Text style={styles.inputLabel}>{t('profile.full_name')}</Text>
             <TextInput
               style={styles.input}
               value={fullName}
@@ -366,7 +368,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
               placeholderTextColor={COLORS.textSecondary}
             />
 
-            <Text style={styles.inputLabel}>Foto de Perfil</Text>
+            <Text style={styles.inputLabel}>{t('profile.profile_photo')}</Text>
             <View style={styles.uploadWrapper}>
               <TouchableOpacity
                 style={styles.dashedDropzone}
@@ -385,7 +387,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                         <Feather name="plus-circle" size={18} color={COLORS.orange} />
                       </View>
                     </View>
-                    <Text style={styles.dropzoneText}>Sube una foto de tu perfil</Text>
+                    <Text style={styles.dropzoneText}>{t('profile.upload_photo_prompt')}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -399,7 +401,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                   setNewImageUri(null);
                 }}
               >
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
+                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -410,7 +412,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 {saving ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.saveBtnText}>Guardar Cambios</Text>
+                  <Text style={styles.saveBtnText}>{t('profile.save_changes')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1190,4 +1192,75 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '600',
   },
+  // ── Language selector modal ──────────────────────────────────────────────────
+  langModalCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    marginHorizontal: 32,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  langModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  langModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  langOptionsList: {
+    gap: 8,
+    marginBottom: 20,
+  },
+  langOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: '#FAFAFA',
+  },
+  langOptionItemActive: {
+    borderColor: COLORS.cyan,
+    backgroundColor: COLORS.cyanSoft,
+  },
+  langOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  langFlag: {
+    fontSize: 26,
+  },
+  langOptionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  langOptionLabelActive: {
+    color: COLORS.cyanIcon,
+  },
+  langCloseBtn: {
+    backgroundColor: COLORS.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  langCloseBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
 });
+

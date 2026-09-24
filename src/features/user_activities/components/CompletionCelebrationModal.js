@@ -2,58 +2,62 @@ import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
+import { useLanguage } from '../../../context/LanguageContext';
 
-export const CompletionCelebrationModal = ({ visible, result, onProfile, onClose }) => (
-  <Modal
-    visible={visible}
-    transparent
-    animationType="fade"
-    statusBarTranslucent
-    onRequestClose={onClose}
-  >
-    <View style={styles.overlay}>
-      <View style={styles.card}>
-        <View style={[styles.decorations, { pointerEvents: 'none' }]}>
-          <Feather name="star" size={20} color={colors.accent} style={styles.starOne} />
-          <Feather name="star" size={13} color={colors.salmon} style={styles.starTwo} />
-          <View style={styles.dot} />
-        </View>
-
-        <View style={styles.iconRing}>
-          <View style={styles.iconCircle}>
-            <Feather name="check" size={40} color={colors.onPrimary} />
+export const CompletionCelebrationModal = ({ visible, result, onProfile, onClose }) => {
+  const { t } = useLanguage();
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.card}>
+          <View style={[styles.decorations, { pointerEvents: 'none' }]}>
+            <Feather name="star" size={20} color={colors.accent} style={styles.starOne} />
+            <Feather name="star" size={13} color={colors.salmon} style={styles.starTwo} />
+            <View style={styles.dot} />
           </View>
+
+          <View style={styles.iconRing}>
+            <View style={styles.iconCircle}>
+              <Feather name="check" size={40} color={colors.onPrimary} />
+            </View>
+          </View>
+
+          <Text style={styles.eyebrow}>{result?.isRepeating ? t('missions.new_advance_recorded') : t('missions.mission_completed')}</Text>
+          <Text style={styles.title}>{result?.isRepeating ? t('missions.kept_advancing') : t('missions.mission_accomplished')}</Text>
+          <Text style={styles.activityName}>{result?.title}</Text>
+
+          <View style={styles.pointsPill}>
+            <Feather name="star" size={15} color={colors.accentDark} />
+            <Text style={styles.pointsText}>+{result?.points || 0} {t('common.points')}</Text>
+          </View>
+
+          <Text style={styles.message}>
+            {t('missions.evidence_saved')}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={onProfile}
+            activeOpacity={0.9}
+            accessibilityRole="button"
+          >
+            <Text style={styles.profileButtonText}>{t('missions.view_in_profile')}</Text>
+            <Feather name="arrow-up-right" size={17} color={colors.onPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityRole="button">
+            <Text style={styles.closeButtonText}>{t('missions.stay_here')}</Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.eyebrow}>{result?.isRepeating ? 'NUEVO AVANCE REGISTRADO' : 'MISIÓN SUPERADA'}</Text>
-        <Text style={styles.title}>{result?.isRepeating ? 'Seguiste avanzando.' : '¡Misión cumplida!'}</Text>
-        <Text style={styles.activityName}>{result?.title}</Text>
-
-        <View style={styles.pointsPill}>
-          <Feather name="star" size={15} color={colors.accentDark} />
-          <Text style={styles.pointsText}>+{result?.points || 0} puntos</Text>
-        </View>
-
-        <Text style={styles.message}>
-          Tu evidencia quedó guardada. Este momento ya forma parte de tu Perfil.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={onProfile}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-        >
-          <Text style={styles.profileButtonText}>Ver en mi Perfil</Text>
-          <Feather name="arrow-up-right" size={17} color={colors.onPrimary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityRole="button">
-          <Text style={styles.closeButtonText}>Seguir aquí</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   overlay: {
