@@ -415,5 +415,17 @@
     "lectura": "Reading",
     "música": "Music",
     "naturaleza": "Nature"
+  },
+  "legal": {
+    "privacy_policy": "Privacy Policy",
+    "terms_of_use": "Terms of Use",
+    "accept_prefix": "I accept the ",
+    "accept_and": " and the ",
+    "accept_required": "You must accept the Terms of Use and the Privacy Policy to create your account.",
+    "close": "Close",
+    "cookie_text": "Hobbier only stores what it needs to work in your browser: your session and your language. We do not use advertising or analytics cookies.",
+    "cookie_read_more": "Read our Privacy Policy.",
+    "cookie_accept": "Accept",
+    "cookie_reject": "Reject"
   }
 }

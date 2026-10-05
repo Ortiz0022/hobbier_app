@@ -22,7 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 // Se reutilizan las reglas de fecha del registro en lugar de escribir otras:
 // ya están probadas y así el formato pedido es el mismo en toda la app.
-import { ageFromISODate, validateBirthDate } from '../auth/validation';
+import { ageFromISODate, validateBirthDate, MIN_AGE } from '../auth/validation';
 import {
   fetchResourcesCatalog,
   fetchUserPreferences,
@@ -30,6 +30,7 @@ import {
   saveUserBirthDate,
 } from '../../services/catalogService';
 import { CatalogPicker } from './components/CatalogPicker';
+import { CalendarDateField } from '../../components/CalendarDateField';
 
 // El asistente recorre esta lista: primero la fecha (paso propio, sin
 // catálogo) y después las tres secciones de opciones. Agregar un paso es
@@ -125,7 +126,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       setModoEdicion(
         prefs.userLikes.length + prefs.userInterests.length + prefs.userResources.length > 0,
       );
-      // Se muestra en dd/mm/aaaa aunque la base la guarde como YYYY-MM-DD.
+      // La base la guarda como YYYY-MM-DD; CalendarDateField trabaja con dd/mm/aaaa.
       if (prefs.birthDate) {
         const [y, m, d] = prefs.birthDate.split('-');
         setBirthDate(`${d}/${m}/${y}`);
@@ -322,10 +323,8 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   // Edad ya calculada, para devolverle al usuario lo que entendimos de su
   // fecha. Escribir 09/03/2003 y que la pantalla conteste "Tienes 22 años" es
   // la única forma de que note un dedazo en el año antes de seguir.
-  const edad = (() => {
-    const { isoDate } = validateBirthDate(birthDate);
-    return isoDate ? ageFromISODate(isoDate) : null;
-  })();
+  const birthIso = validateBirthDate(birthDate).isoDate;
+  const edad = birthIso ? ageFromISODate(birthIso) : null;
 
   // Bloque de la fecha. `compacto` en la pantalla de edición: allí el icono
   // grande y la insignia ocupaban media pantalla antes de llegar a los gustos.
@@ -343,19 +342,17 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
         </>
       ) : null}
 
-      <View
-        style={[styles.dateInputBox, birthDateError ? styles.dateInputBoxInvalid : null]}
-      >
-        <TextInput
-          style={styles.dateInput}
-          placeholder="dd/mm/aaaa"
-          placeholderTextColor={TOKENS.colors.inactiveBorder}
+      <View style={styles.dateFieldsWrap}>
+        <CalendarDateField
           value={birthDate}
-          onChangeText={(value) => {
+          onChange={(value) => {
             setBirthDate(value);
             if (birthDateError) setBirthDateError('');
           }}
-          keyboardType="numbers-and-punctuation"
+          invalid={!!birthDateError}
+          // Igual que en el registro: nadie menor de MIN_AGE puede elegirse
+          maxDate={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE))}
+          initialDate={new Date(new Date().getFullYear() - 20, 0, 1)}
         />
       </View>
 
@@ -372,7 +369,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
           <Text style={styles.dateFeedbackOkText}>Tienes {edad} años</Text>
         </View>
       ) : (
-        <Text style={styles.dateHint}>Por ejemplo: 09/03/2003</Text>
+        <Text style={styles.dateHint}>Toca el campo para elegir la fecha en el calendario.</Text>
       )}
     </View>
   );
@@ -723,6 +720,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: TOKENS.colors.badgeInfoBg,
     marginBottom: TOKENS.spacing.xs,
+  },
+  dateFieldsWrap: {
+    alignSelf: 'stretch',
   },
   dateInputBox: {
     alignSelf: 'stretch',

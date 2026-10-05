@@ -68,6 +68,18 @@ export const roomsService = {
     return data;
   },
 
+  // Invitaciones pendientes que el usuario actual envió para una sala.
+  // La RLS de room_invitations solo deja ver las que uno envió o recibió.
+  async getSentPendingInvitations(roomId) {
+    const { data, error } = await supabase
+      .from('room_invitations')
+      .select('receiver_id')
+      .eq('room_id', roomId)
+      .eq('status', 'PENDING');
+    if (error) throw error;
+    return (data || []).map((row) => row.receiver_id);
+  },
+
   async getPendingInvitations() {
     const { data, error } = await supabase.rpc('get_pending_room_invitations');
     if (error) throw error;

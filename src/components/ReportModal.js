@@ -7,10 +7,16 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
-import { Text } from './scaledText';
+import { Text, TextInput } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { capitalizarTitulo } from '../utils/titleCase';
+import { TOKENS } from '../theme/designTokens';
+
+// Razón que pide al usuario escribir el motivo con sus propias palabras
+const OTHER_REASON = 'Otro';
+const MAX_DETAILS_LENGTH = 300;
 
 const DEFAULT_REASONS = [
   'Contenido ofensivo',
@@ -31,17 +37,23 @@ export const ReportModal = ({
   reasons = DEFAULT_REASONS,
 }) => {
   const [selectedReason, setSelectedReason] = useState(null);
+  const [otherDetails, setOtherDetails] = useState('');
 
   // Reiniciar la selección al abrir el modal
   useEffect(() => {
     if (visible) {
       setSelectedReason(null);
+      setOtherDetails('');
     }
   }, [visible]);
 
+  const isOther = selectedReason === OTHER_REASON;
+  // Con "Otro" el motivo escrito es obligatorio: sin él el admin no sabe qué revisar
+  const canSubmit = !!selectedReason && (!isOther || otherDetails.trim().length > 0);
+
   const handleSubmit = () => {
-    if (selectedReason && onSubmit) {
-      onSubmit(selectedReason);
+    if (canSubmit && onSubmit) {
+      onSubmit(selectedReason, isOther ? otherDetails.trim() : '');
     }
   };
 
@@ -52,6 +64,10 @@ export const ReportModal = ({
       animationType="slide"
       onRequestClose={onClose}
     >
+      <KeyboardAvoidingView
+        style={styles.keyboardWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <TouchableOpacity
         style={styles.overlay}
         activeOpacity={1}
@@ -99,6 +115,26 @@ export const ReportModal = ({
               })}
             </View>
 
+            {/* Campo libre para explicar el motivo cuando se elige "Otro" */}
+            {isOther && (
+              <View style={styles.detailsWrapper}>
+                <TextInput
+                  style={styles.detailsInput}
+                  value={otherDetails}
+                  onChangeText={setOtherDetails}
+                  placeholder="Cuéntanos el motivo del reporte"
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  autoFocus
+                  maxLength={MAX_DETAILS_LENGTH}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.detailsCounter}>
+                  {otherDetails.length}/{MAX_DETAILS_LENGTH}
+                </Text>
+              </View>
+            )}
+
             {/* Línea divisora previa al botón de acción */}
             <View style={styles.divider} />
 
@@ -106,19 +142,19 @@ export const ReportModal = ({
             <TouchableOpacity
               style={[
                 styles.submitBtn,
-                !selectedReason ? styles.submitBtnDisabled : styles.submitBtnActive,
+                !canSubmit ? styles.submitBtnDisabled : styles.submitBtnActive,
               ]}
               onPress={handleSubmit}
-              disabled={!selectedReason || submitting}
+              disabled={!canSubmit || submitting}
               activeOpacity={0.85}
             >
               {submitting ? (
-                <ActivityIndicator color={selectedReason ? '#FFFFFF' : '#94A3B8'} />
+                <ActivityIndicator color={canSubmit ? '#FFFFFF' : '#94A3B8'} />
               ) : (
                 <Text
                   style={[
                     styles.submitBtnText,
-                    !selectedReason ? styles.submitBtnTextDisabled : styles.submitBtnTextActive,
+                    !canSubmit ? styles.submitBtnTextDisabled : styles.submitBtnTextActive,
                   ]}
                 >
                   Enviar reporte
@@ -128,11 +164,15 @@ export const ReportModal = ({
           </View>
         </TouchableWithoutFeedback>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardWrapper: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
@@ -205,13 +245,13 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   radioCircleSelected: {
-    borderColor: '#121B22',
+    borderColor: TOKENS.colors.primary,
   },
   radioInnerDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#121B22',
+    backgroundColor: TOKENS.colors.primary,
   },
   optionText: {
     fontSize: 15,
@@ -221,6 +261,27 @@ const styles = StyleSheet.create({
   optionTextSelected: {
     fontWeight: '600',
     color: '#121B22',
+  },
+  detailsWrapper: {
+    marginTop: 4,
+  },
+  detailsInput: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: TOKENS.colors.inactiveBorder,
+    backgroundColor: TOKENS.colors.inactiveBg,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: 14,
+    color: TOKENS.colors.textDark,
+  },
+  detailsCounter: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    fontSize: 11,
+    color: TOKENS.colors.textMuted,
   },
   divider: {
     height: 1,
@@ -238,7 +299,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   submitBtnActive: {
-    backgroundColor: '#121B22',
+    backgroundColor: TOKENS.colors.primary,
   },
   submitBtnText: {
     fontSize: 15,

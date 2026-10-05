@@ -18,6 +18,8 @@ import { useNotify } from '../context/NotificationContext';
 import { getUserPosts, getFriendsList, getSentFriendRequests, sendFriendRequest } from '../services/socialService';
 import { getUserActivities } from '../services/activityService';
 import { getCategoryStyle, getCategoryLabel } from '../utils/category';
+import { useLanguage } from '../context/LanguageContext';
+import { formatDateTime } from '../utils/dateFormat';
 
 // Mismos tokens exactos que usa ProfileScreen para que ambos perfiles luzcan idénticos.
 const COLORS = {
@@ -45,6 +47,7 @@ const TABS = [
 export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage }) => {
   const { user } = useAuth();
   const { notify } = useNotify();
+  const { language } = useLanguage();
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [completedActivities, setCompletedActivities] = useState([]);
@@ -448,10 +451,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                         <View style={styles.viewerStatItem}>
                           <Feather name="clock" size={13} color={COLORS.textSecondary} />
                           <Text style={styles.viewerStatText}>
-                            {new Date(viewerImage.completedAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {formatDateTime(viewerImage.completedAt, language)}
                           </Text>
                         </View>
                       )}

@@ -14,7 +14,9 @@ import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { isSupabaseConfigured } from '../../config/supabase';
+import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
 import {
   validateEmail,
   validateNewPassword,
@@ -24,7 +26,21 @@ import {
   validatePasswordConfirmation,
   validateBirthDate,
   describeAuthError,
+  MIN_AGE,
 } from './validation';
+import { CalendarDateField } from '../../components/CalendarDateField';
+
+// El calendario de nacimiento abre unos 20 años atrás: empezar en el mes
+// actual obligaría a casi todo el mundo a ir a la lista de años.
+const BIRTH_CALENDAR_START = new Date(new Date().getFullYear() - 20, 0, 1);
+
+// Fecha más reciente elegible: hoy hace MIN_AGE años. Las posteriores salen
+// deshabilitadas en el calendario, así que un menor no puede ni elegirlas.
+const latestAllowedBirthDate = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - MIN_AGE);
+  return d;
+};
 
 // react-native-web no tiene driver nativo; pedirlo deja la animación a medio camino.
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -32,7 +48,13 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 export const AuthScreen = () => {
   const { signIn, signUp, resetPassword, isUsernameTaken, loading } = useAuth();
   const { notify } = useNotify();
+  const { t } = useLanguage();
   const [isRegister, setIsRegister] = useState(false);
+  // Aceptación explícita de Términos y Privacidad: casilla sin marcar por
+  // defecto, como exige el consentimiento informado (GDPR / Ley 8968).
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
+  // Documento legal abierto: 'privacy' | 'terms' | null
+  const [legalDoc, setLegalDoc] = useState(null);
   const [isForgot, setIsForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -185,6 +207,7 @@ export const AuthScreen = () => {
         password: validateNewPassword(password),
         passwordConfirm: validatePasswordConfirmation(password, passwordConfirm),
         birthDate: birth.error,
+        legal: acceptedLegal ? null : t('legal.accept_required'),
       };
 
       if (Object.values(errors).some(Boolean)) {
@@ -213,7 +236,16 @@ export const AuthScreen = () => {
       });
 
       if (error) {
-        setErrorMessage(describeAuthError(error));
+        // Si el trigger handle_new_user falla, Supabase solo dice "Database error
+        // saving new user", sin la causa. Lo más probable es que alguien haya
+        // tomado el nombre en el último instante: se comprueba para poder
+        // señalar el campo en vez de mostrar un error genérico.
+        if (/Database error saving new user/i.test(error.message || '') && (await isUsernameTaken(username))) {
+          setUsernameStatus('taken');
+          setFieldErrors({ username: 'Ese nombre de usuario ya está en uso.' });
+        } else {
+          setErrorMessage(describeAuthError(error));
+        }
       } else {
         if (!data?.session) {
           const msg = '¡Registro recibido! Si en Supabase tienes activada la confirmación por correo, revisa tu bandeja de entrada o desactiva "Confirm email" en tu dashboard de Supabase (Authentication -> Providers -> Email).';
@@ -462,19 +494,51 @@ export const AuthScreen = () => {
           {isRegister && !isForgot && (
             <>
               <Text style={styles.label}>Date of Birth</Text>
-              <View style={[styles.inputRow, fieldErrors.birthDate && styles.inputRowInvalid]}>
-                <Ionicons name="calendar-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="dd/mm/aaaa"
-                  placeholderTextColor="#8A908B"
-                  value={birthDate}
-                  onChangeText={editField(setBirthDate, 'birthDate')}
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
+              <CalendarDateField
+                value={birthDate}
+                onChange={editField(setBirthDate, 'birthDate')}
+                invalid={!!fieldErrors.birthDate}
+                maxDate={latestAllowedBirthDate()}
+                initialDate={BIRTH_CALENDAR_START}
+              />
               {fieldErrors.birthDate ? (
                 <Text style={styles.fieldError}>{fieldErrors.birthDate}</Text>
+              ) : (
+                <Text style={styles.fieldHint}>Debes tener al menos {MIN_AGE} años para registrarte.</Text>
+              )}
+
+              {/* Aceptación de Términos y Privacidad (pilar legal) */}
+              <View style={styles.legalRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setAcceptedLegal((v) => !v);
+                    setFieldErrors((prev) => (prev.legal ? { ...prev, legal: null } : prev));
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: acceptedLegal }}
+                  style={[
+                    styles.checkbox,
+                    acceptedLegal && styles.checkboxChecked,
+                    fieldErrors.legal && styles.checkboxInvalid,
+                  ]}
+                >
+                  {acceptedLegal && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                </TouchableOpacity>
+                <Text style={styles.legalText}>
+                  {t('legal.accept_prefix')}
+                  <Text style={styles.legalLink} onPress={() => setLegalDoc('terms')}>
+                    {t('legal.terms_of_use')}
+                  </Text>
+                  {t('legal.accept_and')}
+                  <Text style={styles.legalLink} onPress={() => setLegalDoc('privacy')}>
+                    {t('legal.privacy_policy')}
+                  </Text>
+                  .
+                </Text>
+              </View>
+              {fieldErrors.legal ? (
+                <Text style={styles.fieldError}>{fieldErrors.legal}</Text>
               ) : null}
             </>
           )}
@@ -500,6 +564,7 @@ export const AuthScreen = () => {
                 // Al cambiar de modo, lo propio del registro se limpia: si no, al
                 // volver aparecería un "¡Disponible!" de un nombre ya olvidado.
                 setPasswordConfirm('');
+                setAcceptedLegal(false);
                 setUsernameStatus('idle');
                 setFieldErrors({});
                 if (isForgot) {
@@ -522,7 +587,20 @@ export const AuthScreen = () => {
             </Text>
           </TouchableOpacity>
         </Animated.View>
+
+        {/* Enlaces legales siempre visibles, también en el inicio de sesión */}
+        <View style={styles.legalFooter}>
+          <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('privacy')}>
+            {t('legal.privacy_policy')}
+          </Text>
+          <Text style={styles.legalFooterDot}>·</Text>
+          <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('terms')}>
+            {t('legal.terms_of_use')}
+          </Text>
+        </View>
       </ScrollView>
+
+      <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
     </SafeAreaView>
   );
 };
@@ -743,6 +821,57 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 18,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#8A908B',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: '#0C8AA6',
+    borderColor: '#0C8AA6',
+  },
+  checkboxInvalid: {
+    borderColor: '#A94403',
+  },
+  legalText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#4A5568',
+  },
+  legalLink: {
+    color: '#0C8AA6',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  legalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 18,
+    gap: 8,
+  },
+  legalFooterLink: {
+    fontSize: 12,
+    color: '#8A908B',
+    textDecorationLine: 'underline',
+  },
+  legalFooterDot: {
+    fontSize: 12,
+    color: '#8A908B',
   },
   toggleButton: {
     marginTop: 18,

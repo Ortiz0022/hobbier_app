@@ -190,10 +190,17 @@ export const AdminScreen = () => {
                     {post.reports.map((r) => (
                       <View key={r.id} style={styles.reasonRow}>
                         <Ionicons name="alert-circle" size={13} color={TOKENS.colors.alertText} />
-                        <Text style={styles.reasonText}>
-                          <Text style={styles.reasonBold}>{r.reason}</Text>
-                          {r.reporter?.username ? ` · por @${r.reporter.username}` : ''}
-                        </Text>
+                        <View style={styles.reasonContent}>
+                          <Text style={styles.reasonText}>
+                            <Text style={styles.reasonBold}>{r.reason}</Text>
+                            {r.reporter?.username ? ` · por @${r.reporter.username}` : ''}
+                          </Text>
+                          {/* Motivo escrito por el usuario (opción "Otro"). Los reportes
+                              antiguos guardaban un texto fijo que no aporta nada. */}
+                          {r.details && r.details !== 'Reportado desde el feed' ? (
+                            <Text style={styles.reasonDetails}>"{r.details}"</Text>
+                          ) : null}
+                        </View>
                       </View>
                     ))}
                   </View>
@@ -494,10 +501,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 6,
   },
-  reasonText: {
+  reasonContent: {
     flex: 1,
+  },
+  reasonText: {
     fontSize: 13,
     color: TOKENS.colors.textDark,
+    lineHeight: 18,
+  },
+  reasonDetails: {
+    marginTop: 2,
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: TOKENS.colors.inactiveText,
     lineHeight: 18,
   },
   reasonBold: {

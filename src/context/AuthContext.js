@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getRedirectUrl } from '../config/supabase';
+import { LEGAL_VERSION } from '../legal/legalContent';
 
 const AuthContext = createContext();
 
@@ -84,6 +85,10 @@ export const AuthProvider = ({ children }) => {
             username: cleanUsername,
             birth_date: birthDate.trim(),
             role: 'USER',
+            // Constancia del consentimiento: qué versión de Términos y
+            // Privacidad aceptó y cuándo. Queda en auth.users.raw_user_meta_data.
+            legal_version: LEGAL_VERSION,
+            legal_accepted_at: new Date().toISOString(),
           },
         },
       });
@@ -127,16 +132,22 @@ export const AuthProvider = ({ children }) => {
   // handle_new_user falla al insertarlo repetido, así que conviene avisar antes de
   // crear la cuenta. Ante un fallo de red devuelve false: que decida el servidor,
   // en lugar de bloquear un registro que quizá sí era válido.
+  //
+  // Se compara SIN distinguir mayúsculas: hay perfiles antiguos guardados con
+  // mayúsculas ("AngeOrtiz") y un `.eq` en minúsculas no los encontraría.
+  // En `ilike` el guion bajo es comodín de un carácter, así que se escapa para
+  // que "ana_b" no coincida con "anaxb".
   const isUsernameTaken = async (username) => {
     try {
+      const pattern = username.trim().toLowerCase().replace(/[\\%_]/g, '\\$&');
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', username.trim().toLowerCase())
-        .maybeSingle();
+        .ilike('username', pattern)
+        .limit(1);
 
       if (error) throw error;
-      return Boolean(data);
+      return (data || []).length > 0;
     } catch (error) {
       console.warn('No se pudo comprobar el nombre de usuario:', error.message);
       return false;
