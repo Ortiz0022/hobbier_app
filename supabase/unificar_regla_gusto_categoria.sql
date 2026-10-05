@@ -141,6 +141,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMIT;
 
+-- RECARGAR LA API
+-- Supabase cachea el esquema que expone por REST. Sin esto, una columna o una
+-- función recién creada puede seguir "sin existir" para la app durante un rato.
+NOTIFY pgrst, 'reload schema';
+
+
 -- 3. COMPROBACIÓN
 -- Qué categoría le corresponde a cada gusto con la regla NUEVA frente a la VIEJA.
 -- Las filas donde ambas columnas difieren son los emparejamientos que cambian.

@@ -104,6 +104,12 @@ ON CONFLICT (external_id) WHERE external_id IS NOT NULL DO UPDATE
 
 COMMIT;
 
+-- RECARGAR LA API
+-- Supabase cachea el esquema que expone por REST. Sin esto, una columna o una
+-- función recién creada puede seguir "sin existir" para la app durante un rato.
+NOTIFY pgrst, 'reload schema';
+
+
 -- ==================================================
 -- COMPROBACIONES (cada consulta se ejecuta por separado en el editor:
 -- solo se muestra el resultado de la última)

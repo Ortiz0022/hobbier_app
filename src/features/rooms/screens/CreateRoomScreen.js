@@ -173,7 +173,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* Nombre */}
-        <Text style={styles.sectionTitle}>Nombre de la sala</Text>
+        <Text style={styles.sectionTitle}>Nombre de la Sala</Text>
         <TextInput 
           style={styles.textInput}
           placeholder="Ej: Reto Verano 2026"

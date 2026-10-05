@@ -14,6 +14,7 @@ import {
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
+import { capitalizarTitulo } from '../../utils/titleCase';
 import { useNotify } from '../../context/NotificationContext';
 import {
   searchUsersByUsername,
@@ -237,7 +238,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               </TouchableOpacity>
             )}
             <Text style={[styles.title, { marginBottom: 0 }]}>
-              {isProfileView ? t('friends.my_friends') : t('friends.community_and_friends')}
+              {capitalizarTitulo(isProfileView ? t('friends.my_friends') : t('friends.community_and_friends'))}
             </Text>
           </View>
 

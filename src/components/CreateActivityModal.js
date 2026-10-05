@@ -16,6 +16,7 @@ import { colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
+import { capitalizarTitulo } from '../utils/titleCase';
 
 /**
  * Minúsculas, sin espacios sobrantes y sin tildes, para comparar nombres.
@@ -66,6 +67,20 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
   }, [visible]);
 
   const likeSeleccionado = likes.find((l) => l.id === likeId);
+
+  /**
+   * Nombre de un gusto para mostrar: traducido si existe la clave, y con cada
+   * palabra en mayúscula.
+   *
+   * `t()` devuelve la RUTA cuando no encuentra la clave ("likes.coleccionismo"),
+   * que es un texto no vacío: por eso el `||` de antes nunca actuaba y un gusto
+   * sin traducir se veía como "likes.coleccionismo" en pantalla.
+   */
+  const nombreDeGusto = (nombre) => {
+    const clave = `likes.${(nombre || '').toLowerCase()}`;
+    const traducido = t(clave);
+    return capitalizarTitulo(traducido === clave ? nombre : traducido);
+  };
 
   /**
    * Categoría deducida del gusto elegido.
@@ -201,7 +216,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
             activeOpacity={0.7}
           >
             <Text style={[styles.dropdownText, !likeSeleccionado && styles.dropdownPlaceholder]}>
-              {likeSeleccionado ? (t(`likes.${likeSeleccionado.name.toLowerCase()}`) || likeSeleccionado.name) : (t('create_activity.no_like_assigned') || 'Sin gusto asignado')}
+              {likeSeleccionado ? nombreDeGusto(likeSeleccionado.name) : (t('create_activity.no_like_assigned') || 'Sin gusto asignado')}
             </Text>
             <Text style={styles.dropdownChevron}>{likeOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -232,7 +247,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                   }}
                 >
                   <Text style={[styles.dropdownOptionText, likeId === l.id && styles.dropdownOptionActive]}>
-                    {t(`likes.${l.name.toLowerCase()}`) || l.name}
+                    {nombreDeGusto(l.name)}
                   </Text>
                 </TouchableOpacity>
               ))}

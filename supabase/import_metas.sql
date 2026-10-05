@@ -1,7 +1,7 @@
 -- ==================================================
 -- HOBBIER - Importación del catálogo de metas (mockapi.io -> Supabase)
 -- Generado desde https://6a84625153754283b0b86fa4.mockapi.io/metas
--- 101 metas · 94 gustos · 100 intereses · 46 recursos
+-- 121 metas · 103 gustos · 118 intereses · 62 recursos
 -- ==================================================
 --
 -- Pega este archivo completo en el SQL Editor y ejecútalo.
@@ -130,7 +130,27 @@ FROM (VALUES
     ('98', 'Escucha e identifica cinco sonidos de la naturaleza', 'Permanece unos minutos en silencio e intenta distinguir sonidos como aves, viento, hojas, insectos o agua.', 'Naturaleza', 6, NULL, 10),
     ('99', 'Recoge basura de un espacio natural cercano', 'Dedica unos minutos a recoger residuos visibles en un parque, jardín o zona verde, evitando objetos peligrosos.', 'Naturaleza', 10, NULL, 25),
     ('100', 'Planta una semilla y cuida su crecimiento', 'Siembra una semilla en tierra o en una maceta y déjala preparada para observar cómo cambia con los días.', 'Naturaleza', 6, NULL, 20),
-    ('101', 'Busca seis colores diferentes en la naturaleza', 'Explora un espacio al aire libre e identifica seis colores distintos presentes en hojas, flores, piedras o el paisaje.', 'Naturaleza', 5, NULL, 15)
+    ('101', 'Busca seis colores diferentes en la naturaleza', 'Explora un espacio al aire libre e identifica seis colores distintos presentes en hojas, flores, piedras o el paisaje.', 'Naturaleza', 5, NULL, 15),
+    ('101', 'Juega una partida de ajedrez', 'Juega una partida completa con alguien de tu casa o contra ti mismo, pensando cada movimiento antes de hacerlo.', 'Juegos y Entretenimiento', 7, NULL, 20),
+    ('102', 'Resuelve un problema de ajedrez', 'Busca o inventa una posición en la que se pueda dar jaque mate en dos jugadas y encuentra la solución.', 'Juegos y Entretenimiento', 10, NULL, 15),
+    ('103', 'Aprende un juego de cartas nuevo', 'Elige un juego de cartas que nunca hayas jugado, aprende sus reglas y juega al menos una partida.', 'Juegos y Entretenimiento', 8, NULL, 20),
+    ('104', 'Inventa tu propio juego de mesa', 'Dibuja un tablero en papel, define las reglas y prueba tu juego con alguien más.', 'Juegos y Entretenimiento', 8, NULL, 30),
+    ('105', 'Empieza una colección de hojas', 'Recoge hojas de distintas formas y colores, y déjalas secar dentro de un libro pesado durante unos días.', 'Coleccionismo', 6, NULL, 15),
+    ('106', 'Colecciona piedras con formas curiosas', 'Sal a buscar piedras con formas, colores o texturas diferentes y ordénalas según lo que tengan en común.', 'Coleccionismo', 6, NULL, 15),
+    ('107', 'Organiza una colección que ya tengas', 'Reúne objetos que guardes (monedas, stickers, postales, tapas) y ordénalos con un criterio que tú elijas.', 'Coleccionismo', 8, NULL, 15),
+    ('108', 'Crea una ficha para cada pieza de tu colección', 'Escribe para cada objeto de tu colección de dónde viene, cuándo lo conseguiste y qué lo hace especial.', 'Coleccionismo', 10, NULL, 20),
+    ('109', 'Pinta una piedra', 'Busca una piedra lisa, límpiala y decórala con un dibujo, un patrón o un mensaje.', 'Manualidades', 5, NULL, 20),
+    ('110', 'Haz un marcapáginas decorado', 'Recorta una tira de cartón o papel grueso y decórala para usarla en tu próximo libro.', 'Manualidades', 6, NULL, 15),
+    ('111', 'Haz una tarjeta a mano para alguien', 'Diseña una tarjeta para una persona que aprecies, con un dibujo y un mensaje escrito por ti.', 'Manualidades', 5, NULL, 15),
+    ('112', 'Construye un organizador con cartón reciclado', 'Usa cajas o tubos de cartón para hacer un organizador para tu escritorio o tus útiles.', 'Manualidades', 8, NULL, 25),
+    ('113', 'Diseña y mejora un avión de papel', 'Dobla un avión de papel, pruébalo y haz al menos tres cambios en el diseño para que vuele más lejos.', 'Modelismo', 6, NULL, 10),
+    ('114', 'Construye una maqueta de tu casa', 'Con cartón y papel, construye una maqueta a escala de tu casa o de tu cuarto.', 'Modelismo', 10, NULL, 40),
+    ('115', 'Construye un puente de papel que sostenga un libro', 'Usando solo papel doblado, construye un puente entre dos superficies que aguante el peso de un libro.', 'Modelismo', 10, NULL, 30),
+    ('116', 'Crea un vehículo en miniatura', 'Construye un carro, barco o nave con materiales reciclados y dale detalles como ruedas, ventanas o colores.', 'Modelismo', 7, NULL, 25),
+    ('117', 'Aprende programación con bloques', 'Usa una herramienta de programación con bloques para crear una animación corta con un personaje.', 'Programación', 8, NULL, 25),
+    ('118', 'Escribe tu primer programa', 'Sigue un tutorial para principiantes y escribe un programa que muestre un mensaje en pantalla.', 'Programación', 12, NULL, 30),
+    ('119', 'Programa un juego de adivinar números', 'Crea un programa que elija un número al azar y le diga al jugador si su intento es mayor o menor.', 'Programación', 13, NULL, 40),
+    ('120', 'Crea una calculadora sencilla', 'Programa una calculadora que sume, reste, multiplique y divida dos números que escriba el usuario.', 'Programación', 13, NULL, 35)
 ) AS v(external_id, title, description, category, min_age, max_age, points)
 LEFT JOIN public.activity_categories c ON c.name = v.category
 WHERE NOT EXISTS (
@@ -237,7 +257,16 @@ FROM (VALUES
     ('99', 'Naturaleza'),
     ('100', 'Naturaleza'),
     ('101', 'Naturaleza'),
-    ('101', 'Arte')
+    ('101', 'Arte'),
+    ('105', 'Naturaleza'),
+    ('106', 'Naturaleza'),
+    ('109', 'Arte'),
+    ('110', 'Arte'),
+    ('110', 'Lectura'),
+    ('111', 'Arte'),
+    ('112', 'Arte'),
+    ('114', 'Arte'),
+    ('116', 'Arte')
 ) AS v(external_id, name)
 JOIN public.activities a ON a.external_id = v.external_id
 JOIN public.likes l ON l.name = v.name
@@ -346,7 +375,25 @@ FROM (VALUES
     ('98', 'Aprender cosas nuevas'),
     ('99', 'Aprender cosas nuevas'),
     ('100', 'Aprender cosas nuevas'),
-    ('101', 'Mejorar creatividad')
+    ('101', 'Mejorar creatividad'),
+    ('101', 'Aprender cosas nuevas'),
+    ('102', 'Aprender cosas nuevas'),
+    ('103', 'Aprender cosas nuevas'),
+    ('104', 'Mejorar creatividad'),
+    ('105', 'Aprender cosas nuevas'),
+    ('108', 'Aprender cosas nuevas'),
+    ('109', 'Mejorar creatividad'),
+    ('110', 'Mejorar creatividad'),
+    ('111', 'Mejorar creatividad'),
+    ('112', 'Mejorar creatividad'),
+    ('113', 'Aprender cosas nuevas'),
+    ('114', 'Mejorar creatividad'),
+    ('115', 'Aprender cosas nuevas'),
+    ('116', 'Mejorar creatividad'),
+    ('117', 'Aprender cosas nuevas'),
+    ('118', 'Aprender cosas nuevas'),
+    ('119', 'Aprender cosas nuevas'),
+    ('120', 'Aprender cosas nuevas')
 ) AS v(external_id, name)
 JOIN public.activities a ON a.external_id = v.external_id
 JOIN public.interests i ON i.name = v.name
@@ -401,7 +448,23 @@ FROM (VALUES
     ('76', 'Lápices'),
     ('77', 'Lápices'),
     ('82', 'Balón'),
-    ('87', 'Cartas')
+    ('87', 'Cartas'),
+    ('101', 'Ajedrez'),
+    ('102', 'Ajedrez'),
+    ('103', 'Cartas'),
+    ('104', 'Lápices'),
+    ('105', 'Libros'),
+    ('108', 'Lápices'),
+    ('109', 'Pinturas'),
+    ('110', 'Lápices'),
+    ('111', 'Lápices'),
+    ('114', 'Lápices'),
+    ('115', 'Libros'),
+    ('116', 'Pinturas'),
+    ('117', 'Computadora'),
+    ('118', 'Computadora'),
+    ('119', 'Computadora'),
+    ('120', 'Computadora')
 ) AS v(external_id, name)
 JOIN public.activities a ON a.external_id = v.external_id
 JOIN public.resources r ON r.name = v.name

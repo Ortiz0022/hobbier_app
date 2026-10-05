@@ -21,6 +21,7 @@ import {
   validateLoginPassword,
   validateFullName,
   validateUsername,
+  validatePasswordConfirmation,
   validateBirthDate,
   describeAuthError,
 } from './validation';
@@ -37,8 +38,14 @@ export const AuthScreen = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Se escribe dos veces: una errata en una contraseña oculta deja al usuario
+  // fuera de su propia cuenta recién creada, sin forma de saber qué escribió.
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  // Disponibilidad del usuario mientras se escribe:
+  // 'idle' | 'checking' | 'available' | 'taken'
+  const [usernameStatus, setUsernameStatus] = useState('idle');
   const [birthDate, setBirthDate] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -91,6 +98,42 @@ export const AuthScreen = () => {
     });
   };
 
+  // Comprobación del usuario mientras se escribe.
+  //
+  // Espera a que el usuario deje de teclear (400 ms) en vez de consultar en cada
+  // letra, y solo pregunta a la base si el formato ya es válido: de nada sirve
+  // preguntar por "ab" si de todos modos lo rechazan las reglas locales.
+  //
+  // Cada consulta lleva número de orden: si una lenta contesta después de otra
+  // más reciente, se descarta en lugar de pintar un resultado que ya no es el
+  // del texto que hay en pantalla.
+  const comprobacionRef = useRef(0);
+  // `isUsernameTaken` llega del contexto y se vuelve a crear en cada render suyo.
+  // Si fuera dependencia del efecto, este se reiniciaría constantemente.
+  const isUsernameTakenRef = useRef(isUsernameTaken);
+  isUsernameTakenRef.current = isUsernameTaken;
+
+  useEffect(() => {
+    if (!isRegister || isForgot) return undefined;
+
+    const nombre = username.trim();
+    if (!nombre || validateUsername(nombre)) {
+      comprobacionRef.current += 1; // invalida cualquier respuesta en vuelo
+      setUsernameStatus('idle');
+      return undefined;
+    }
+
+    setUsernameStatus('checking');
+    const temporizador = setTimeout(async () => {
+      const comprobacion = ++comprobacionRef.current;
+      const taken = await isUsernameTakenRef.current(nombre);
+      if (comprobacion !== comprobacionRef.current) return;
+      setUsernameStatus(taken ? 'taken' : 'available');
+    }, 400);
+
+    return () => clearTimeout(temporizador);
+  }, [username, isRegister, isForgot]);
+
   const animatedStyle = {
     opacity: enter,
     transform: [
@@ -140,6 +183,7 @@ export const AuthScreen = () => {
         username: validateUsername(username),
         email: validateEmail(email),
         password: validateNewPassword(password),
+        passwordConfirm: validatePasswordConfirmation(password, passwordConfirm),
         birthDate: birth.error,
       };
 
@@ -151,8 +195,11 @@ export const AuthScreen = () => {
       // El usuario es UNIQUE en profiles y el trigger handle_new_user revienta al
       // insertarlo repetido. Se comprueba antes para dar un mensaje claro en el
       // campo, en vez de un error de Postgres al final de todo el registro.
-      const taken = await isUsernameTaken(username);
+      // Se vuelve a comprobar aquí aunque la pantalla ya lo diga: entre que se
+      // comprobó y se pulsa Crear cuenta, alguien puede haber tomado ese nombre.
+      const taken = usernameStatus === 'taken' || (await isUsernameTaken(username));
       if (taken) {
+        setUsernameStatus('taken');
         setFieldErrors({ username: 'Ese nombre de usuario ya está en uso.' });
         return;
       }
@@ -301,8 +348,19 @@ export const AuthScreen = () => {
               ) : null}
 
               <Text style={styles.label}>Username</Text>
-              <View style={[styles.inputRow, fieldErrors.username && styles.inputRowInvalid]}>
-                <Ionicons name="at" size={18} color="#8A908B" style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputRow,
+                  (fieldErrors.username || usernameStatus === 'taken') && styles.inputRowInvalid,
+                  !fieldErrors.username && usernameStatus === 'available' && styles.inputRowValid,
+                ]}
+              >
+                <Ionicons
+                  name="at"
+                  size={18}
+                  color={!fieldErrors.username && usernameStatus === 'available' ? '#2A6347' : '#8A908B'}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="usuario_hobbier"
@@ -311,9 +369,22 @@ export const AuthScreen = () => {
                   onChangeText={editField(setUsername, 'username')}
                   autoCapitalize="none"
                 />
+                {usernameStatus === 'checking' ? (
+                  <ActivityIndicator size="small" color="#8A908B" />
+                ) : !fieldErrors.username && usernameStatus === 'available' ? (
+                  <Ionicons name="checkmark-circle" size={20} color="#2A6347" />
+                ) : null}
               </View>
+              {/* El color por sí solo no basta: siempre va con icono y con texto,
+                  para quien no distingue el verde del rojo. */}
               {fieldErrors.username ? (
                 <Text style={styles.fieldError}>{fieldErrors.username}</Text>
+              ) : usernameStatus === 'taken' ? (
+                <Text style={styles.fieldError}>Ese nombre de usuario ya está en uso.</Text>
+              ) : usernameStatus === 'available' ? (
+                <Text style={styles.fieldOk}>¡Disponible! Este nombre es tuyo.</Text>
+              ) : usernameStatus === 'checking' ? (
+                <Text style={styles.fieldHint}>Comprobando disponibilidad...</Text>
               ) : null}
             </>
           )}
@@ -362,6 +433,28 @@ export const AuthScreen = () => {
               {fieldErrors.password ? (
                 <Text style={styles.fieldError}>{fieldErrors.password}</Text>
               ) : null}
+
+              {isRegister && (
+                <>
+                  <Text style={styles.label}>Confirmar contraseña</Text>
+                  <View style={[styles.inputRow, fieldErrors.passwordConfirm && styles.inputRowInvalid]}>
+                    <Ionicons name="lock-closed-outline" size={18} color="#8A908B" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="••••••••"
+                      placeholderTextColor="#8A908B"
+                      value={passwordConfirm}
+                      onChangeText={editField(setPasswordConfirm, 'passwordConfirm')}
+                      // Comparte el ojo con la contraseña: si una se ve, la otra
+                      // también, que es justo lo que se necesita para compararlas.
+                      secureTextEntry={!showPassword}
+                    />
+                  </View>
+                  {fieldErrors.passwordConfirm ? (
+                    <Text style={styles.fieldError}>{fieldErrors.passwordConfirm}</Text>
+                  ) : null}
+                </>
+              )}
             </>
           )}
 
@@ -404,6 +497,11 @@ export const AuthScreen = () => {
             style={styles.toggleButton}
             onPress={() =>
               switchMode(() => {
+                // Al cambiar de modo, lo propio del registro se limpia: si no, al
+                // volver aparecería un "¡Disponible!" de un nombre ya olvidado.
+                setPasswordConfirm('');
+                setUsernameStatus('idle');
+                setFieldErrors({});
                 if (isForgot) {
                   setIsForgot(false);
                 } else {
@@ -603,6 +701,22 @@ const styles = StyleSheet.create({
   },
   fieldError: {
     color: '#A94403',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  // Marco verde cuando el nombre de usuario está libre. Igual que el rojo, nunca
+  // va solo: lo acompañan el tilde dentro del campo y el texto de abajo.
+  inputRowValid: {
+    borderColor: '#2A6347',
+  },
+  fieldOk: {
+    color: '#2A6347',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  fieldHint: {
+    color: '#8A908B',
     fontSize: 12,
     marginTop: 5,
   },

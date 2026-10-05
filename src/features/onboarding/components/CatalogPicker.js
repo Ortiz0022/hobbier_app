@@ -32,7 +32,7 @@ const MINIMO_LETRAS = 2;
  *
  * No se pueden crear opciones nuevas: los catálogos los administra el admin.
  */
-export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }) => {
+export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5, compact = false }) => {
   const { t } = useLanguage();
 
   const [texto, setTexto] = useState('');
@@ -47,6 +47,14 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
   const consultaRef = useRef(0);
   const idsElegidosRef = useRef(selectedIds);
   idsElegidosRef.current = selectedIds;
+  // ¿Lo que se ve viene de una búsqueda? Sirve para saber cuándo hay que
+  // devolver las sugerencias iniciales al borrar el texto.
+  const busquedaActivaRef = useRef(false);
+
+  // Siempre por orden alfabético. Sin esto, lo recién elegido se iba al final y
+  // la lista cambiaba de orden a cada toque.
+  const porNombre = (filas) =>
+    [...filas].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
 
   const cargarIniciales = useCallback(async () => {
     const consulta = ++consultaRef.current;
@@ -58,8 +66,9 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
         fetchCatalogoPorIds(tabla, idsElegidosRef.current),
       ]);
       if (consulta !== consultaRef.current) return;
+      busquedaActivaRef.current = false;
       setSugerencias(iniciales);
-      setElegidas(filasElegidas);
+      setElegidas(porNombre(filasElegidas));
     } catch (err) {
       if (consulta !== consultaRef.current) return;
       setError(err);
@@ -75,7 +84,12 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
   // Búsqueda con espera: sin ella se consultaría en cada tecla.
   useEffect(() => {
     const termino = texto.trim();
-    if (termino.length < MINIMO_LETRAS) return undefined;
+    if (termino.length < MINIMO_LETRAS) {
+      // Al borrar letras (o vaciar el campo con el teclado) se quedaban a la vista
+      // los últimos resultados, y solo la X los recuperaba.
+      if (busquedaActivaRef.current) cargarIniciales();
+      return undefined;
+    }
 
     const temporizador = setTimeout(async () => {
       const consulta = ++consultaRef.current;
@@ -84,6 +98,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
       try {
         const resultados = await buscarEnCatalogo(tabla, termino);
         if (consulta !== consultaRef.current) return;
+        busquedaActivaRef.current = true;
         setSugerencias(resultados);
       } catch (err) {
         if (consulta !== consultaRef.current) return;
@@ -94,7 +109,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
     }, ESPERA_BUSQUEDA);
 
     return () => clearTimeout(temporizador);
-  }, [texto, tabla]);
+  }, [texto, tabla, cargarIniciales]);
 
   const limpiarBusqueda = () => {
     setTexto('');
@@ -113,7 +128,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
         ? previas.filter((fila) => fila.id !== item.id)
         : previas.some((fila) => fila.id === item.id)
           ? previas
-          : [...previas, item],
+          : porNombre([...previas, item]),
     );
   };
 
@@ -125,6 +140,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
       tint={getCatalogTint(item.name)}
       isSelected={selectedIds.includes(item.id)}
       onPress={() => alternar(item)}
+      compact={compact}
     />
   );
 
@@ -133,8 +149,8 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
 
   return (
     <View>
-      <View style={styles.buscador}>
-        <Feather name="search" size={18} color={TOKENS.colors.textMuted} />
+      <View style={[styles.buscador, compact && styles.buscadorCompact]}>
+        <Feather name="search" size={compact ? 16 : 18} color={TOKENS.colors.textMuted} />
         <TextInput
           style={styles.buscadorInput}
           placeholder={t('onboarding.search_placeholder')}
@@ -160,7 +176,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
       {elegidas.length > 0 ? (
         <View style={styles.bloque}>
           <Text style={styles.encabezado}>{t('onboarding.selected_heading')}</Text>
-          <View style={styles.lista}>{elegidas.map(pintarOpcion)}</View>
+          <View style={[styles.lista, compact && styles.listaCompact]}>{elegidas.map(pintarOpcion)}</View>
         </View>
       ) : null}
 
@@ -192,7 +208,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5 }
             </Text>
           </View>
         ) : (
-          <View style={styles.lista}>{sugerenciasVisibles.map(pintarOpcion)}</View>
+          <View style={[styles.lista, compact && styles.listaCompact]}>{sugerenciasVisibles.map(pintarOpcion)}</View>
         )}
       </View>
     </View>
@@ -210,6 +226,10 @@ const styles = StyleSheet.create({
     borderRadius: TOKENS.radius.full,
     paddingHorizontal: TOKENS.spacing.md,
     height: 46,
+  },
+  buscadorCompact: {
+    height: 38,
+    paddingHorizontal: TOKENS.spacing.sm + 4,
   },
   buscadorInput: {
     flex: 1,
@@ -233,6 +253,9 @@ const styles = StyleSheet.create({
     // El mismo `gap` que la rejilla del asistente: las tarjetas ocupan la fila
     // entera (pastillas), así que esto separa renglones.
     gap: TOKENS.spacing.sm + 4,
+  },
+  listaCompact: {
+    gap: TOKENS.spacing.sm,
   },
   estado: {
     alignItems: 'center',

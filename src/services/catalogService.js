@@ -134,6 +134,10 @@ export const fetchActivityCategories = async () => {
 // El filtrado ocurre en Postgres, no en el dispositivo: la pantalla pide unas
 // pocas opciones y luego busca, en vez de descargarse el catálogo entero.
 
+/** Minúsculas y sin tildes, igual que public.normalizar_nombre en la base. */
+const normalizarTexto = (texto) =>
+  (texto || '').trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
 /** Tablas que admiten búsqueda. Evita interpolar un nombre de tabla arbitrario. */
 const CATALOGOS_BUSCABLES = ['likes', 'interests'];
 
@@ -169,7 +173,7 @@ export const buscarEnCatalogo = async (tabla, texto, limite = 20) => {
   const termino = (texto || '').trim();
   if (!termino) return [];
 
-  const normalizado = termino.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const normalizado = normalizarTexto(termino);
 
   const { data, error } = await supabase
     .from(tabla)
@@ -180,15 +184,25 @@ export const buscarEnCatalogo = async (tabla, texto, limite = 20) => {
 
   if (!error) return data || [];
 
+  // 42703 = la API no conoce la columna `name_normalizado`. Pasa si no se aplicó
+  // supabase/rpc_preferencias.sql, y TAMBIÉN si se aplicó pero la caché de esquema
+  // de Supabase no se ha refrescado (`NOTIFY pgrst, 'reload schema'`).
+  //
+  // Antes aquí se buscaba por `name`, que SÍ distingue tildes: escribir
+  // "programacion" no encontraba "Programación" y parecía que la opción no
+  // existía. Ahora se traen las filas y se filtran aquí sin tildes. Los catálogos
+  // son de decenas de filas, así que es asumible como red de seguridad.
   if (error.code === '42703') {
-    const respaldo = await supabase
+    const { data: todas, error: errorRespaldo } = await supabase
       .from(tabla)
       .select('id, name, icon')
-      .ilike('name', `%${termino}%`)
       .order('name')
-      .limit(limite);
-    if (respaldo.error) throw respaldo.error;
-    return respaldo.data || [];
+      .limit(200);
+
+    if (errorRespaldo) throw errorRespaldo;
+    return (todas || [])
+      .filter((fila) => normalizarTexto(fila.name).includes(normalizado))
+      .slice(0, limite);
   }
 
   throw error;

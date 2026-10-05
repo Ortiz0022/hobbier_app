@@ -107,7 +107,7 @@ export const ResetPasswordScreen = () => {
               </View>
             </View>
 
-            <Text style={styles.title}>Crea una contraseña nueva</Text>
+            <Text style={styles.title}>Crea una Contraseña Nueva</Text>
             <Text style={styles.subtitle}>
               Escríbela dos veces para confirmar que no hay erratas.
             </Text>

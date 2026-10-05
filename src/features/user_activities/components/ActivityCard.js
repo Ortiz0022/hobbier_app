@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native
 import Feather from '@expo/vector-icons/Feather';
 import { colors } from '../../../theme';
 import { useLanguage } from '../../../context/LanguageContext';
+import { capitalizarTitulo } from '../../../utils/titleCase';
 
 const getCategoryStyle = (categoryObj, title = '') => {
   const categoryName = categoryObj?.name || '';
@@ -45,7 +46,7 @@ export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
           <View style={styles.iconBox}>
             <Feather name={category.icon} size={14} color={colors.primary} />
           </View>
-          <Text style={styles.categoryText}>{category.name}</Text>
+          <Text style={styles.categoryText}>{capitalizarTitulo(category.name)}</Text>
           {isMine && (
             <View style={styles.myActivityPill}>
               <Text style={styles.myActivityText}>Mi actividad</Text>

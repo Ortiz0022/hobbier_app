@@ -26,6 +26,12 @@ const ICONS = {
   'naturaleza': 'leaf',
   'cocina': 'chef-hat',
 
+  // Gustos que reflejan las categorías importadas de Wikidata
+  'coleccionismo': 'archive-outline',
+  'modelismo': 'airplane',
+  'manualidades': 'content-cut',
+  'programación': 'laptop',
+
   // Intereses
   'leer más': 'book-plus',
   'aprender un idioma': 'translate',

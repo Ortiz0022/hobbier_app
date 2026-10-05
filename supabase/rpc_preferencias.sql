@@ -110,6 +110,12 @@ GRANT EXECUTE ON FUNCTION public.guardar_preferencias(UUID[], UUID[], UUID[]) TO
 
 COMMIT;
 
+-- RECARGAR LA API
+-- Supabase cachea el esquema que expone por REST. Sin esto, una columna o una
+-- función recién creada puede seguir "sin existir" para la app durante un rato.
+NOTIFY pgrst, 'reload schema';
+
+
 -- ==================================================
 -- COMPROBACIONES (ejecutar cada una por separado)
 -- ==================================================

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
+import { capitalizarTitulo } from '../utils/titleCase';
 
 const DEFAULT_REASONS = [
   'Contenido ofensivo',
@@ -63,7 +64,7 @@ export const ReportModal = ({
 
             {/* Encabezado con título y botón de cierre */}
             <View style={styles.headerRow}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.title}>{capitalizarTitulo(title)}</Text>
               <TouchableOpacity
                 onPress={onClose}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}

@@ -8,11 +8,13 @@
  * como fila en `activity_categories` a propósito: si existiera, alguien acabaría
  * filtrando o administrando "Libre" como si fuera una categoría de verdad.
  */
+import { capitalizarTitulo } from './titleCase';
+
 export const FREE_CATEGORY_LABEL = 'Libre';
 
 /** Nombre a mostrar. Devuelve "Libre" cuando la actividad no tiene categoría. */
 export const getCategoryLabel = (categoryObj) =>
-  categoryObj?.name?.trim() || FREE_CATEGORY_LABEL;
+  capitalizarTitulo(categoryObj?.name?.trim() || '') || FREE_CATEGORY_LABEL;
 
 /**
  * Nombre + icono para las pastillas de categoría.
@@ -61,5 +63,5 @@ export const getCategoryStyle = (categoryObj, title = '') => {
     iconName = 'book-open';
   }
 
-  return { name: catName || FREE_CATEGORY_LABEL, iconName };
+  return { name: capitalizarTitulo(catName) || FREE_CATEGORY_LABEL, iconName };
 };

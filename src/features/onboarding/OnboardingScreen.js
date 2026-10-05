@@ -16,6 +16,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { SelectableCard } from '../../components/SelectableCard';
 import { StepProgressBar } from '../../components/StepProgressBar';
 import { TOKENS } from '../../theme/designTokens';
+import { capitalizarTitulo } from '../../utils/titleCase';
 import { getCatalogIcon, getCatalogTint } from './catalogIcons';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
@@ -381,21 +382,22 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
    * descarga entero). Recursos sigue siendo una rejilla: son 9 opciones fijas y
    * buscar entre ellas no aporta nada.
    */
-  const renderOpciones = (key) => {
+  const renderOpciones = (key, compact = false) => {
     if (key === 'likes' || key === 'interests') {
       return (
         <CatalogPicker
           tabla={key}
           selectedIds={sectionData[key].selected}
           onChange={sectionData[key].setSelected}
+          compact={compact}
         />
       );
     }
-    return renderRejilla(key);
+    return renderRejilla(key, compact);
   };
 
-  const renderRejilla = (key) => (
-    <View style={styles.optionsGrid}>
+  const renderRejilla = (key, compact = false) => (
+    <View style={[styles.optionsGrid, compact && styles.optionsGridCompact]}>
       {sectionData[key].catalog.map((item) => (
         <SelectableCard
           key={item.id}
@@ -410,6 +412,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
               sectionData[key].setSelected,
             )
           }
+          compact={compact}
         />
       ))}
     </View>
@@ -426,13 +429,13 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       return (
         <View key={paso.key} style={styles.editSection}>
           <View style={styles.editSectionHeader}>
-            <Text style={styles.editSectionTitle}>{paso.title}</Text>
+            <Text style={styles.editSectionTitle}>{capitalizarTitulo(paso.title)}</Text>
             <Text style={styles.editSectionCount}>
               {elegidas === 1 ? '1 elegida' : `${elegidas} elegidas`}
             </Text>
           </View>
           <Text style={styles.editSectionDescription}>{paso.description}</Text>
-          {renderOpciones(paso.key)}
+          {renderOpciones(paso.key, true)}
         </View>
       );
     });
@@ -476,7 +479,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
 
           {modoEdicion ? (
             <>
-              <Text style={styles.headerTitle}>Editar preferencias</Text>
+              <Text style={styles.headerTitle}>Editar Preferencias</Text>
               {/* Contrapeso del botón de volver para que el título quede centrado */}
               <View style={styles.headerSpacer} />
             </>
@@ -529,7 +532,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
               renderEdicion()
             ) : (
               <>
-                <Text style={styles.stepTitle}>{seccion.title}</Text>
+                <Text style={styles.stepTitle}>{capitalizarTitulo(seccion.title)}</Text>
                 <Text style={styles.stepSubtitle}>{seccion.description}</Text>
 
                 {seccion.key === 'birthDate' ? renderFecha() : renderOpciones(seccion.key)}
@@ -662,7 +665,7 @@ const styles = StyleSheet.create({
     paddingBottom: TOKENS.spacing.lg * 2,
   },
   editSection: {
-    marginBottom: TOKENS.spacing.lg + TOKENS.spacing.sm,
+    marginBottom: TOKENS.spacing.md,
   },
   editSectionHeader: {
     flexDirection: 'row',
@@ -672,7 +675,7 @@ const styles = StyleSheet.create({
   },
   editSectionTitle: {
     flexShrink: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: TOKENS.colors.textDark,
   },
@@ -682,10 +685,10 @@ const styles = StyleSheet.create({
     color: TOKENS.colors.badgeInfoText,
   },
   editSectionDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: TOKENS.colors.textMuted,
     marginTop: 2,
-    marginBottom: TOKENS.spacing.md,
+    marginBottom: TOKENS.spacing.sm,
   },
   stepTitle: {
     fontSize: 26,
@@ -790,6 +793,9 @@ const styles = StyleSheet.create({
     // El `gap` es la ÚNICA separación entre tarjetas: si además tuvieran margen
     // propio, los dos se sumarían y la rejilla dejaría de cuadrar.
     gap: TOKENS.spacing.sm + 4,
+  },
+  optionsGridCompact: {
+    gap: TOKENS.spacing.sm,
   },
   scrollHint: {
     position: 'absolute',
