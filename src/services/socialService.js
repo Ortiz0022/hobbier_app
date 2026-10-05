@@ -323,6 +323,19 @@ export const togglePostReaction = async (postId, userId) => {
   }
 };
 
+// Borrado lógico de una publicación propia. La RPC comprueba en el servidor que
+// el usuario sea el autor: la app nunca decide sola qué se puede borrar.
+export const deleteOwnPost = async (postId) => {
+  try {
+    const { error } = await supabase.rpc('delete_own_post', { p_post_id: postId });
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    console.error('Error al eliminar publicación:', error.message);
+    return { error };
+  }
+};
+
 export const getUserPosts = async (userId) => {
   try {
     const { data, error } = await supabase

@@ -18,11 +18,16 @@ import { supabase } from '../../../config/supabase';
 import { getFriendsList } from '../../../services/socialService';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { colors, spacing, fonts, radii, input, primaryButton, card } from '../../../theme';
+import { CalendarDateField } from '../../../components/CalendarDateField';
+import { toISODate } from '../../auth/validation';
+import { formatLongDate } from '../../../utils/dateFormat';
 
 export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   const { user } = useAuth();
   const { notify } = useNotify();
+  const { language } = useLanguage();
   const { createRoom, uploadCover, inviteFriend } = useRoomActions();
   
   const [name, setName] = useState('');
@@ -94,9 +99,14 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
       let endAt = null;
       if (hasDeadline) {
         if (daysToAdd === 'custom') {
-          const parsed = new Date(customDateStr);
-          if (isNaN(parsed.getTime()) || parsed <= new Date()) {
-            return alert('Por favor ingresa una fecha futura válida (YYYY-MM-DD).');
+          // Fin del día elegido en la hora LOCAL del anfitrión. Antes se usaba
+          // new Date('AAAA-MM-DD'), que JavaScript interpreta como medianoche
+          // UTC: en Costa Rica (UTC-6) el reto cerraba a las 6 p. m. del día
+          // anterior. Se guarda en ISO (UTC) y cada miembro lo ve en su huso.
+          const iso = toISODate(customDateStr);
+          const parsed = iso ? new Date(`${iso}T23:59:59`) : null;
+          if (!parsed || parsed <= new Date()) {
+            return alert('Elige en el calendario una fecha futura.');
           }
           endAt = parsed.toISOString();
         } else {
@@ -151,6 +161,18 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   };
 
   const alert = (msg) => notify(msg, { type: 'error', title: 'Aviso' });
+
+  // Día de cierre en el idioma de la app, para 7/14/30 días o fecha elegida
+  const deadlinePreview = (() => {
+    if (!hasDeadline) return '';
+    if (daysToAdd === 'custom') {
+      const iso = toISODate(customDateStr);
+      return iso ? formatLongDate(`${iso}T12:00:00`, language) : '';
+    }
+    const d = new Date();
+    d.setDate(d.getDate() + daysToAdd);
+    return formatLongDate(d, language);
+  })();
 
   if (loadingData) {
     return (
@@ -250,14 +272,19 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
             </View>
             
             {daysToAdd === 'custom' && (
-              <TextInput 
-                style={[styles.textInput, { marginTop: spacing.md }]}
-                placeholder="AAAA-MM-DD (Ej: 2026-12-31)"
-                value={customDateStr}
-                onChangeText={setCustomDateStr}
-                placeholderTextColor={colors.textMuted}
-              />
+              <View style={{ marginTop: spacing.md }}>
+                <CalendarDateField
+                  value={customDateStr}
+                  onChange={setCustomDateStr}
+                  minDate={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+                />
+              </View>
             )}
+
+            {/* Fecha de cierre en palabras: confirma qué día termina el reto */}
+            {deadlinePreview ? (
+              <Text style={styles.deadlinePreview}>Finaliza el {deadlinePreview}</Text>
+            ) : null}
           </View>
         )}
 
@@ -438,6 +465,12 @@ const styles = StyleSheet.create({
   },
   dayOptionTextSelected: {
     color: colors.primaryDark,
+  },
+  deadlinePreview: {
+    marginTop: spacing.sm,
+    fontSize: 13,
+    color: colors.primaryDark,
+    fontWeight: '600',
   },
   emptyText: {
     color: colors.textMuted,

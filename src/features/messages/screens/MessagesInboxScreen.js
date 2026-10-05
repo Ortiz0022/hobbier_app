@@ -12,12 +12,14 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { Text, TextInput } from '../../../components/scaledText';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useDirectInbox } from '../hooks/useDirectInbox';
 import { formatMessageTime } from '../utils/formatMessageTime';
 import { colors, spacing, fonts, radii, input } from '../../../theme';
 
 export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { conversations, loading, error, refetch } = useDirectInbox();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -77,7 +79,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
               {preview}
             </Text>
             {item.last_message_at ? (
-              <Text style={styles.time}> · {formatMessageTime(item.last_message_at)}</Text>
+              <Text style={styles.time}> · {formatMessageTime(item.last_message_at, language)}</Text>
             ) : null}
           </View>
         </View>

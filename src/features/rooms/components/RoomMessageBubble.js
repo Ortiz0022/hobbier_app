@@ -4,8 +4,11 @@ import Feather from '@expo/vector-icons/Feather';
 import { useRecyclingState } from '@shopify/flash-list';
 import { colors, radii, spacing, fonts } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { useLanguage } from '../../../context/LanguageContext';
+import { formatMessageStamp } from '../../../utils/dateFormat';
 
 export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true, onRetry, onDiscard }) => {
+  const { language } = useLanguage();
   const isEvidence = message.message_type === 'EVIDENCE';
   // Estados locales del envío optimista (ver useChatMessages). Mientras el mensaje
   // no esté guardado no se puede responder: la cita apuntaría a una fila inexistente.
@@ -145,7 +148,7 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                   <Feather name="clock" size={11} color={colors.textFaint} style={styles.timeMe} />
                 ) : (
                   <Text style={[styles.time, styles.timeMe]}>
-                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatMessageStamp(message.created_at, language)}
                   </Text>
                 )
               )}
@@ -163,7 +166,7 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
 
               {!isMe && (
                 <Text style={[styles.time, styles.timeOther]}>
-                  {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatMessageStamp(message.created_at, language)}
                 </Text>
               )}
             </>

@@ -16,7 +16,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getFriendsFeed, reportPost, togglePostReaction } from '../../services/socialService';
+import { getFriendsFeed, reportPost, togglePostReaction, deleteOwnPost } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
 import { StarReactionButton } from '../../components/StarReactionButton';
@@ -66,7 +66,7 @@ const FEED_PAGE_SIZE = 10;
 
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
-  const { notify } = useNotify();
+  const { notify, confirm } = useNotify();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -232,16 +232,37 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     setReportModalVisible(true);
   };
 
-  const handleSendReport = async (reason) => {
+  // Solo se ofrece en publicaciones propias; aun así el servidor vuelve a
+  // comprobar la autoría, así que no se puede borrar la de otra persona.
+  const handleDeletePost = async (post) => {
+    const ok = await confirm({
+      title: 'Eliminar publicación',
+      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil.',
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const { error } = await deleteOwnPost(post.id);
+    if (error) {
+      notify(error.message || 'No se pudo eliminar la publicación.', { type: 'error', title: t('common.error') });
+      return;
+    }
+    setPosts((prev) => prev.filter((p) => p.id !== post.id));
+    notify('Publicación eliminada.', { type: 'success', title: 'Listo' });
+  };
+
+  // "•••": en lo propio se elimina; en lo ajeno se reporta.
+  const handlePostOptions = (post) => {
+    if (post.user_id === user?.id) handleDeletePost(post);
+    else openReportModal(post);
+  };
+
+  const handleSendReport = async (reason, details = '') => {
     if (!selectedPost || !user?.id || !reason) return;
     setSubmittingReport(true);
 
-    const { error } = await reportPost(
-      selectedPost.id,
-      user.id,
-      reason,
-      'Reportado desde el feed'
-    );
+    const { error } = await reportPost(selectedPost.id, user.id, reason, details);
 
     setSubmittingReport(false);
     setReportModalVisible(false);
@@ -323,8 +344,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
             <TouchableOpacity
               style={styles.optionsBtn}
-              onPress={() => openReportModal(post)}
+              onPress={() => handlePostOptions(post)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={post.user_id === user?.id ? 'Eliminar publicación' : 'Reportar publicación'}
             >
               <Text style={styles.optionsIcon}>•••</Text>
             </TouchableOpacity>

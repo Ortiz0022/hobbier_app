@@ -21,16 +21,20 @@ import { useRoomChat } from '../hooks/useRoomChat';
 import { useEvidenceUploader } from '../hooks/useEvidenceUploader';
 import { useRoomActions } from '../hooks/useRoomActions';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
+import { formatDateTime } from '../../../utils/dateFormat';
 import { useNotify } from '../../../context/NotificationContext';
 
 import { ChatThread } from '../components/ChatThread';
 import { RoomRankingItem } from '../components/RoomRankingItem';
+import { InviteFriendsModal } from '../components/InviteFriendsModal';
 import { colors, spacing, fonts, radii } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { isRoomClosed as getIsRoomClosed } from '../utils/roomHelpers';
 
 export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { notify, confirm } = useNotify();
   const { room, ranking, loading: detailsLoading, error: detailsError, refetch } = useRoomDetails(roomId);
   const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useRoomChat(roomId);
@@ -41,6 +45,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const [activeTab, setActiveTab] = useState('Reto'); // 'RETO', 'CHAT', 'RANKING'
   const [adminModalVisible, setAdminModalVisible] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   if (detailsLoading && !room) {
     return (
@@ -65,11 +70,14 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const isOwner = room.owner_id === user?.id;
   const isClosed = getIsRoomClosed(room);
   const isActiveWithoutDeadline = room.status === 'ACTIVE' && !room.end_at;
+  // Invitar solo tiene sentido mientras el reto sigue abierto (el RPC también lo exige)
+  const canInvite = isOwner && !isClosed;
+  const memberIds = (room.members || []).map((m) => m.profile?.id).filter(Boolean);
 
   const getStatusText = () => {
     if (isClosed) return 'Reto finalizado';
     if (isActiveWithoutDeadline) return 'Reto activo · Sin fecha límite';
-    return `Reto activo · Finaliza el ${new Date(room.end_at).toLocaleDateString()}`;
+    return `Reto activo · Finaliza el ${formatDateTime(room.end_at, language)}`;
   };
 
   const handlePickEvidence = async () => {
@@ -203,6 +211,16 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                 )}
               </View>
               <Text style={styles.membersCountText}>{ranking?.length || 1} Hobbiers en sala</Text>
+              {canInvite && (
+                <TouchableOpacity
+                  style={styles.inviteBtn}
+                  onPress={() => setInviteModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="user-plus" size={15} color={colors.primary} />
+                  <Text style={styles.inviteBtnText}>Invitar</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* 3. MISSION BOX */}
@@ -322,6 +340,16 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
             <View style={styles.modalGrabber} />
             <Text style={styles.modalTitle}>Administración de Sala</Text>
 
+            {canInvite && (
+              <TouchableOpacity
+                style={styles.modalActionBtn}
+                onPress={() => { setAdminModalVisible(false); setInviteModalVisible(true); }}
+              >
+                <Feather name="user-plus" size={18} color={colors.text} style={{ marginRight: 10 }} />
+                <Text style={styles.modalActionText}>Invitar amigos</Text>
+              </TouchableOpacity>
+            )}
+
             {!isClosed && (
               <TouchableOpacity
                 style={styles.modalActionBtn}
@@ -344,6 +372,16 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {canInvite && (
+        <InviteFriendsModal
+          visible={inviteModalVisible}
+          onClose={() => setInviteModalVisible(false)}
+          roomId={roomId}
+          userId={user?.id}
+          memberIds={memberIds}
+        />
+      )}
     </View>
   );
 };
@@ -531,9 +569,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   membersCountText: {
+    flex: 1,
     fontSize: 15,
     color: colors.textMuted,
     fontWeight: '500',
+  },
+  inviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  inviteBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
   },
   missionBox: {
     backgroundColor: '#FAFAFA',

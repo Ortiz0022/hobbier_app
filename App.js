@@ -30,6 +30,7 @@ import { FeedScreen } from './src/features/feed/FeedScreen';
 import { FriendsScreen } from './src/features/friends/FriendsScreen';
 import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
+import { CookieBanner } from './src/legal/CookieBanner';
 
 const MainApp = () => {
   const { user, loading, isAdmin, passwordRecovery } = useAuth();
@@ -250,6 +251,9 @@ export default function App() {
         <AuthProvider>
           <PresenceProvider>
             <MainApp />
+            {/* Fuera de MainApp para que aparezca desde la primera pantalla,
+                antes de iniciar sesión. Solo se muestra en web. */}
+            <CookieBanner />
           </PresenceProvider>
         </AuthProvider>
       </NotificationProvider>

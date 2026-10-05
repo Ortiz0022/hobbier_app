@@ -8,9 +8,11 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const MIN_USERNAME_LENGTH = 3;
 export const MAX_USERNAME_LENGTH = 20;
 export const MAX_AGE = 120;
-// Edad mínima para registrarse. Es una decisión de producto, no una restricción
-// técnica: súbela a 13 si quieres alinearte con COPPA.
-export const MIN_AGE = 5;
+// Edad mínima para registrarse. Por debajo de 13 años las leyes de privacidad
+// (COPPA, GDPR, Ley 8968 de Costa Rica) exigen consentimiento verificable de
+// los padres, que la app no gestiona. Los Términos de Uso citan esta misma
+// edad: si cambia aquí, hay que actualizar también src/legal/legalContent.js.
+export const MIN_AGE = 13;
 
 // Deliberadamente permisivo: validar correos con una expresión estricta produce
 // más falsos negativos que aciertos. Lo que se comprueba es que haya algo antes
@@ -88,7 +90,8 @@ export const validateUsername = (value) => {
 
 /**
  * Convierte la fecha escrita al formato que espera la columna DATE de Postgres.
- * Acepta dd/mm/aaaa (lo que ve el usuario) y también YYYY-MM-DD.
+ * Acepta dd/mm/aaaa (formato interno que entrega CalendarDateField; el usuario nunca
+ * lo escribe a mano) y también YYYY-MM-DD.
  * Devuelve null si no es una fecha real: `new Date` acepta 31/02 y lo corre a
  * marzo sin avisar, así que se comprueba que los componentes sobrevivan la ida y
  * vuelta.
@@ -135,10 +138,12 @@ export const ageFromISODate = (isoDate, today = new Date()) => {
  */
 export const validateBirthDate = (value, today = new Date()) => {
   const raw = (value || '').trim();
-  if (!raw) return { error: 'Escribe tu fecha de nacimiento.', isoDate: null };
+  if (!raw) return { error: 'Indica tu fecha de nacimiento.', isoDate: null };
 
+  // El calendario (CalendarDateField) entrega "dd/mm/aaaa"; toISODate devuelve
+  // null si el texto no es una fecha real.
   const isoDate = toISODate(raw);
-  if (!isoDate) return { error: 'Usa el formato dd/mm/aaaa.', isoDate: null };
+  if (!isoDate) return { error: 'Esa fecha no es válida. Elígela en el calendario.', isoDate: null };
 
   const age = ageFromISODate(isoDate, today);
   if (age < 0) return { error: 'La fecha no puede estar en el futuro.', isoDate: null };

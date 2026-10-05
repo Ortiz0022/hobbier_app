@@ -4,8 +4,11 @@ import Feather from '@expo/vector-icons/Feather';
 import { colors, radii, spacing, fonts, card } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { isRoomClosed } from '../utils/roomHelpers';
+import { useLanguage } from '../../../context/LanguageContext';
+import { formatDate } from '../../../utils/dateFormat';
 
 export const RoomCard = ({ room, onPress }) => {
+  const { language } = useLanguage();
   const isClosed = isRoomClosed(room);
   const { url: coverUrl, loading } = useSignedUrl('room-images', room.image_path);
   
@@ -13,8 +16,7 @@ export const RoomCard = ({ room, onPress }) => {
     if (isClosed) return 'Reto finalizado';
     if (!room.end_at) return 'Activa · Sin fecha límite';
     
-    const endDate = new Date(room.end_at);
-    return `Activa · Finaliza el ${endDate.toLocaleDateString()}`;
+    return `Activa · Finaliza el ${formatDate(room.end_at, language)}`;
   };
 
   return (

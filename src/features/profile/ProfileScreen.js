@@ -19,8 +19,10 @@ import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../config/supabase';
 import { uploadAvatarImage, getUserActivities } from '../../services/activityService';
-import { getUserPosts, getFriendsList } from '../../services/socialService';
+import { getUserPosts, getFriendsList, deleteOwnPost } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
+import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
+import { formatDateTime } from '../../utils/dateFormat';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
 // Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
@@ -51,7 +53,7 @@ const COLORS = {
 
 export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const { profile, refreshProfile, signOut } = useAuth();
-  const { notify } = useNotify();
+  const { notify, confirm } = useNotify();
   const { t, language, setLanguage, languages } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,6 +73,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   const [friendsCount, setFriendsCount] = useState(0);
 
   const [viewerImage, setViewerImage] = useState(null);
+  // Documento legal abierto desde el menú: 'privacy' | 'terms' | null
+  const [legalDoc, setLegalDoc] = useState(null);
   const [expandedActivityId, setExpandedActivityId] = useState(null);
 
   const [activeTab, setActiveTab] = useState('fotos');
@@ -101,6 +105,38 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
   useEffect(() => {
     loadExtras();
   }, [loadExtras]);
+
+  // Este perfil es siempre el propio, así que todas las fotos del visor se
+  // pueden eliminar. El servidor vuelve a comprobar la autoría de todos modos.
+  const [deletingPost, setDeletingPost] = useState(false);
+  const handleDeleteViewerPost = async () => {
+    const postId = viewerImage?.postId;
+    if (!postId || deletingPost) return;
+
+    const ok = await confirm({
+      title: 'Eliminar publicación',
+      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil.',
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setDeletingPost(true);
+    const { error } = await deleteOwnPost(postId);
+    setDeletingPost(false);
+
+    if (error) {
+      notify(error.message || 'No se pudo eliminar la publicación.', { type: 'error', title: 'Error' });
+      return;
+    }
+
+    setViewerImage(null);
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    setCompletedActivities((prev) =>
+      prev.map((a) => ({ ...a, posts: (a.posts || []).filter((p) => p.id !== postId) }))
+    );
+    notify('Publicación eliminada.', { type: 'success', title: 'Listo' });
+  };
 
   const handlePickAvatar = async () => {
     try {
@@ -249,6 +285,32 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 style={styles.menuItem}
                 onPress={() => {
                   setMenuOpen(false);
+                  setLegalDoc('privacy');
+                }}
+              >
+                <Feather name="shield" size={16} color={COLORS.textPrimary} />
+                <Text style={styles.menuItemText}>{t('legal.privacy_policy')}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setLegalDoc('terms');
+                }}
+              >
+                <Feather name="file-text" size={16} color={COLORS.textPrimary} />
+                <Text style={styles.menuItemText}>{t('legal.terms_of_use')}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
                   signOut();
                 }}
               >
@@ -318,6 +380,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
           onClose={() => setCreateActivityOpen(false)}
         />
 
+        <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
+
         <Modal
           visible={!!viewerImage}
           transparent
@@ -341,6 +405,23 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                   >
                     <Feather name="x" size={18} color={COLORS.textPrimary} />
                   </TouchableOpacity>
+
+                  {!!viewerImage.postId && (
+                    <TouchableOpacity
+                      style={styles.viewerDeleteBtn}
+                      onPress={handleDeleteViewerPost}
+                      disabled={deletingPost}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Eliminar publicación"
+                    >
+                      {deletingPost ? (
+                        <ActivityIndicator size="small" color={COLORS.danger} />
+                      ) : (
+                        <Feather name="trash-2" size={17} color={COLORS.danger} />
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {(viewerImage.title || viewerImage.category) && (
@@ -366,10 +447,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                         <View style={styles.viewerStatItem}>
                           <Feather name="clock" size={13} color={COLORS.textSecondary} />
                           <Text style={styles.viewerStatText}>
-                            {new Date(viewerImage.completedAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {formatDateTime(viewerImage.completedAt, language)}
                           </Text>
                         </View>
                       )}
@@ -615,6 +693,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                                     activeOpacity={0.85}
                                     onPress={() =>
                                       setViewerImage({
+                                        postId: post.id,
                                         uri: post.image_url,
                                         title: item.activity?.title,
                                         category: getCategoryLabel(item.activity?.category),
@@ -663,6 +742,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                         activeOpacity={0.85}
                         onPress={() =>
                           setViewerImage({
+                            postId: post.id,
                             uri: post.image_url,
                             title,
                             category,
@@ -1238,6 +1318,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  // Esquina opuesta a la X: así nadie la pulsa por error al querer cerrar
+  viewerDeleteBtn: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.dangerSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   viewerCaption: {
     padding: 18,
