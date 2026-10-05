@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   editSectionTitle: {
     flexShrink: 1,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '400',
     color: TOKENS.colors.textDark,
   },
   editSectionCount: {
