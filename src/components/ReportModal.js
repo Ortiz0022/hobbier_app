@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
-  TouchableWithoutFeedback,
+  Pressable,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -73,7 +73,7 @@ export const ReportModal = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableWithoutFeedback>
+        <Pressable>
           <View style={styles.sheetContainer}>
             {/* Indicador de arrastre superior */}
             <View style={styles.handleBar} />
@@ -162,7 +162,7 @@ export const ReportModal = ({
               )}
             </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </TouchableOpacity>
       </KeyboardAvoidingView>
     </Modal>
@@ -186,17 +186,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     elevation: 20,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px -4px 12px rgba(0,0,0,0.1)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      }
-    }),
+    boxShadow: '0px -4px 12px rgba(0,0,0,0.1)',
   },
   handleBar: {
     width: 36,

@@ -17,6 +17,7 @@ import {
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { SuspendedScreen } from './src/features/auth/SuspendedScreen';
 import { PresenceProvider } from './src/context/PresenceContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
@@ -24,6 +25,7 @@ import { AuthScreen } from './src/features/auth/AuthScreen';
 import { SplashScreen } from './src/features/auth/SplashScreen';
 import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { useNeedsOnboarding } from './src/features/onboarding/hooks/useNeedsOnboarding';
 import { RecommendationScreen } from './src/features/recommendations/RecommendationScreen';
 import { PendingActivityScreen } from './src/features/user_activities/PendingActivityScreen';
 import { FeedScreen } from './src/features/feed/FeedScreen';
@@ -33,7 +35,7 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
 
 const MainApp = () => {
-  const { user, loading, isAdmin, passwordRecovery } = useAuth();
+  const { user, loading, isAdmin, passwordRecovery, suspension } = useAuth();
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -44,8 +46,15 @@ const MainApp = () => {
   // porque a preferencias se entra desde dos sitios (Sugerencia y Perfil) y
   // devolver siempre al mismo dejaría al usuario en una pantalla que no pidió.
   const [volverA, setVolverA] = useState('recommendations');
+  // Sección abierta dentro del panel de administración. Vive aquí y no dentro
+  // de AdminScreen porque es la barra de navegación de abajo (que es de App)
+  // la que cambia de sección cuando el admin está en el panel.
+  const [adminSection, setAdminSection] = useState('overview');
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
+  // Una cuenta recién creada pasa por el asistente de preferencias ANTES de
+  // entrar: sin gustos ni intereses, las recomendaciones no tienen de dónde salir.
+  const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
 
   if (loading) {
     return (
@@ -63,11 +72,45 @@ const MainApp = () => {
     return <ResetPasswordScreen />;
   }
 
+  // Cuenta suspendida por reporte: ocupa toda la app hasta que expire la fecha.
+  // Va tras `passwordRecovery` para no tapar el flujo de recuperar contraseña.
+  if (suspension) {
+    return <SuspendedScreen />;
+  }
+
   if (!user) {
     if (showSplash) {
       return <SplashScreen onFinish={() => setShowSplash(false)} />;
     }
     return <AuthScreen />;
+  }
+
+  // Se espera a saber si faltan preferencias antes de pintar nada: entrar al
+  // inicio y que la pantalla salte al asistente un segundo después parece un fallo.
+  if (estadoOnboarding === 'comprobando') {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#386756" />
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
+      </View>
+    );
+  }
+
+  // Cuenta nueva: el asistente ocupa la pantalla entera y no tiene salida
+  // (`onCancel` ausente). Al terminar se entra a la app sin volver a consultar.
+  if (estadoOnboarding === 'falta') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <OnboardingScreen
+          obligatorio
+          onComplete={() => {
+            marcarCompletado();
+            setCurrentScreen('recommendations');
+          }}
+        />
+      </SafeAreaView>
+    );
   }
 
   const irAPreferencias = (origen) => {
@@ -122,6 +165,10 @@ const MainApp = () => {
           <ProfileScreen
             onGoToPreferences={() => irAPreferencias('profile')}
             onNavigateToFriends={() => setCurrentScreen('profile_friends')}
+            onNavigateToAdmin={() => {
+              setAdminSection('overview');
+              setCurrentScreen('admin');
+            }}
           />
         );
       case 'preferences':
@@ -135,13 +182,21 @@ const MainApp = () => {
           />
         );
       case 'admin':
-        return <AdminScreen />;
+        return (
+          <AdminScreen
+            section={adminSection}
+            onNavigateSection={setAdminSection}
+            // Cada pantalla del panel tiene su salida: se vuelve a Perfil, que
+            // es de donde se entra al panel.
+            onExit={() => setCurrentScreen('profile')}
+          />
+        );
       default:
         return <RecommendationScreen />;
     }
   };
 
-  const navItems = [
+  const navItemsUsuario = [
     { key: 'recommendations', label: t('nav.discover'), icon: 'gift' },
     { key: 'feed', label: t('nav.feed'), icon: 'rss' },
     { key: 'my_activities', label: t('nav.missions'), icon: 'target' },
@@ -149,9 +204,21 @@ const MainApp = () => {
     { key: 'profile', label: t('nav.profile'), icon: 'user' },
   ];
 
-  if (isAdmin) {
-    navItems.push({ key: 'admin', label: t('nav.admin'), icon: 'shield' });
-  }
+  // Dentro del panel, la misma barra pasa a ofrecer las secciones del panel:
+  // moverse por la administración se siente igual que moverse por la app, y no
+  // hace falta volver a Perfil para cambiar de sección.
+  const navItemsAdmin = [
+    { key: 'overview', label: t('admin.nav_overview'), icon: 'activity' },
+    { key: 'users', label: t('admin.nav_users'), icon: 'users' },
+    { key: 'posts', label: t('admin.nav_posts'), icon: 'image' },
+    { key: 'activities', label: t('admin.nav_activities'), icon: 'zap' },
+  ];
+
+  const enPanelAdmin = currentScreen === 'admin' && isAdmin;
+  const navItems = enPanelAdmin ? navItemsAdmin : navItemsUsuario;
+  const claveActiva = enPanelAdmin ? adminSection : currentScreen;
+  const irA = (clave) => (enPanelAdmin ? setAdminSection(clave) : setCurrentScreen(clave));
+
 
   // El asistente de preferencias ocupa la pantalla entera: es un flujo con sus
   // propios pasos y su propia salida, y dejar las pestañas abajo invita a irse
@@ -172,14 +239,14 @@ const MainApp = () => {
 
             <View style={styles.sidebarNav}>
               {navItems.map((item) => {
-                const isActive = currentScreen === item.key;
+                const isActive = claveActiva === item.key;
                 const iconColor = isActive ? '#0C8AA6' : '#64748b';
 
                 return (
                   <TouchableOpacity
                     key={item.key}
                     style={[styles.sidebarItem, isActive && styles.sidebarItemActive]}
-                    onPress={() => setCurrentScreen(item.key)}
+                    onPress={() => irA(item.key)}
                     activeOpacity={0.7}
                   >
                     <Feather name={item.icon} size={22} color={iconColor} />
@@ -206,14 +273,14 @@ const MainApp = () => {
         <View style={styles.bottomNavContainer}>
           <View style={styles.bottomNav}>
             {navItems.map((item) => {
-              const isActive = currentScreen === item.key;
+              const isActive = claveActiva === item.key;
               const iconColor = isActive ? '#0C8AA6' : '#121B22';
 
               return (
                 <TouchableOpacity
                   key={item.key}
                   style={styles.navItem}
-                  onPress={() => setCurrentScreen(item.key)}
+                  onPress={() => irA(item.key)}
                   activeOpacity={0.8}
                 >
                   <Feather name={item.icon} size={20} color={iconColor} />

@@ -15,7 +15,8 @@ import { Text } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../context/NotificationContext';
-import { getUserPosts, getFriendsList, getSentFriendRequests, sendFriendRequest } from '../services/socialService';
+import { getUserPosts, getFriendsList, getSentFriendRequests, sendFriendRequest, reportProfile } from '../services/socialService';
+import { ReportModal } from './ReportModal';
 import { getUserActivities } from '../services/activityService';
 import { getCategoryStyle, getCategoryLabel } from '../utils/category';
 import { useLanguage } from '../context/LanguageContext';
@@ -63,6 +64,9 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
   const [myFriendIds, setMyFriendIds] = useState(new Set());
   const [sendingMap, setSendingMap] = useState({});
   const [sentMap, setSentMap] = useState({});
+
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const loadUserData = useCallback(async (userId) => {
     setLoadingStats(true);
@@ -136,6 +140,18 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
     }
   };
 
+  const handleReportProfile = async (reason, details) => {
+    setReporting(true);
+    const { error } = await reportProfile(userProfile.id, user.id, reason, details);
+    setReporting(false);
+    if (error) {
+      notify(error.message || 'No se pudo enviar el reporte.', { type: 'error', title: 'Error' });
+    } else {
+      setShowReportModal(false);
+      notify('Perfil reportado. Nuestro equipo lo revisará pronto.', { type: 'success', title: 'Gracias' });
+    }
+  };
+
   if (!userProfile) return null;
 
   const suggestedFriends = friends.filter((f) => f.profile.id !== user?.id);
@@ -150,13 +166,24 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalHeaderTitle}>Perfil de Hobbier</Text>
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Feather name="x" size={20} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {userProfile.id !== user?.id && (
+              <TouchableOpacity
+                style={styles.modalActionBtn}
+                onPress={() => setShowReportModal(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="flag" size={16} color={COLORS.danger} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={onClose}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="x" size={20} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -556,6 +583,17 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
             </ScrollView>
           </SafeAreaView>
         </Modal>
+
+        {/* MODAL DE REPORTE */}
+        <ReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          onSubmit={handleReportProfile}
+          submitting={reporting}
+          title="Reportar perfil"
+          subtitle="¿Por qué quieres reportar a este usuario?"
+          reasons={['Comportamiento abusivo', 'Spam', 'Perfil falso', 'Otro']}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -580,6 +618,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
     color: COLORS.textPrimary,
+  },
+  modalActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fee2e2', // Fondo rojito suave para reportar
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalCloseBtn: {
     width: 36,
@@ -679,17 +725,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
     elevation: 2,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 8px rgba(12, 138, 166, 0.25)',
-      },
-      default: {
-        shadowColor: COLORS.cyanIcon,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-      },
-    }),
+    boxShadow: '0px 2px 8px rgba(12, 138, 166, 0.25)',
   },
   messageButtonText: {
     color: '#FFFFFF',

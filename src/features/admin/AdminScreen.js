@@ -4,89 +4,101 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
-  Image,
   ActivityIndicator,
   SafeAreaView,
-  Platform,
 } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { getCategoryLabel } from '../../utils/category';
-import { TOKENS } from '../../theme/designTokens';
+import { capitalizarTitulo } from '../../utils/titleCase';
+import { colors, radii, spacing, fonts, card } from '../../theme';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
+import { AdminOverview } from './sections/AdminOverview';
+import { AdminUsers } from './sections/AdminUsers';
+import { AdminPosts } from './sections/AdminPosts';
+import { Paginador, Insignia, BotonAccion, adminStyles } from './adminUI';
+import { ActivityTagsModal } from './components/ActivityTagsModal';
 import {
-  getReportedPostsAdmin,
-  resolveReportedPostAdmin,
   getAllActivitiesAdmin,
   toggleActivityActiveAdmin,
+  getActivityTagsAdmin,
 } from '../../services/adminService';
 
-export const AdminScreen = () => {
+/**
+ * Panel de administración.
+ *
+ * La sección activa NO vive aquí: la elige la barra de navegación de abajo,
+ * que en modo admin cambia sus opciones por las del panel (App.js). Así el
+ * admin navega el panel igual que navega la app, y cada sección conserva su
+ * salida: el botón "Volver a la app" de la cabecera.
+ *
+ * Los colores, radios y tipografías salen de src/theme, los mismos que el
+ * resto de la aplicación. El panel tenía antes una paleta propia y por eso
+ * parecía otra app.
+ */
+const POR_PAGINA_CATALOGO = 10;
+
+export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit }) => {
   const { isAdmin } = useAuth();
-  const { notify, confirm } = useNotify();
-  const [activeTab, setActiveTab] = useState('reports'); // 'reports' | 'activities'
+  const { notify } = useNotify();
   const [loading, setLoading] = useState(false);
-
-  // Estado de publicaciones reportadas
-  const [reportedPosts, setReportedPosts] = useState([]);
-
-  // Estado de actividades
   const [activities, setActivities] = useState([]);
+  const [totalActividades, setTotalActividades] = useState(0);
+  const [paginaCatalogo, setPaginaCatalogo] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Gustos e intereses de las actividades de esta página: { [id]: { likes, interests } }
+  const [etiquetas, setEtiquetas] = useState({});
+  // Actividad cuyas etiquetas se están editando. null = modal cerrado.
+  const [etiquetando, setEtiquetando] = useState(null);
 
   useEffect(() => {
-    if (activeTab === 'reports') loadReports();
-    if (activeTab === 'activities') loadActivities();
-  }, [activeTab]);
+    if (section === 'activities') loadActivities(paginaCatalogo);
+  }, [section, paginaCatalogo]);
 
-  const loadReports = async () => {
+  // El catálogo tiene cientos de actividades: se piden por página en vez de
+  // traerlas todas y dejar al admin bajando sin fin.
+  const loadActivities = async (pagina = paginaCatalogo) => {
     setLoading(true);
-    const { posts } = await getReportedPostsAdmin();
-    setReportedPosts(posts);
-    setLoading(false);
-  };
-
-  const handleResolveReport = async (postId, actionStatus) => {
-    const { error } = await resolveReportedPostAdmin(postId, actionStatus);
-    if (error) {
-      notify(error.message || 'No se pudo resolver el reporte.', { type: 'error', title: 'Error' });
-    } else {
-      const actionText = actionStatus === 'ACTIVE' ? 'restaurada' : 'eliminada';
-      notify(`La publicación fue ${actionText} correctamente.`, { type: 'success', title: 'Éxito' });
-      loadReports();
-    }
-  };
-
-  const handleDeletePost = async (postId) => {
-    const ok = await confirm({
-      title: '¿Eliminar la publicación?',
-      message: 'Dejará de verse en el feed y el autor perderá su evidencia. Esta acción no se puede deshacer.',
-      confirmLabel: 'Sí, eliminar',
-      destructive: true,
+    const { activities: filas, total } = await getAllActivitiesAdmin({
+      pagina,
+      porPagina: POR_PAGINA_CATALOGO,
     });
-    if (ok) handleResolveReport(postId, 'DELETED');
-  };
-
-  const loadActivities = async () => {
-    setLoading(true);
-    const { activities } = await getAllActivitiesAdmin();
-    setActivities(activities);
+    setActivities(filas);
+    setTotalActividades(total);
     setLoading(false);
+
+    // Las etiquetas van en una sola consulta para las diez de la página, no
+    // una por tarjeta.
+    const { tags } = await getActivityTagsAdmin(filas.map((fila) => fila.id));
+    setEtiquetas(tags);
   };
 
   const handleToggleActive = async (activityId, currentIsActive) => {
     const { error } = await toggleActivityActiveAdmin(activityId, currentIsActive);
-    if (!error) loadActivities();
+    if (error) {
+      notify('No se pudo cambiar el estado de la actividad.', { type: 'error' });
+      return;
+    }
+    loadActivities(paginaCatalogo);
   };
 
+  // Un rótulo por sección: el título grande de la cabecera y la línea que
+  // explica qué se está mirando.
+  const SECCIONES = {
+    overview: { titulo: 'Resumen General', subtitulo: 'Cómo va el sistema ahora mismo' },
+    users: { titulo: 'Usuarios', subtitulo: 'Quién está registrado, denunciado o suspendido' },
+    posts: { titulo: 'Publicaciones', subtitulo: 'Todo lo que la gente publica en el feed' },
+    activities: { titulo: 'Actividades', subtitulo: 'El catálogo que se recomienda a los usuarios' },
+  };
+  const seccion = SECCIONES[section] || SECCIONES.overview;
 
   if (!isAdmin) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.forbiddenBox}>
-          <Ionicons name="lock-closed" size={54} color="#121B22" style={{ marginBottom: 12 }} />
+          <Ionicons name="lock-closed" size={54} color={colors.text} style={{ marginBottom: spacing.md }} />
           <Text style={styles.forbiddenTitle}>Acceso Restringido</Text>
           <Text style={styles.forbiddenSubtitle}>
             Esta sección solo está disponible para usuarios con rol de Administrador.
@@ -99,152 +111,52 @@ export const AdminScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Panel de Administración</Text>
-        <View style={styles.tabsRow}>
+        <View style={styles.headerTop}>
+          <Text style={styles.kicker}>PANEL DE ADMINISTRACIÓN</Text>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'reports' && styles.activeTab]}
-            onPress={() => setActiveTab('reports')}
+            style={styles.exitBtn}
+            onPress={onExit}
+            activeOpacity={0.8}
+            accessibilityLabel="Volver a la aplicación como usuario normal"
           >
-            <Ionicons
-              name="flag"
-              size={14}
-              color={activeTab === 'reports' ? TOKENS.colors.active : TOKENS.colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'reports' && styles.activeTabText]}>
-              Reportes ({reportedPosts.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
-            onPress={() => setActiveTab('activities')}
-          >
-            <Ionicons
-              name="flash"
-              size={14}
-              color={activeTab === 'activities' ? TOKENS.colors.active : TOKENS.colors.textMuted}
-            />
-            <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
-              Actividades
-            </Text>
+            <Ionicons name="arrow-back" size={13} color={colors.textFaint} />
+            <Text style={styles.exitBtnText}>Volver a la app</Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.title}>{seccion.titulo}</Text>
+        <Text style={styles.subtitle}>{seccion.subtitulo}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* PESTAÑA REPORTES */}
-        {activeTab === 'reports' && (
-          <View>
-            {loading && <ActivityIndicator color="#0C8AA6" style={{ marginTop: 20 }} />}
-            {!loading && reportedPosts.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Ionicons name="sparkles" size={40} color="#121B22" style={{ marginBottom: 8 }} />
-                <Text style={styles.emptyText}>No hay publicaciones reportadas pendientes de revisión.</Text>
-              </View>
-            )}
+        {section === 'overview' && <AdminOverview onIrASeccion={onNavigateSection} />}
 
-            {reportedPosts.map((post) => {
-              const actividad = post.user_activity?.activity;
-              return (
-              <View key={post.id} style={styles.reportCard}>
-                <View style={styles.reportHeader}>
-                  <Text style={styles.reportAuthor}>
-                    Post de: <Text style={styles.reportAuthorName}>@{post.author?.username}</Text>
-                  </Text>
-                  {/* "REVISAR" en vez de "REPORTED": dice qué hacer, no repite
-                      el estado que ya implica estar en esta pestaña. */}
-                  <View style={styles.alertBadge}>
-                    <Text style={styles.alertBadgeText}>REVISAR</Text>
-                  </View>
-                </View>
+        {section === 'users' && <AdminUsers />}
 
-                {/* Contexto: a qué actividad correspondía la foto. Sin esto hay
-                    que juzgar una imagen suelta sin saber qué se pedía. */}
-                {actividad ? (
-                  <View style={styles.originalPostPreview}>
-                    <View style={styles.categoryRow}>
-                      <View style={styles.tagCategory}>
-                        <Text style={styles.tagText}>{getCategoryLabel(actividad.category)}</Text>
-                      </View>
-                      <View style={styles.tagPoints}>
-                        <Ionicons name="star" size={10} color={TOKENS.colors.badgePointsText} />
-                        <Text style={styles.pointsText}>+{actividad.points_awarded} pts</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.postTitle}>{actividad.title}</Text>
-                    <Text style={styles.postSubtitle} numberOfLines={2}>
-                      {actividad.description}
-                    </Text>
-                  </View>
-                ) : null}
+        {section === 'posts' && <AdminPosts />}
 
-                {/* La evidencia. Es lo que de verdad se está moderando: sin la
-                    imagen no hay forma de decidir si el reporte procede. */}
-                <Image source={{ uri: post.image_url }} style={styles.reportImage} />
-
-                {post.reports && post.reports.length > 0 && (
-                  <View style={styles.reasonsBox}>
-                    <Text style={styles.reasonsLabel}>
-                      {post.reports.length > 1 ? 'Motivos del reporte' : 'Motivo del reporte'}
-                    </Text>
-                    {post.reports.map((r) => (
-                      <View key={r.id} style={styles.reasonRow}>
-                        <Ionicons name="alert-circle" size={13} color={TOKENS.colors.alertText} />
-                        <View style={styles.reasonContent}>
-                          <Text style={styles.reasonText}>
-                            <Text style={styles.reasonBold}>{r.reason}</Text>
-                            {r.reporter?.username ? ` · por @${r.reporter.username}` : ''}
-                          </Text>
-                          {/* Motivo escrito por el usuario (opción "Otro"). Los reportes
-                              antiguos guardaban un texto fijo que no aporta nada. */}
-                          {r.details && r.details !== 'Reportado desde el feed' ? (
-                            <Text style={styles.reasonDetails}>"{r.details}"</Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                <View style={styles.reportActions}>
-                  <TouchableOpacity
-                    style={[styles.btn, styles.btnKeep]}
-                    onPress={() => handleResolveReport(post.id, 'ACTIVE')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.btnTextKeep}>Mantener post</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.btn, styles.btnDelete]}
-                    onPress={() => handleDeletePost(post.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.btnTextDelete}>Eliminar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* PESTAÑA ACTIVIDADES */}
-        {activeTab === 'activities' && (
+        {/* CATÁLOGO DE ACTIVIDADES */}
+        {section === 'activities' && (
           <View>
             <TouchableOpacity
               style={styles.createBtn}
               onPress={() => setShowCreateModal(true)}
+              activeOpacity={0.85}
             >
               <Text style={styles.createBtnText}>+ Crear Nueva Actividad</Text>
             </TouchableOpacity>
 
-            {loading && <ActivityIndicator color="#0C8AA6" style={{ marginTop: 20 }} />}
+            {loading && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />}
+
+            {!loading && (
+              <Text style={styles.catalogoTotal}>
+                {totalActividades} {totalActividades === 1 ? 'actividad' : 'actividades'} en el catálogo
+              </Text>
+            )}
 
             {activities.map((act) => (
               <View key={act.id} style={styles.activityCard}>
                 <View style={styles.activityHeader}>
-                  <Text style={styles.activityTitle}>{act.title}</Text>
+                  <Text style={styles.activityTitle}>{capitalizarTitulo(act.title)}</Text>
                   <TouchableOpacity
                     style={[styles.statusToggle, act.is_active ? styles.activeToggle : styles.inactiveToggle]}
                     onPress={() => handleToggleActive(act.id, act.is_active)}
@@ -252,7 +164,7 @@ export const AdminScreen = () => {
                     <Text
                       style={[
                         styles.statusToggleText,
-                        { color: act.is_active ? TOKENS.colors.badgeInfoText : TOKENS.colors.textMuted },
+                        { color: act.is_active ? colors.primaryDark : colors.textMuted },
                       ]}
                     >
                       {act.is_active ? 'ACTIVA' : 'INACTIVA'}
@@ -265,22 +177,68 @@ export const AdminScreen = () => {
                     había que leerla entera para encontrar un dato concreto. */}
                 <View style={styles.metaRow}>
                   <View style={styles.metaBadge}>
-                    <Ionicons name="pricetag-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Ionicons name="pricetag-outline" size={11} color={colors.textFaint} />
                     <Text style={styles.metaBadgeText}>{getCategoryLabel(act.category)}</Text>
                   </View>
                   <View style={styles.metaBadge}>
-                    <Ionicons name="star-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Ionicons name="star-outline" size={11} color={colors.textFaint} />
                     <Text style={styles.metaBadgeText}>{act.points_awarded} pts</Text>
                   </View>
                   <View style={styles.metaBadge}>
-                    <Ionicons name="person-outline" size={11} color={TOKENS.colors.inactiveText} />
+                    <Ionicons name="person-outline" size={11} color={colors.textFaint} />
                     <Text style={styles.metaBadgeText}>
                       {act.max_age ? `${act.min_age || 0}-${act.max_age} años` : `${act.min_age || 0}+ años`}
                     </Text>
                   </View>
                 </View>
+
+                {/* Con qué gustos e intereses se recomienda. Sin ningún gusto,
+                    get_recommended_activity solo la ofrece como comodín: por eso
+                    se avisa en la propia tarjeta en vez de esconderlo. */}
+                <View style={styles.etiquetasBloque}>
+                  {(() => {
+                    const suyas = etiquetas[act.id] || { likes: [], interests: [] };
+                    const sinGustos = suyas.likes.length === 0;
+                    return (
+                      <>
+                        {sinGustos ? (
+                          <Text style={styles.sinEtiquetas}>
+                            Sin gustos: solo se ofrece como comodín
+                          </Text>
+                        ) : (
+                          <View style={adminStyles.badgeRow}>
+                            {suyas.likes.map((g) => (
+                              <Insignia key={g.id} texto={capitalizarTitulo(g.name)} tono="marca" />
+                            ))}
+                            {suyas.interests.map((i) => (
+                              <Insignia key={i.id} texto={capitalizarTitulo(i.name)} tono="neutro" />
+                            ))}
+                          </View>
+                        )}
+
+                        <View style={styles.etiquetasAccion}>
+                          <BotonAccion
+                            texto={sinGustos ? 'Agregar gustos' : 'Editar etiquetas'}
+                            icono="pricetag"
+                            tono={sinGustos ? 'marca' : 'neutro'}
+                            onPress={() => setEtiquetando(act)}
+                          />
+                        </View>
+                      </>
+                    );
+                  })()}
+                </View>
               </View>
             ))}
+
+            {!loading && (
+              <Paginador
+                pagina={paginaCatalogo}
+                porPagina={POR_PAGINA_CATALOGO}
+                total={totalActividades}
+                onCambiar={setPaginaCatalogo}
+              />
+            )}
           </View>
         )}
       </ScrollView>
@@ -293,8 +251,20 @@ export const AdminScreen = () => {
         visible={showCreateModal}
         forCatalog
         onClose={() => setShowCreateModal(false)}
-        onCreated={loadActivities}
+        onCreated={() => loadActivities(paginaCatalogo)}
       />
+
+      {/* GUSTOS E INTERESES DE UNA ACTIVIDAD YA CREADA */}
+      {!!etiquetando && (
+        <ActivityTagsModal
+          activity={etiquetando}
+          onClose={() => setEtiquetando(null)}
+          onSaved={() => {
+            setEtiquetando(null);
+            loadActivities(paginaCatalogo);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -302,269 +272,98 @@ export const AdminScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   header: {
-    padding: 24,
-    paddingBottom: 12,
+    padding: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  kicker: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+    flexShrink: 1,
+  },
+  exitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.round,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.surfaceMuted,
+  },
+  exitBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textFaint,
   },
   title: {
     fontSize: 26,
-    fontWeight: '800',
-    color: '#121B22',
-    marginBottom: 16,
+    fontFamily: fonts.heading,
+    color: colors.text,
+    marginBottom: 2,
   },
-  tabsRow: {
-    flexDirection: 'row',
-    backgroundColor: TOKENS.colors.segmentTrack,
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  activeTab: {
-    // La pastilla activa es BLANCA, no del color de marca: así no compite con
-    // el botón "Crear Nueva Actividad", que es la acción principal de la pantalla.
-    backgroundColor: TOKENS.colors.white,
-    elevation: 2,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-    }),
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: TOKENS.colors.textMuted,
-  },
-  activeTabText: {
-    color: TOKENS.colors.active,
-    fontWeight: '600',
+  subtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
   },
   content: {
-    padding: 24,
-    paddingTop: 12,
+    padding: spacing.xl,
+    paddingTop: spacing.md,
   },
   forbiddenBox: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing.xxl,
   },
   forbiddenTitle: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#121B22',
-    marginBottom: 8,
+    fontFamily: fonts.heading,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   forbiddenSubtitle: {
-    color: '#8A908B',
+    color: colors.textMuted,
     textAlign: 'center',
     fontSize: 14,
   },
-  emptyCard: {
-    backgroundColor: '#F0F8FA',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F3F5',
-    marginTop: 12,
-  },
-  emptyText: {
-    color: '#121B22',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  reportCard: {
-    backgroundColor: TOKENS.colors.white,
-    borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 14,
-  },
-  reportHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reportAuthor: {
-    fontSize: 14,
-    color: TOKENS.colors.inactiveText,
-    flexShrink: 1,
-  },
-  reportAuthorName: {
-    fontWeight: '700',
-    color: TOKENS.colors.textDark,
-  },
-  alertBadge: {
-    backgroundColor: TOKENS.colors.alertBg,
-    borderWidth: 1,
-    borderColor: TOKENS.colors.alertBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  alertBadgeText: {
-    color: TOKENS.colors.alertText,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  originalPostPreview: {
-    backgroundColor: TOKENS.colors.inactiveBg,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: TOKENS.colors.segmentTrack,
-    marginBottom: 12,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  tagCategory: {
-    backgroundColor: TOKENS.colors.inactiveBorder,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    flexShrink: 1,
-  },
-  tagText: {
-    fontSize: 11,
-    color: TOKENS.colors.inactiveText,
-  },
-  tagPoints: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: TOKENS.colors.badgePointsBg,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  pointsText: {
-    fontSize: 11,
-    color: TOKENS.colors.badgePointsText,
-    fontWeight: '600',
-  },
-  postTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: TOKENS.colors.textDark,
-    marginBottom: 2,
-  },
-  postSubtitle: {
+
+  // --- Catálogo de actividades ---
+  catalogoTotal: {
     fontSize: 12,
-    color: TOKENS.colors.textMuted,
-    lineHeight: 16,
-  },
-  reportImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  reasonsBox: {
-    backgroundColor: TOKENS.colors.segmentTrack,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    gap: 6,
-  },
-  reasonsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: TOKENS.colors.inactiveText,
-  },
-  reasonRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  reasonContent: {
-    flex: 1,
-  },
-  reasonText: {
-    fontSize: 13,
-    color: TOKENS.colors.textDark,
-    lineHeight: 18,
-  },
-  reasonDetails: {
-    marginTop: 2,
-    fontSize: 13,
-    fontStyle: 'italic',
-    color: TOKENS.colors.inactiveText,
-    lineHeight: 18,
-  },
-  reasonBold: {
-    fontWeight: '600',
-  },
-  reportActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnKeep: {
-    backgroundColor: TOKENS.colors.inactiveBorder,
-  },
-  btnDelete: {
-    backgroundColor: TOKENS.colors.destructive,
-  },
-  btnTextKeep: {
-    color: TOKENS.colors.inactiveText,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  btnTextDelete: {
-    color: TOKENS.colors.white,
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: spacing.md,
   },
   createBtn: {
-    backgroundColor: TOKENS.colors.active,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md + 4,
   },
   createBtnText: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   activityCard: {
-    backgroundColor: TOKENS.colors.white,
-    borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    ...card,
+    padding: spacing.md + 4,
+    borderRadius: radii.input,
+    marginBottom: spacing.md,
   },
   activityHeader: {
     flexDirection: 'row',
@@ -574,23 +373,23 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#121B22',
+    fontFamily: fonts.heading,
+    color: colors.text,
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   statusToggle: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radii.pill,
   },
   activeToggle: {
-    backgroundColor: TOKENS.colors.badgeInfoBg,
+    backgroundColor: colors.primarySoft,
   },
   inactiveToggle: {
-    backgroundColor: TOKENS.colors.inactiveBg,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
+    borderColor: colors.surfaceMuted,
   },
   statusToggleText: {
     fontSize: 11,
@@ -598,9 +397,9 @@ const styles = StyleSheet.create({
   },
   activityDesc: {
     fontSize: 13,
-    color: TOKENS.colors.inactiveText,
+    color: colors.textFaint,
     lineHeight: 18,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   metaRow: {
     flexDirection: 'row',
@@ -611,16 +410,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: TOKENS.colors.inactiveBg,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
-    paddingHorizontal: 8,
+    borderColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 6,
   },
   metaBadgeText: {
     fontSize: 12,
-    color: TOKENS.colors.inactiveText,
+    color: colors.textFaint,
     fontWeight: '500',
+  },
+  etiquetasBloque: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceMuted,
+    gap: spacing.sm,
+  },
+  sinEtiquetas: {
+    fontSize: 12,
+    color: colors.danger,
+  },
+  etiquetasAccion: {
+    flexDirection: 'row',
   },
 });

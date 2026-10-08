@@ -156,6 +156,30 @@ export const AuthScreen = () => {
     return () => clearTimeout(temporizador);
   }, [username, isRegister, isForgot]);
 
+  // Live password confirmation validation
+  useEffect(() => {
+    if (!isRegister || isForgot) return;
+
+    if (passwordConfirm.length > 0) {
+      const error = validatePasswordConfirmation(password, passwordConfirm);
+      if (error) {
+        setFieldErrors((prev) => ({ ...prev, passwordConfirm: error }));
+      } else {
+        setFieldErrors((prev) => {
+          if (!prev.passwordConfirm) return prev;
+          const { passwordConfirm: _, ...rest } = prev;
+          return rest;
+        });
+      }
+    } else {
+      setFieldErrors((prev) => {
+        if (!prev.passwordConfirm) return prev;
+        const { passwordConfirm: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [password, passwordConfirm, isRegister, isForgot]);
+
   const animatedStyle = {
     opacity: enter,
     transform: [

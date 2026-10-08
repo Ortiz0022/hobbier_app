@@ -80,10 +80,50 @@ export const roomsService = {
     return (data || []).map((row) => row.receiver_id);
   },
 
+  /**
+   * Invitaciones a salas que el usuario tiene sin responder.
+   *
+   * La RPC no dice en qué estado está cada sala, así que una sala que su dueño
+   * cerró llegaba como invitación normal... que al aceptarla rechaza
+   * accept_room_invitation. Aquí se completa con el estado real.
+   *
+   * La consulta funciona porque la política de rooms deja ver una sala a quien
+   * tiene una invitación pendiente en ella ("Usuarios pueden ver salas
+   * relevantes"), así que no hace falta cambiar nada en la base.
+   *
+   * Si la base ya trae `room_status` (script invitaciones_salas_estado.sql),
+   * se usa tal cual y esta segunda consulta ni se hace.
+   */
   async getPendingInvitations() {
     const { data, error } = await supabase.rpc('get_pending_room_invitations');
     if (error) throw error;
-    return data || [];
+
+    const invitaciones = data || [];
+    const sinEstado = invitaciones.filter((inv) => !inv.room_status && inv.room_id);
+    if (sinEstado.length === 0) return invitaciones;
+
+    const { data: salas, error: errorSalas } = await supabase
+      .from('rooms')
+      .select('id, status, end_at')
+      .in('id', sinEstado.map((inv) => inv.room_id));
+
+    if (errorSalas) {
+      // Sin el estado se sigue detectando lo vencido por fecha, que es mejor
+      // que quedarse sin lista de invitaciones.
+      console.warn('No se pudo leer el estado de las salas invitadas:', errorSalas.message);
+      return invitaciones;
+    }
+
+    const porId = new Map((salas || []).map((sala) => [sala.id, sala]));
+    return invitaciones.map((inv) => {
+      const sala = porId.get(inv.room_id);
+      if (!sala) return inv;
+      return {
+        ...inv,
+        room_status: sala.status,
+        room_end_at: inv.room_end_at || sala.end_at,
+      };
+    });
   },
 
   // ----------------------------------------------------

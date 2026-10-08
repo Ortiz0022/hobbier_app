@@ -205,7 +205,9 @@
     "no_common_friends": "This Hobbier doesn't have other friends in common with you yet.",
     "already_friends": "Friends",
     "view_profile": "View profile",
-    "send_message": "Send message"
+    "send_message": "Send message",
+    "profile_locked_title": "Private profile",
+    "profile_requires_friendship": "You can only see your friends’ profiles. Send a request and you’ll see it once they accept."
   },
   "auth": {
     "login": "Log In",
@@ -315,6 +317,10 @@
     "admin_only": "This section is only available for users with Administrator role.",
     "reports_tab": "Reports ({count})",
     "activities_tab": "Activities",
+    "nav_overview": "Overview",
+    "nav_users": "Users",
+    "nav_posts": "Posts",
+    "nav_activities": "Catalog",
     "no_reports": "No reported posts pending review.",
     "post_by": "Post by: @{username}",
     "review": "REVIEW",

@@ -398,6 +398,28 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
   }
 };
 
+export const reportProfile = async (reportedProfileId, reporterId, reason, details = '') => {
+  try {
+    const { data, error } = await supabase
+      .from('profile_reports')
+      .insert({
+        reported_profile_id: reportedProfileId,
+        reporter_id: reporterId,
+        reason,
+        details,
+        status: 'PENDING',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { report: data, error: null };
+  } catch (error) {
+    console.error('Error al reportar perfil:', error.message);
+    return { report: null, error };
+  }
+};
+
 export const getFriendSuggestionsByInterests = async (userId) => {
   try {
     // 1. Obtener los intereses del usuario actual

@@ -91,6 +91,38 @@ export const saveUserPreferences = async (userId, selectedLikes, selectedInteres
   }
 };
 
+/**
+ * ¿Esta cuenta ya eligió preferencias alguna vez?
+ *
+ * Se usa para llevar al asistente ANTES de entrar a la app en una cuenta recién
+ * creada. Solo cuenta filas (`head: true`), no las descarga: es una comprobación
+ * que ocurre en cada arranque con sesión.
+ *
+ * Ante un fallo de red devuelve `true` (ya lo hizo). Es deliberado: dar por
+ * nuevo a alguien que no lo es lo encerraría en el asistente por un corte de red.
+ */
+export const hasCompletedOnboarding = async (userId) => {
+  if (!userId) return true;
+  try {
+    const contar = (tabla) =>
+      supabase.from(tabla).select('user_id', { count: 'exact', head: true }).eq('user_id', userId);
+
+    const [likes, interests, resources] = await Promise.all([
+      contar('user_likes'),
+      contar('user_interests'),
+      contar('user_resources'),
+    ]);
+
+    const error = likes.error || interests.error || resources.error;
+    if (error) throw error;
+
+    return (likes.count || 0) + (interests.count || 0) + (resources.count || 0) > 0;
+  } catch (error) {
+    console.error('Error comprobando si faltan preferencias:', error.message);
+    return true;
+  }
+};
+
 // Guardar la fecha de nacimiento del perfil.
 // Se guarda la FECHA, no la edad: un número quedaría desactualizado en cada
 // cumpleaños, mientras que la fecha permite recalcular la edad siempre.

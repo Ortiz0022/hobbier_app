@@ -51,8 +51,8 @@ const COLORS = {
   dangerSoft: '#FEF2F2',
 };
 
-export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
-  const { profile, refreshProfile, signOut } = useAuth();
+export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNavigateToAdmin }) => {
+  const { profile, refreshProfile, signOut, isAdmin } = useAuth();
   const { notify, confirm } = useNotify();
   const { t, language, setLanguage, languages } = useLanguage();
   const [editing, setEditing] = useState(false);
@@ -250,6 +250,22 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends }) => {
                 <Feather name="sliders" size={16} color={COLORS.textPrimary} />
                 <Text style={styles.menuItemText}>{t('profile.config_preferences')}</Text>
               </TouchableOpacity>
+
+              {isAdmin && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setMenuOpen(false);
+                      if (onNavigateToAdmin) onNavigateToAdmin();
+                    }}
+                  >
+                    <Feather name="shield" size={16} color={COLORS.orange} />
+                    <Text style={styles.menuItemText}>Administrar aplicación</Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
               <View style={styles.menuDivider} />
 
@@ -835,17 +851,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     elevation: 8,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 4px 16px rgba(0,0,0,0.1)',
-      },
-      default: {
-        shadowColor: COLORS.textPrimary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-      }
-    }),
+    boxShadow: '0px 4px 16px rgba(0,0,0,0.1)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -1378,10 +1384,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 32,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 8px 24px rgba(0,0,0,0.12)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+      },
+    }),
     elevation: 10,
   },
   langModalHeader: {

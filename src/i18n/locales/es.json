@@ -205,7 +205,9 @@
     "no_common_friends": "Este Hobbier todavía no tiene otros amigos en común contigo.",
     "already_friends": "Amigos",
     "view_profile": "Ver perfil",
-    "send_message": "Enviar mensaje"
+    "send_message": "Enviar mensaje",
+    "profile_locked_title": "Perfil privado",
+    "profile_requires_friendship": "Solo puedes ver el perfil de tus amigos. Envíale una solicitud y, cuando la acepte, podrás verlo."
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -315,6 +317,10 @@
     "admin_only": "Esta sección solo está disponible para usuarios con rol de Administrador.",
     "reports_tab": "Reportes ({count})",
     "activities_tab": "Actividades",
+    "nav_overview": "Resumen",
+    "nav_users": "Usuarios",
+    "nav_posts": "Posts",
+    "nav_activities": "Catálogo",
     "no_reports": "No hay publicaciones reportadas pendientes de revisión.",
     "post_by": "Post de: @{username}",
     "review": "REVISAR",

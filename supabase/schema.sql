@@ -142,6 +142,20 @@ CREATE TABLE IF NOT EXISTS public.reports (
   CONSTRAINT chk_unique_report UNIQUE (post_id, reporter_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.profile_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reported_profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reporter_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  details TEXT,
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'RESOLVED')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_unique_profile_report UNIQUE (reported_profile_id, reporter_id)
+);
+
+-- Adding status column for profile bans/suspensions if it doesn't exist
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'BANNED'));
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN

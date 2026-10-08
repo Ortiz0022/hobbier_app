@@ -22,25 +22,20 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 // Se reutilizan las reglas de fecha del registro en lugar de escribir otras:
 // ya están probadas y así el formato pedido es el mismo en toda la app.
-import { ageFromISODate, validateBirthDate, MIN_AGE } from '../auth/validation';
 import {
   fetchResourcesCatalog,
   fetchUserPreferences,
   saveUserPreferences,
-  saveUserBirthDate,
 } from '../../services/catalogService';
 import { CatalogPicker } from './components/CatalogPicker';
-import { CalendarDateField } from '../../components/CalendarDateField';
 
 // El asistente recorre esta lista: primero la fecha (paso propio, sin
 // catálogo) y después las tres secciones de opciones. Agregar un paso es
 // agregar una entrada aquí; los puntitos y la navegación salen de su longitud.
+// La fecha de nacimiento NO está aquí: la pide el registro y el trigger
+// handle_new_user la guarda en profiles. Volver a pedirla era pedir dos veces lo
+// mismo. La edad se sigue usando para filtrar actividades, leída del perfil.
 const STEPS = [
-  {
-    key: 'birthDate',
-    title: 'Tu Fecha de Nacimiento',
-    description: 'Usamos tu edad para asegurarnos de sugerirte actividades adecuadas.',
-  },
   {
     key: 'likes',
     title: 'Mis Gustos',
@@ -58,7 +53,13 @@ const STEPS = [
   },
 ];
 
-export const OnboardingScreen = ({ onComplete, onCancel }) => {
+/**
+ * `obligatorio`: el asistente que ve una cuenta recién creada, ANTES de entrar a
+ * la app. Sin salida (no se pasa `onCancel`) y exigiendo al menos una opción:
+ * terminar sin elegir nada dejaría la cuenta igual que al principio y el arranque
+ * volvería a mandarla aquí, en bucle.
+ */
+export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) => {
   const { user } = useAuth();
   const { notify } = useNotify();
   const [loading, setLoading] = useState(true);
@@ -71,9 +72,6 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedResources, setSelectedResources] = useState([]);
 
-  // Fecha de nacimiento: define qué metas son aptas por edad.
-  const [birthDate, setBirthDate] = useState('');
-  const [birthDateError, setBirthDateError] = useState('');
 
   // Paso actual del asistente (0 = fecha de nacimiento).
   const [step, setStep] = useState(0);
@@ -126,11 +124,6 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       setModoEdicion(
         prefs.userLikes.length + prefs.userInterests.length + prefs.userResources.length > 0,
       );
-      // La base la guarda como YYYY-MM-DD; CalendarDateField trabaja con dd/mm/aaaa.
-      if (prefs.birthDate) {
-        const [y, m, d] = prefs.birthDate.split('-');
-        setBirthDate(`${d}/${m}/${y}`);
-      }
     }
     setLoading(false);
   };
@@ -240,21 +233,24 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
       return;
     }
 
-    // La fecha se valida ANTES de tocar la red: si está mal, no tiene sentido
-    // guardar preferencias a medias.
-    const birth = validateBirthDate(birthDate);
-    if (birth.error) {
-      setBirthDateError(birth.error);
+    // En el asistente obligatorio hay que elegir algo: guardar con las tres listas
+    // vacías no cambiaría nada y el arranque devolvería a esta misma pantalla.
+    if (obligatorio && selectedLikes.length + selectedInterests.length + selectedResources.length === 0) {
+      notify(
+        'Elige al menos una opción para que podamos sugerirte actividades.',
+        { type: 'warning', title: 'Falta elegir' },
+      );
       return;
     }
-    setBirthDateError('');
 
     setSaving(true);
 
-    const [result] = await Promise.all([
-      saveUserPreferences(user.id, selectedLikes, selectedInterests, selectedResources),
-      saveUserBirthDate(user.id, birth.isoDate),
-    ]);
+    const result = await saveUserPreferences(
+      user.id,
+      selectedLikes,
+      selectedInterests,
+      selectedResources,
+    );
 
     setSaving(false);
 
@@ -269,17 +265,6 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
   const esUltimo = step === STEPS.length - 1;
 
   const siguiente = () => {
-    // La fecha se valida al SALIR de su paso, no al guardar: si estuviera mal,
-    // el error aparecería tres pantallas después de haberla escrito.
-    if (STEPS[step].key === 'birthDate') {
-      const birth = validateBirthDate(birthDate);
-      if (birth.error) {
-        setBirthDateError(birth.error);
-        return;
-      }
-      setBirthDateError('');
-    }
-
     if (esUltimo) {
       handleSave();
       return;
@@ -320,65 +305,6 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
 
   const seccion = STEPS[step];
 
-  // Edad ya calculada, para devolverle al usuario lo que entendimos de su
-  // fecha. Escribir 09/03/2003 y que la pantalla conteste "Tienes 22 años" es
-  // la única forma de que note un dedazo en el año antes de seguir.
-  const birthIso = validateBirthDate(birthDate).isoDate;
-  const edad = birthIso ? ageFromISODate(birthIso) : null;
-
-  // Bloque de la fecha. `compacto` en la pantalla de edición: allí el icono
-  // grande y la insignia ocupaban media pantalla antes de llegar a los gustos.
-  const renderFecha = (compacto = false) => (
-    <View style={compacto ? styles.dateBlockCompact : styles.dateBlock}>
-      {!compacto ? (
-        <>
-          <View style={styles.dateIconCircle}>
-            <Feather name="calendar" size={38} color={TOKENS.colors.active} />
-          </View>
-
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>OBLIGATORIO</Text>
-          </View>
-        </>
-      ) : null}
-
-      <View style={styles.dateFieldsWrap}>
-        <CalendarDateField
-          value={birthDate}
-          onChange={(value) => {
-            setBirthDate(value);
-            if (birthDateError) setBirthDateError('');
-          }}
-          invalid={!!birthDateError}
-          // Igual que en el registro: nadie menor de MIN_AGE puede elegirse
-          maxDate={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE))}
-          initialDate={new Date(new Date().getFullYear() - 20, 0, 1)}
-        />
-      </View>
-
-      {/* Siempre hay una línea aquí (error, edad o pista) para que el
-        bloque no cambie de alto y salte al escribir. */}
-      {birthDateError ? (
-        <View style={[styles.dateFeedback, styles.dateFeedbackError]}>
-          <Feather name="alert-circle" size={14} color={TOKENS.colors.alertText} />
-          <Text style={styles.dateFeedbackErrorText}>{birthDateError}</Text>
-        </View>
-      ) : edad !== null ? (
-        <View style={[styles.dateFeedback, styles.dateFeedbackOk]}>
-          <Feather name="check-circle" size={14} color={TOKENS.colors.badgeInfoText} />
-          <Text style={styles.dateFeedbackOkText}>Tienes {edad} años</Text>
-        </View>
-      ) : (
-        <Text style={styles.dateHint}>Toca el campo para elegir la fecha en el calendario.</Text>
-      )}
-    </View>
-  );
-
-  /**
-   * Gustos e intereses se eligen con buscador (el catálogo puede crecer y no se
-   * descarga entero). Recursos sigue siendo una rejilla: son 9 opciones fijas y
-   * buscar entre ellas no aporta nada.
-   */
   const renderOpciones = (key, compact = false) => {
     if (key === 'likes' || key === 'interests') {
       return (
@@ -421,7 +347,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
     // La fecha NO aparece en edición: el registro ya la pidió y nadie viene
     // aquí a cambiarla; dejarla solo generaba errores de validación que
     // bloqueaban el guardado.
-    STEPS.filter((paso) => paso.key !== 'birthDate').map((paso) => {
+    STEPS.map((paso) => {
       const elegidas = sectionData[paso.key].selected.length;
       return (
         <View key={paso.key} style={styles.editSection}>
@@ -532,7 +458,7 @@ export const OnboardingScreen = ({ onComplete, onCancel }) => {
                 <Text style={styles.stepTitle}>{capitalizarTitulo(seccion.title)}</Text>
                 <Text style={styles.stepSubtitle}>{seccion.description}</Text>
 
-                {seccion.key === 'birthDate' ? renderFecha() : renderOpciones(seccion.key)}
+                {renderOpciones(seccion.key)}
               </>
             )}
           </ScrollView>
@@ -703,89 +629,6 @@ const styles = StyleSheet.create({
     // Un renglón muy largo cuesta de leer, y centrado todavía más.
     maxWidth: 340,
     alignSelf: 'center',
-  },
-  dateBlock: {
-    alignItems: 'center',
-    gap: TOKENS.spacing.md,
-  },
-  dateBlockCompact: {
-    alignItems: 'center',
-    gap: TOKENS.spacing.sm,
-  },
-  dateIconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: TOKENS.colors.badgeInfoBg,
-    marginBottom: TOKENS.spacing.xs,
-  },
-  dateFieldsWrap: {
-    alignSelf: 'stretch',
-  },
-  dateInputBox: {
-    alignSelf: 'stretch',
-    backgroundColor: TOKENS.colors.inactiveBg,
-    borderWidth: 1.5,
-    borderColor: TOKENS.colors.inactiveBorder,
-    borderRadius: TOKENS.radius.card,
-    paddingHorizontal: TOKENS.spacing.md,
-  },
-  dateInputBoxInvalid: {
-    borderColor: TOKENS.colors.danger,
-    backgroundColor: TOKENS.colors.alertBg,
-  },
-  dateInput: {
-    paddingVertical: TOKENS.spacing.md,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textAlign: 'center',
-    color: TOKENS.colors.textDark,
-  },
-  dateFeedback: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: TOKENS.spacing.md,
-    paddingVertical: 6,
-    borderRadius: TOKENS.radius.full,
-  },
-  dateFeedbackOk: {
-    backgroundColor: TOKENS.colors.badgeInfoBg,
-  },
-  dateFeedbackOkText: {
-    color: TOKENS.colors.badgeInfoText,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  dateFeedbackError: {
-    backgroundColor: TOKENS.colors.alertBg,
-  },
-  dateFeedbackErrorText: {
-    color: TOKENS.colors.alertText,
-    fontSize: 13,
-    fontWeight: '600',
-    // Un mensaje largo baja de línea en vez de estirar la pastilla fuera de
-    // la pantalla con la letra del sistema agrandada.
-    flexShrink: 1,
-  },
-  dateHint: {
-    color: TOKENS.colors.textMuted,
-    fontSize: 13,
-  },
-  badge: {
-    // Ámbar: avisa sin repetir el naranja del botón ni el cian de lo demás.
-    backgroundColor: TOKENS.colors.badgePointsBg,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeText: {
-    color: TOKENS.colors.badgePointsText,
-    fontSize: 10,
-    fontWeight: '700',
   },
   optionsGrid: {
     flexDirection: 'row',

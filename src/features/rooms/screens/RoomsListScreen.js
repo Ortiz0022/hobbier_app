@@ -8,7 +8,15 @@ import { colors, spacing, fonts, radii, primaryButton, card } from '../../../the
 
 export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
   const { rooms, loading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms();
-  const { invitations, loading: invLoading, acceptInvitation, rejectInvitation, refetch: refetchInv } = usePendingInvitations();
+  const {
+    invitations,
+    finishedInvitations,
+    loading: invLoading,
+    acceptInvitation,
+    rejectInvitation,
+    dismissInvitation,
+    refetch: refetchInv,
+  } = usePendingInvitations();
 
   const loading = roomsLoading || invLoading;
   const error = roomsError;
@@ -38,6 +46,68 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
     );
   }
 
+  const cabecera = (invitations.length > 0 || finishedInvitations.length > 0) ? (
+    <View>
+      {invitations.length > 0 && (
+        <View style={styles.invitationsSection}>
+          <Text style={styles.sectionTitle}>Invitaciones Pendientes ({invitations.length})</Text>
+          {invitations.map(inv => (
+            <View key={inv.invitation_id} style={styles.invitationCard}>
+              <View style={styles.invitationInfo}>
+                <Text style={styles.invitationRoomName}>{inv.room_name}</Text>
+                <Text style={styles.invitationSender}>
+                  Invitado por <Text style={{fontWeight: 'bold'}}>@{inv.sender_username}</Text>
+                </Text>
+                <Text style={styles.invitationChallenge}>Reto: {inv.challenge_title}</Text>
+              </View>
+              <View style={styles.invitationActions}>
+                <TouchableOpacity
+                  style={styles.invAcceptBtn}
+                  onPress={() => acceptInvitation(inv.invitation_id).then(handleRefresh)}
+                >
+                  <Feather name="check" size={16} color={colors.onPrimary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.invRejectBtn}
+                  onPress={() => rejectInvitation(inv.invitation_id)}
+                >
+                  <Feather name="x" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Invitaciones a salas que ya terminaron: no hay nada que aceptar, solo
+          enterarse y quitarlas. Al descartar se marcan en la base, así que no
+          vuelven a salir. */}
+      {finishedInvitations.length > 0 && (
+        <View style={styles.invitationsSection}>
+          {finishedInvitations.map(inv => (
+            <View key={inv.invitation_id} style={styles.finishedCard}>
+              <Feather name="clock" size={18} color={colors.textFaint} style={styles.finishedIcon} />
+              <View style={styles.invitationInfo}>
+                <Text style={styles.finishedRoomName}>{inv.room_name}</Text>
+                <Text style={styles.finishedText}>
+                  <Text style={{ fontWeight: 'bold' }}>@{inv.sender_username}</Text> te invitó a esta
+                  sala, pero ya finalizó: la invitación venció.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.finishedDismissBtn}
+                onPress={() => dismissInvitation(inv.invitation_id)}
+                accessibilityLabel="Descartar aviso"
+              >
+                <Text style={styles.finishedDismissText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  ) : null;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -53,38 +123,7 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
         contentContainerStyle={styles.listContent}
         refreshing={loading}
         onRefresh={handleRefresh}
-        ListHeaderComponent={
-          invitations.length > 0 ? (
-            <View style={styles.invitationsSection}>
-              <Text style={styles.sectionTitle}>Invitaciones Pendientes ({invitations.length})</Text>
-              {invitations.map(inv => (
-                <View key={inv.invitation_id} style={styles.invitationCard}>
-                  <View style={styles.invitationInfo}>
-                    <Text style={styles.invitationRoomName}>{inv.room_name}</Text>
-                    <Text style={styles.invitationSender}>
-                      Invitado por <Text style={{fontWeight: 'bold'}}>@{inv.sender_username}</Text>
-                    </Text>
-                    <Text style={styles.invitationChallenge}>Reto: {inv.challenge_title}</Text>
-                  </View>
-                  <View style={styles.invitationActions}>
-                    <TouchableOpacity 
-                      style={styles.invAcceptBtn}
-                      onPress={() => acceptInvitation(inv.invitation_id).then(handleRefresh)}
-                    >
-                      <Feather name="check" size={16} color={colors.onPrimary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.invRejectBtn}
-                      onPress={() => rejectInvitation(inv.invitation_id)}
-                    >
-                      <Feather name="x" size={16} color={colors.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null
-        }
+        ListHeaderComponent={cabecera}
         renderItem={({ item }) => (
           <RoomCard 
             room={item} 
@@ -257,5 +296,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  finishedCard: {
+    ...card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.surfaceMuted,
+  },
+  finishedIcon: {
+    marginRight: spacing.sm,
+  },
+  finishedRoomName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.textFaint,
+    marginBottom: 2,
+  },
+  finishedText: {
+    fontSize: 12,
+    color: colors.textFaint,
+  },
+  finishedDismissBtn: {
+    marginLeft: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+  },
+  finishedDismissText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primaryDark,
   },
 });

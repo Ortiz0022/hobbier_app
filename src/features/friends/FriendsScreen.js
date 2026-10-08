@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -30,6 +30,7 @@ import {
 import { getUserActivities } from '../../services/activityService';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { roomsService } from '../../services/roomsService';
+import { isInvitationFinished } from '../rooms/utils/roomHelpers';
 import { usePresence } from '../../context/PresenceContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -120,7 +121,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const loadRoomInvitations = async () => {
     try {
       const invitations = await roomsService.getPendingInvitations();
-      setRoomInvitations(invitations);
+      // El punto rojo es "tienes algo que decidir". Una invitación a una sala
+      // que ya terminó no se puede aceptar: se avisa dentro de Salas, pero no
+      // cuenta como solicitud.
+      setRoomInvitations(invitations.filter((inv) => !isInvitationFinished(inv)));
     } catch (err) {
       console.error('Error cargando invitaciones a salas:', err);
     }
@@ -171,6 +175,31 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     const { friends } = await getFriendsList(user.id);
     setFriends(friends);
     setLoading(false);
+  };
+
+  /**
+   * Ids de mis amigos, para decidir qué mostrar en cada resultado de búsqueda.
+   * `friends` ya se carga al montar la pantalla, no solo en su pestaña.
+   */
+  const idsAmigos = useMemo(
+    () => new Set(friends.map((item) => item.profile?.id).filter(Boolean)),
+    [friends],
+  );
+
+  /**
+   * El perfil de alguien solo se abre si ya es amigo. A quien no lo es se le
+   * explica por qué, en vez de abrir una ficha vacía o no responder al toque.
+   */
+  const abrirPerfilSiEsAmigo = (perfil) => {
+    if (!perfil?.id) return;
+    if (idsAmigos.has(perfil.id)) {
+      openFriendProfile(perfil);
+      return;
+    }
+    notify(t('friends.profile_requires_friendship'), {
+      type: 'info',
+      title: t('friends.profile_locked_title'),
+    });
   };
 
   const handleRemoveFriend = async (friendshipId, friendName) => {
@@ -428,7 +457,14 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               )}
 
               {searchResults.map((targetUser) => (
-                <View key={targetUser.id} style={styles.userCard}>
+                <TouchableOpacity
+                  key={targetUser.id}
+                  style={styles.userCard}
+                  onPress={() => abrirPerfilSiEsAmigo(targetUser)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={targetUser.full_name}
+                >
                   <View style={styles.avatarRing}>
                     {targetUser.avatar_url ? (
                       <Image source={{ uri: targetUser.avatar_url }} style={styles.avatarCircleImage} />
@@ -445,7 +481,14 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                     <Text style={styles.userName}>{targetUser.full_name}</Text>
                     <Text style={styles.userHandle}>@{targetUser.username}</Text>
                   </View>
-                  {sentMap[targetUser.id] ? (
+                  {idsAmigos.has(targetUser.id) ? (
+                    // Ya son amigos: ni "Agregar" ni "Enviada", y su perfil se abre
+                    // al tocar la fila.
+                    <View style={styles.friendBadge}>
+                      <Feather name="users" size={14} color="#0C8AA6" />
+                      <Text style={styles.friendBadgeText}>{t('friends.already_friends')}</Text>
+                    </View>
+                  ) : sentMap[targetUser.id] ? (
                     <View style={styles.sentBadge}>
                       <Feather name="check" size={14} color="#8A908B" />
                       <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
@@ -467,7 +510,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       )}
                     </TouchableOpacity>
                   )}
-                </View>
+                </TouchableOpacity>
               ))}
 
               {/* SUGERENCIAS (CUANDO NO SE ESTÁ BUSCANDO NADA) */}
@@ -512,7 +555,12 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                             </Text>
                           </View>
                         </View>
-                        {sentMap[sug.profile.id] ? (
+                        {idsAmigos.has(sug.profile.id) ? (
+                          <View style={styles.friendBadge}>
+                            <Feather name="users" size={14} color="#0C8AA6" />
+                            <Text style={styles.friendBadgeText}>{t('friends.already_friends')}</Text>
+                          </View>
+                        ) : sentMap[sug.profile.id] ? (
                           <View style={styles.sentBadge}>
                             <Feather name="check" size={14} color="#8A908B" />
                             <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
@@ -833,6 +881,23 @@ const styles = StyleSheet.create({
   },
   sentBadgeText: {
     color: '#8A908B',
+    fontSize: 13,
+    fontFamily: 'Poppins_700Bold',
+    fontWeight: '700',
+  },
+  // "Amigos": mismo tamaño que las otras pastillas, en el turquesa de la marca
+  // para que se lea como un estado logrado y no como un botón apagado.
+  friendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EAF7FA',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  friendBadgeText: {
+    color: '#0C8AA6',
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
