@@ -41,7 +41,9 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
   const renderItem = ({ item }) => {
     const hasUnread = item.unread_count > 0;
     const displayName = item.friend_full_name || item.friend_username;
-    const preview = item.last_message
+    const preview = item.last_message_is_toxic
+      ? (language === 'en' ? 'Hidden message' : 'Mensaje oculto')
+      : item.last_message
       ? `${item.last_message_sender_id === user?.id ? 'Tú: ' : ''}${item.last_message}`
       : 'Toca para empezar a chatear';
 

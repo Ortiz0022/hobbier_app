@@ -87,6 +87,17 @@ export const directMessagesService = {
     const trimmedContent = (content || '').trim();
     if (!trimmedContent) throw new Error('Message content cannot be empty');
 
+    let isToxic = false;
+    try {
+      // Moderamos ANTES de guardar en la base de datos para que el receptor nunca vea el mensaje limpio
+      const { data: modData } = await supabase.functions.invoke('moderate-message', {
+        body: { text: trimmedContent },
+      });
+      isToxic = Boolean(modData?.is_toxic);
+    } catch (err) {
+      console.error('Error invocando moderación:', err);
+    }
+
     const { data, error } = await supabase
       .from('direct_messages')
       .insert({
@@ -95,6 +106,7 @@ export const directMessagesService = {
         sender_id: userId,
         content: trimmedContent,
         reply_to_message_id: replyToMessageId || null,
+        is_toxic: isToxic,
       })
       // Solo lo que el chat no sabe ya. El remitente y la cita los tiene del mensaje
       // optimista: pedirlos otra vez era un join y, al responder, una consulta más.
@@ -102,6 +114,7 @@ export const directMessagesService = {
       .single();
 
     if (error) throw error;
+
     return data;
   },
 

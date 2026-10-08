@@ -242,6 +242,17 @@ export const roomsService = {
     const trimmedContent = (content || '').trim();
     if (!trimmedContent) throw new Error('Message content cannot be empty');
 
+    let isToxic = false;
+    try {
+      // Moderamos ANTES de guardar en la base de datos para que el receptor nunca vea el mensaje limpio
+      const { data: modData } = await supabase.functions.invoke('moderate-message', {
+        body: { text: trimmedContent },
+      });
+      isToxic = Boolean(modData?.is_toxic);
+    } catch (err) {
+      console.error('Error invocando moderación:', err);
+    }
+
     const { data, error } = await supabase
       .from('room_messages')
       .insert({
@@ -250,12 +261,14 @@ export const roomsService = {
         sender_id: userId,
         message_type: 'TEXT',
         content: trimmedContent,
-        reply_to_message_id: replyToMessageId || null
+        reply_to_message_id: replyToMessageId || null,
+        is_toxic: isToxic,
       })
       .select()
       .single();
 
     if (error) throw error;
+
     return data;
   },
 

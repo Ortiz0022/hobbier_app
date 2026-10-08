@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { useRecyclingState } from '@shopify/flash-list';
@@ -6,6 +6,10 @@ import { colors, radii, spacing, fonts } from '../../../theme';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatMessageStamp } from '../../../utils/dateFormat';
+
+// Caché en memoria para recordar qué mensajes nocivos el usuario ya decidió revelar
+// durante esta sesión de la aplicación.
+const unhiddenMessagesCache = new Set();
 
 export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true, onRetry, onDiscard }) => {
   const { language } = useLanguage();
@@ -18,6 +22,12 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
   // FlashList reutiliza esta burbuja para otros mensajes al hacer scroll: con un
   // useState normal, el visor abierto de una foto seguiría abierto en otra.
   const [viewerOpen, setViewerOpen] = useRecyclingState(false, [message.id]);
+  const [showToxic, setShowToxic] = useRecyclingState(unhiddenMessagesCache.has(message.id), [message.id]);
+
+  const handleShowToxic = () => {
+    unhiddenMessagesCache.add(message.id);
+    setShowToxic(true);
+  };
 
   return (
     <View style={[
@@ -73,7 +83,7 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                 <Image source={{ uri: evidenceUrl }} style={styles.evidenceImage} />
               </TouchableOpacity>
             ) : (
-               <View style={styles.evidenceImagePlaceholder} />
+              <View style={styles.evidenceImagePlaceholder} />
             )}
 
             <View style={styles.evidencePoints}>
@@ -101,6 +111,21 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                 </TouchableOpacity>
               </Pressable>
             </Modal>
+          </View>
+        ) : message.is_toxic && !showToxic && !isMe ? (
+          <View style={styles.toxicBubble}>
+            <View style={styles.toxicIconWrapper}>
+              <Feather name="message-square" size={16} color={colors.textFaint} />
+              <Feather name="x" size={10} color={colors.textFaint} style={styles.toxicIconOverlay} />
+            </View>
+            <Text style={styles.toxicText}>
+              {language === 'en'
+                ? 'This message is hidden because it may contain sensitive content. '
+                : 'Este mensaje está oculto porque puede incluir contenido sensible. '}
+              <Text style={styles.toxicBtn} onPress={handleShowToxic}>
+                {language === 'en' ? 'View' : 'Ver'}
+              </Text>
+            </Text>
           </View>
         ) : (
           <View style={[
@@ -400,4 +425,34 @@ const styles = StyleSheet.create({
   timeOther: {
     marginLeft: 4,
   },
+  toxicBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: "black",
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
+    maxWidth: '85%',
+    borderRadius: 6,
+  },
+  toxicText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    flexShrink: 1,
+    marginLeft: 8,
+  },
+  toxicBtn: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  toxicIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toxicIconOverlay: {
+    position: 'absolute',
+  }
 });
