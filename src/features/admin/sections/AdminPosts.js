@@ -205,18 +205,18 @@ export const AdminPosts = () => {
 
               <View style={adminStyles.pairRow}>
                 <TouchableOpacity
-                  style={[adminStyles.bigBtn, adminStyles.bigBtnKeep]}
-                  onPress={() => cambiarEstado(post, 'ACTIVE')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={adminStyles.bigBtnTextKeep}>Mantener post</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                   style={[adminStyles.bigBtn, adminStyles.bigBtnDelete]}
                   onPress={() => eliminar(post)}
                   activeOpacity={0.8}
                 >
                   <Text style={adminStyles.bigBtnTextDelete}>Eliminar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[adminStyles.bigBtn, adminStyles.bigBtnKeep]}
+                  onPress={() => cambiarEstado(post, 'ACTIVE')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={adminStyles.bigBtnTextKeep}>Mantener post</Text>
                 </TouchableOpacity>
               </View>
             </View>

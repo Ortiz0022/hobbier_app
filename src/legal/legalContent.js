@@ -15,7 +15,7 @@
 import { MIN_AGE } from '../features/auth/validation';
 
 // Versión de los documentos. Se guarda junto con la aceptación en el registro.
-export const LEGAL_VERSION = '2026-10-05';
+export const LEGAL_VERSION = '2026-10-18';
 
 // TODO: sustituir por el correo real de contacto del proyecto antes de publicar.
 export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
@@ -23,7 +23,7 @@ export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
 const es = {
   privacy: {
     title: 'Política de Privacidad',
-    updated: `Última actualización: 5 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 18 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Quiénes somos',
@@ -40,8 +40,9 @@ const es = {
           '• Contenido que publicas: fotos de tus actividades, reacciones, salas de reto, mensajes de sala y mensajes directos.\n' +
           '• Actividad social: tus amistades, solicitudes e invitaciones.\n' +
           '• Reportes: si reportas una publicación, el motivo y el texto que escribas.\n' +
-          '• Estado de conexión: mientras usas la app, otros usuarios con sesión iniciada pueden saber que estás en línea.\n\n' +
-          'No recogemos tu ubicación, tus contactos del teléfono ni datos de pago.',
+          '• Estado de conexión: mientras usas la app, otros usuarios con sesión iniciada pueden saber que estás en línea.\n' +
+          '• Anuncios: tu ciudad, solo si decides escribirla en Perfil > Anuncios, y qué anuncios ves o tocas.\n\n' +
+          'No recogemos tu ubicación GPS, tus contactos del teléfono ni datos de pago.',
       },
       {
         heading: '3. Para qué los usamos',
@@ -49,8 +50,12 @@ const es = {
           '• Crear y proteger tu cuenta.\n' +
           '• Recomendarte actividades según tus gustos, intereses y edad.\n' +
           '• Mostrar tus publicaciones a tus amigos y permitir el chat y las salas de reto.\n' +
-          '• Moderar el contenido y atender los reportes.\n\n' +
-          'No vendemos tus datos ni los usamos para publicidad.',
+          '• Moderar el contenido y atender los reportes.\n' +
+          '• Mostrarte anuncios discretos de negocios y actividades relacionados con tus gustos y tu ciudad. ' +
+          'El cruce se hace en nuestros servidores: el anunciante nunca recibe tus datos, solo cifras totales ' +
+          '(cuántas personas vieron o tocaron su anuncio). Puedes desactivar los anuncios personalizados en ' +
+          'Perfil > Anuncios y entonces solo verás anuncios generales.\n\n' +
+          'No vendemos tus datos.',
       },
       {
         heading: '4. Con quién los compartimos',
@@ -108,7 +113,7 @@ const es = {
   },
   terms: {
     title: 'Términos de Uso',
-    updated: `Última actualización: 5 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 18 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Aceptación',
@@ -165,7 +170,7 @@ const es = {
 const en = {
   privacy: {
     title: 'Privacy Policy',
-    updated: `Last updated: October 5, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: October 18, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Who we are',
@@ -182,8 +187,9 @@ const en = {
           '• Content you post: activity photos, reactions, challenge rooms, room messages and direct messages.\n' +
           '• Social activity: your friendships, requests and invitations.\n' +
           '• Reports: if you report a post, the reason and any text you write.\n' +
-          '• Online status: while you use the app, other signed-in users can tell that you are online.\n\n' +
-          'We do not collect your location, your phone contacts or payment data.',
+          '• Online status: while you use the app, other signed-in users can tell that you are online.\n' +
+          '• Ads: your city, only if you choose to enter it in Profile > Ads, and which ads you see or tap.\n\n' +
+          'We do not collect your GPS location, your phone contacts or payment data.',
       },
       {
         heading: '3. How we use it',
@@ -191,8 +197,12 @@ const en = {
           '• To create and protect your account.\n' +
           '• To recommend activities based on your likes, interests and age.\n' +
           '• To show your posts to your friends and enable chat and challenge rooms.\n' +
-          '• To moderate content and handle reports.\n\n' +
-          'We do not sell your data or use it for advertising.',
+          '• To moderate content and handle reports.\n' +
+          '• To show you discreet ads from businesses and activities related to your likes and your city. ' +
+          'The matching happens on our servers: advertisers never receive your data, only totals ' +
+          '(how many people saw or tapped their ad). You can turn off personalized ads in ' +
+          'Profile > Ads, and you will then only see general ads.\n\n' +
+          'We do not sell your data.',
       },
       {
         heading: '4. Who we share it with',
@@ -250,7 +260,7 @@ const en = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: `Last updated: October 5, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: October 18, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Acceptance',

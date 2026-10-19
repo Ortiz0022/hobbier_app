@@ -16,7 +16,7 @@ import { decode } from 'base64-arraybuffer';
  * `readAsStringAsync` quedó deprecado en SDK 54; aquí se usa la clase `File`,
  * que es la API actual.
  */
-const readImageForUpload = async (imageUri) => {
+export const readImageForUpload = async (imageUri) => {
   if (Platform.OS === 'web') {
     const response = await fetch(imageUri);
     return await response.blob();

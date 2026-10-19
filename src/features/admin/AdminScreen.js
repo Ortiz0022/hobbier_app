@@ -18,6 +18,7 @@ import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { AdminOverview } from './sections/AdminOverview';
 import { AdminUsers } from './sections/AdminUsers';
 import { AdminPosts } from './sections/AdminPosts';
+import { AdminAds } from './sections/AdminAds';
 import { Paginador, Insignia, BotonAccion, adminStyles } from './adminUI';
 import { ActivityTagsModal } from './components/ActivityTagsModal';
 import {
@@ -91,6 +92,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
     users: { titulo: 'Usuarios', subtitulo: 'Quién está registrado, denunciado o suspendido' },
     posts: { titulo: 'Publicaciones', subtitulo: 'Todo lo que la gente publica en el feed' },
     activities: { titulo: 'Actividades', subtitulo: 'El catálogo que se recomienda a los usuarios' },
+    ads: { titulo: 'Anuncios', subtitulo: 'Negocios y actividades que pagan por aparecer en la app' },
   };
   const seccion = SECCIONES[section] || SECCIONES.overview;
 
@@ -133,6 +135,8 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
         {section === 'users' && <AdminUsers />}
 
         {section === 'posts' && <AdminPosts />}
+
+        {section === 'ads' && <AdminAds />}
 
         {/* CATÁLOGO DE ACTIVIDADES */}
         {section === 'activities' && (

@@ -22,6 +22,7 @@ import { uploadAvatarImage, getUserActivities } from '../../services/activitySer
 import { getUserPosts, getFriendsList, deleteOwnPost } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
+import { AdPreferencesModal } from './components/AdPreferencesModal';
 import { formatDateTime } from '../../utils/dateFormat';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
@@ -75,6 +76,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   const [viewerImage, setViewerImage] = useState(null);
   // Documento legal abierto desde el menú: 'privacy' | 'terms' | null
   const [legalDoc, setLegalDoc] = useState(null);
+  const [adPrefsOpen, setAdPrefsOpen] = useState(false);
   const [expandedActivityId, setExpandedActivityId] = useState(null);
 
   const [activeTab, setActiveTab] = useState('fotos');
@@ -301,6 +303,19 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                 style={styles.menuItem}
                 onPress={() => {
                   setMenuOpen(false);
+                  setAdPrefsOpen(true);
+                }}
+              >
+                <Feather name="speaker" size={16} color={COLORS.textPrimary} />
+                <Text style={styles.menuItemText}>{t('ads.prefs_title')}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
                   setLegalDoc('privacy');
                 }}
               >
@@ -397,6 +412,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
         />
 
         <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
+
+        <AdPreferencesModal visible={adPrefsOpen} onClose={() => setAdPrefsOpen(false)} />
 
         <Modal
           visible={!!viewerImage}
@@ -576,16 +593,6 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
             <View style={styles.editActions}>
               <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => {
-                  setEditing(false);
-                  setNewImageUri(null);
-                }}
-              >
-                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
                 style={styles.saveBtn}
                 onPress={handleSaveProfile}
                 disabled={saving}
@@ -595,6 +602,16 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                 ) : (
                   <Text style={styles.saveBtnText}>{t('profile.save_changes')}</Text>
                 )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setEditing(false);
+                  setNewImageUri(null);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>

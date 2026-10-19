@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { FlashList } from '@shopify/flash-list';
@@ -25,6 +26,8 @@ import { DoAlsoModal } from './components/DoAlsoModal';
 import { MessagesInboxScreen } from '../messages/screens/MessagesInboxScreen';
 import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 import { useDirectUnreadCount } from '../messages/hooks/useDirectUnreadCount';
+import { SponsoredCard } from '../../components/SponsoredCard';
+import { getMyAds, logAdEvent } from '../../services/adsService';
 import { colors } from '../../theme';
 
 const getPillStyle = (title, index) => {
@@ -64,6 +67,32 @@ const getPillStyle = (title, index) => {
 // Publicaciones por página del scroll infinito.
 const FEED_PAGE_SIZE = 10;
 
+// Anuncios discretos: el primero tras la 3.ª publicación y luego uno cada 6.
+// Nunca dos seguidos ni al principio del feed, que es lo primero que se ve.
+const AD_FIRST_AFTER = 3;
+const AD_EVERY = 6;
+
+/** Intercala los anuncios entre las publicaciones sin repetir ninguno. */
+const intercalarAnuncios = (posts, ads) => {
+  if (!ads.length) return posts;
+  const items = [];
+  let siguiente = 0;
+  posts.forEach((post, i) => {
+    items.push(post);
+    const n = i + 1;
+    const toca = n === AD_FIRST_AFTER || (n > AD_FIRST_AFTER && (n - AD_FIRST_AFTER) % AD_EVERY === 0);
+    if (toca && siguiente < ads.length) {
+      const ad = ads[siguiente++];
+      items.push({ __ad: true, id: `ad-${ad.id}`, ad });
+    }
+  });
+  // Feed corto (menos de 3 publicaciones): un solo anuncio al final.
+  if (siguiente === 0 && posts.length > 0) {
+    items.push({ __ad: true, id: `ad-${ads[0].id}`, ad: ads[0] });
+  }
+  return items;
+};
+
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
   const { notify, confirm } = useNotify();
@@ -74,6 +103,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [posts, setPosts] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
+  const [ads, setAds] = useState([]);
+  // Una impresión por anuncio y carga del feed: volver a pasar por encima al
+  // hacer scroll no la cuenta otra vez.
+  const adsVistosRef = useRef(new Set());
   // onEndReached puede dispararse varias veces antes de que el estado se actualice:
   // la ref impide pedir la misma página dos veces.
   const loadingMoreRef = useRef(false);
@@ -174,7 +207,12 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   // Primera página (o recarga completa). Devuelve si fue bien.
   const fetchFirstPage = async () => {
-    const { posts: newPosts, hasMore: more, friendIds, error } = await getFriendsFeed(user.id, FEED_PAGE_SIZE, 0);
+    const [{ posts: newPosts, hasMore: more, friendIds, error }, { ads: misAnuncios }] = await Promise.all([
+      getFriendsFeed(user.id, FEED_PAGE_SIZE, 0),
+      getMyAds(3),
+    ]);
+    setAds(misAnuncios);
+    adsVistosRef.current = new Set();
     if (error) return false;
     setPosts(newPosts);
     setHasMore(more);
@@ -279,6 +317,29 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     }
   };
 
+  const feedItems = useMemo(() => intercalarAnuncios(posts, ads), [posts, ads]);
+
+  // Impresión = el anuncio llegó a verse en pantalla, no solo a cargarse.
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    viewableItems.forEach(({ item }) => {
+      if (!item?.__ad || adsVistosRef.current.has(item.ad.id)) return;
+      adsVistosRef.current.add(item.ad.id);
+      logAdEvent(item.ad.id, 'IMPRESSION');
+    });
+  }).current;
+
+  const handleAdPress = (ad) => {
+    if (!ad.link_url) return;
+    logAdEvent(ad.id, 'CLICK');
+    Linking.openURL(ad.link_url).catch(() =>
+      notify(t('ads.open_error'), { type: 'error', title: t('common.error') })
+    );
+  };
+
+  const handleAdInfo = (ad) => {
+    notify(ad.matched ? t('ads.why_matched') : t('ads.why_generic'), { title: t('ads.why_title') });
+  };
+
   if (messagesView?.screen === 'CHAT') {
     return (
       <DirectChatScreen
@@ -311,6 +372,16 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   }
 
   const renderPost = ({ item: post, index }) => {
+    if (post.__ad) {
+      return (
+        <SponsoredCard
+          ad={post.ad}
+          onPress={() => handleAdPress(post.ad)}
+          onInfo={() => handleAdInfo(post.ad)}
+        />
+      );
+    }
+
     const activityTitle = post.activityTitle || post.user_activity?.activity?.title || t('recommendations.new_activity');
     const pillStyle = getPillStyle(activityTitle, index);
     const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
@@ -433,9 +504,14 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     <SafeAreaView style={styles.container}>
       {/* LISTA DE PUBLICACIONES DE AMIGOS (SCROLL INFINITO) */}
       <FlashList
-        data={posts}
+        data={feedItems}
         keyExtractor={(post) => post.id}
         renderItem={renderPost}
+        // Tipos distintos: FlashList no recicla una tarjeta de anuncio como
+        // publicación (miden muy distinto) ni al revés.
+        getItemType={(item) => (item.__ad ? 'ad' : 'post')}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }}
         // renderPost depende del usuario actual (Repetir / Hacer también)
         extraData={user?.id}
         ListHeaderComponent={listHeader}

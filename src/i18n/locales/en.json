@@ -345,7 +345,8 @@
     "activity_active": "ACTIVE",
     "activity_inactive": "INACTIVE",
     "age_range": "{min}-{max} years",
-    "age_min_plus": "{min}+ years"
+    "age_min_plus": "{min}+ years",
+    "nav_ads": "Ads"
   },
   "report": {
     "title": "Report post",
@@ -433,5 +434,26 @@
     "cookie_read_more": "Read our Privacy Policy.",
     "cookie_accept": "Accept",
     "cookie_reject": "Reject"
+  },
+  "ads": {
+    "sponsored": "Sponsored",
+    "because_likes": "Based on your likes",
+    "default_cta": "Learn more",
+    "open_error": "Could not open the ad link.",
+    "why_title": "Why am I seeing this ad?",
+    "why_matched": "This ad matches one of the likes you chose in your preferences. The advertiser does not receive any of your data. You can turn off personalized ads in Profile > Ads.",
+    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free.",
+    "prefs_title": "Ads",
+    "prefs_intro": "Hobbier shows a few discreet ads from local businesses and activities. That keeps the app free. Advertisers never receive your data.",
+    "prefs_personalized": "Ads based on my likes",
+    "prefs_personalized_on": "You will see ads related to your likes (for example, races if you like running).",
+    "prefs_personalized_off": "You will only see general ads that do not use your likes.",
+    "prefs_city": "Your city (optional)",
+    "prefs_city_help": "To show you events near you. We do not use your GPS.",
+    "prefs_city_placeholder": "e.g. San José",
+    "prefs_save": "Save",
+    "prefs_saving": "Saving...",
+    "prefs_saved": "Ad preferences saved.",
+    "prefs_error": "Could not save your ad preferences."
   }
 }

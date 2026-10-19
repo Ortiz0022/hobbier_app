@@ -25,9 +25,10 @@ export const getCookieConsent = () => {
  * apps nativas no hay cookies de navegador.
  *
  * Hoy Hobbier solo guarda lo estrictamente necesario (sesión e idioma), así que
- * "Rechazar" no desactiva nada: ese almacenamiento es imprescindible para
- * funcionar y el GDPR no exige consentimiento para él. El banner existe para
- * informar con transparencia y dejar registrada la elección.
+ * no se ofrece "Rechazar": ese almacenamiento es imprescindible para funcionar
+ * y el GDPR no exige consentimiento para él. El banner existe para informar con
+ * transparencia. Si se añade una cookie NO esencial, hay que volver a ofrecer
+ * la opción de rechazar.
  */
 export const CookieBanner = () => {
   const { t } = useLanguage();
@@ -60,9 +61,6 @@ export const CookieBanner = () => {
             </Text>
           </Text>
           <View style={styles.actions}>
-            <TouchableOpacity style={[styles.btn, styles.btnSecondary]} onPress={() => choose('rejected')}>
-              <Text style={styles.btnSecondaryText}>{t('legal.cookie_reject')}</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => choose('accepted')}>
               <Text style={styles.btnPrimaryText}>{t('legal.cookie_accept')}</Text>
             </TouchableOpacity>
@@ -121,14 +119,6 @@ const styles = StyleSheet.create({
   btnPrimaryText: {
     color: colors.onPrimary,
     fontWeight: '700',
-    fontSize: 14,
-  },
-  btnSecondary: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  btnSecondaryText: {
-    color: colors.text,
-    fontWeight: '600',
     fontSize: 14,
   },
 });

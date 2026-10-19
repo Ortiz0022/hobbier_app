@@ -13,6 +13,8 @@ import Feather from '@expo/vector-icons/Feather';
 import { Text, TextInput } from '../../../components/scaledText';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
+import { useNotify } from '../../../context/NotificationContext';
+import { directMessagesService } from '../../../services/directMessagesService';
 import { useDirectInbox } from '../hooks/useDirectInbox';
 import { formatMessageTime } from '../utils/formatMessageTime';
 import { colors, spacing, fonts, radii, input } from '../../../theme';
@@ -20,6 +22,7 @@ import { colors, spacing, fonts, radii, input } from '../../../theme';
 export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const { notify, confirm } = useNotify();
   const { conversations, loading, error, refetch } = useDirectInbox();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -38,9 +41,33 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
     setRefreshing(false);
   };
 
+  // Solo para mí: la otra persona sigue viendo sus mensajes. El amigo no
+  // desaparece de la lista (la bandeja lista a todos los amigos), solo vuelve a
+  // "Toca para empezar a chatear".
+  const handleDeleteConversation = async (item) => {
+    const displayName = item.friend_full_name || item.friend_username;
+    const ok = await confirm({
+      title: 'Eliminar conversación',
+      message: `Se borrarán todos los mensajes con ${displayName} solo para ti. ${displayName} seguirá viendo la conversación.`,
+      confirmLabel: 'Eliminar',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await directMessagesService.clearConversation(item.conversation_id);
+      await refetch();
+      notify('Conversación eliminada.', { type: 'success' });
+    } catch (err) {
+      console.error('Error al eliminar la conversación:', err);
+      notify('No se pudo eliminar la conversación.', { type: 'error', title: 'Error' });
+    }
+  };
+
   const renderItem = ({ item }) => {
     const hasUnread = item.unread_count > 0;
     const displayName = item.friend_full_name || item.friend_username;
+    const canDelete = !!item.conversation_id && !!item.last_message_at;
     const preview = item.last_message_is_toxic
       ? (language === 'en' ? 'Hidden message' : 'Mensaje oculto')
       : item.last_message
@@ -51,6 +78,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.7}
+        onLongPress={canDelete ? () => handleDeleteConversation(item) : undefined}
         onPress={() => onOpenChat({
           conversationId: item.conversation_id,
           friend: {
@@ -87,6 +115,20 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
         </View>
 
         {hasUnread && <View style={styles.unreadDot} />}
+
+        {/* Botón visible además de la pulsación larga: en la web y para mucha
+            gente, mantener pulsado no es algo que se descubra solo. */}
+        {canDelete && (
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={() => handleDeleteConversation(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Eliminar conversación con ${displayName}`}
+          >
+            <Feather name="trash-2" size={17} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     );
   };
@@ -257,6 +299,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.primary,
     marginLeft: spacing.sm,
+  },
+  deleteBtn: {
+    marginLeft: spacing.sm,
+    padding: spacing.xs,
   },
   centerContainer: {
     flex: 1,
