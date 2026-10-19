@@ -115,9 +115,6 @@ export const ActivityTagsModal = ({ activity, onClose, onSaved }) => {
           )}
 
           <View style={estilos.pie}>
-            <TouchableOpacity style={estilos.btnCancelar} onPress={onClose} activeOpacity={0.85}>
-              <Text style={estilos.btnCancelarTexto}>Cancelar</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={[estilos.btnGuardar, (guardando || cargando) && estilos.btnApagado]}
               onPress={guardar}
@@ -127,6 +124,9 @@ export const ActivityTagsModal = ({ activity, onClose, onSaved }) => {
               <Text style={estilos.btnGuardarTexto}>
                 {guardando ? 'Guardando...' : 'Guardar etiquetas'}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={estilos.btnCancelar} onPress={onClose} activeOpacity={0.85}>
+              <Text style={estilos.btnCancelarTexto}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

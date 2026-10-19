@@ -345,7 +345,8 @@
     "activity_active": "ACTIVA",
     "activity_inactive": "INACTIVA",
     "age_range": "{min}-{max} años",
-    "age_min_plus": "{min}+ años"
+    "age_min_plus": "{min}+ años",
+    "nav_ads": "Anuncios"
   },
   "report": {
     "title": "Reportar publicación",
@@ -433,5 +434,26 @@
     "cookie_read_more": "Lee nuestra Política de Privacidad.",
     "cookie_accept": "Aceptar",
     "cookie_reject": "Rechazar"
+  },
+  "ads": {
+    "sponsored": "Patrocinado",
+    "because_likes": "Por tus gustos",
+    "default_cta": "Más información",
+    "open_error": "No se pudo abrir el enlace del anuncio.",
+    "why_title": "¿Por qué veo este anuncio?",
+    "why_matched": "Este anuncio coincide con uno de los gustos que marcaste en tus preferencias. El anunciante no recibe ningún dato tuyo. Puedes desactivar los anuncios personalizados en Perfil > Anuncios.",
+    "why_generic": "Es un anuncio dirigido a todos los usuarios, no se eligió por tus datos. Gracias a los anuncios Hobbier sigue siendo gratis.",
+    "prefs_title": "Anuncios",
+    "prefs_intro": "Hobbier muestra algunos anuncios discretos de negocios y actividades. Así la app sigue siendo gratis. Los anunciantes nunca reciben tus datos.",
+    "prefs_personalized": "Anuncios según mis gustos",
+    "prefs_personalized_on": "Verás anuncios relacionados con tus gustos (por ejemplo, carreras si te gusta correr).",
+    "prefs_personalized_off": "Solo verás anuncios generales, sin usar tus gustos.",
+    "prefs_city": "Tu ciudad (opcional)",
+    "prefs_city_help": "Para mostrarte eventos cerca de ti. No usamos tu GPS.",
+    "prefs_city_placeholder": "Ej. San José",
+    "prefs_save": "Guardar",
+    "prefs_saving": "Guardando...",
+    "prefs_saved": "Preferencias de anuncios guardadas.",
+    "prefs_error": "No se pudieron guardar tus preferencias de anuncios."
   }
 }

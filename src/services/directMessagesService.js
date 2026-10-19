@@ -41,6 +41,15 @@ export const directMessagesService = {
     if (error) throw error;
   },
 
+  // Vacía la conversación SOLO para el usuario actual: la otra persona conserva
+  // sus mensajes. Ver supabase/migrations/20261018b_clear_direct_conversation.sql.
+  async clearConversation(conversationId) {
+    const { error } = await supabase.rpc('clear_direct_conversation', {
+      p_conversation_id: conversationId,
+    });
+    if (error) throw error;
+  },
+
   // ----------------------------------------------------
   // MENSAJES (Respaldados por RLS)
   // ----------------------------------------------------

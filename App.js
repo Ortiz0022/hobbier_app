@@ -212,6 +212,7 @@ const MainApp = () => {
     { key: 'users', label: t('admin.nav_users'), icon: 'users' },
     { key: 'posts', label: t('admin.nav_posts'), icon: 'image' },
     { key: 'activities', label: t('admin.nav_activities'), icon: 'zap' },
+    { key: 'ads', label: t('admin.nav_ads'), icon: 'speaker' },
   ];
 
   const enPanelAdmin = currentScreen === 'admin' && isAdmin;
