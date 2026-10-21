@@ -247,59 +247,63 @@ export const getReportedProfilesAdmin = async () => {
 /**
  * Suspende o reactiva un perfil.
  *
- * La suspensión tiene que escribir TAMBIÉN suspended_until: el bloqueo del
- * login (AuthContext.checkSuspension) solo frena a quien tiene status 'BANNED'
- * *y* una fecha futura, igual que hace el trigger de perfiles reportados. Con
- * status a secas la cuenta quedaba marcada pero el usuario seguía entrando.
+ * La sanción es permanente (status = 'BANNED'). Si la columna suspended_until
+ * existe en la base se limpia, pero si aún no se ha aplicado la migración
+ * el error se ignora para que la acción de moderación no falle.
  */
-export const resolveProfileAdmin = async (profileId, newStatus, dias = 15) => {
+export const resolveProfileAdmin = async (profileId, newStatus) => {
   try {
     if (!['ACTIVE', 'BANNED'].includes(newStatus)) {
       throw new Error('Estado inválido para resolución de perfil.');
     }
 
+    // La sanción es permanente: se actualiza directamente el status. Al
+    // reactivar se borra el motivo, que ya no aplica a nadie.
     const cambios =
-      newStatus === 'BANNED'
-        ? {
-            status: 'BANNED',
-            suspended_until: new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString(),
-          }
-        : { status: 'ACTIVE', suspended_until: null };
+      newStatus === 'ACTIVE'
+        ? { status: 'ACTIVE', ban_reason: null, banned_at: null }
+        : { status: 'BANNED' };
 
     let { data, error } = await supabase
       .from('profiles')
       .update(cambios)
       .eq('id', profileId)
-      .select()
+      .select('id, status')
       .single();
 
+    // Si la base todavía no tiene las columnas del motivo, basta con el estado.
     if (faltaColumnaSuspension(error)) {
-      console.warn(
-        'La base no tiene profiles.suspended_until: se suspende sin fecha. ' +
-          'Aplica supabase/suspension_cuentas.sql para que el bloqueo al entrar funcione.'
-      );
       const reintento = await supabase
         .from('profiles')
         .update({ status: newStatus })
         .eq('id', profileId)
-        .select()
+        .select('id, status')
         .single();
       data = reintento.data;
       error = reintento.error;
     }
 
     if (error) throw error;
-    
-    // Resolve pending profile reports if they exist
+
+    // Si la columna suspended_until existe en la base, la limpiamos de forma segura
+    // Supabase devuelve { error } en lugar de lanzar una excepción, así que
+    // basta con ignorar el resultado si la columna aún no existe.
+    const cleanupResult = await supabase
+      .from('profiles')
+      .update({ suspended_until: null })
+      .eq('id', profileId);
+    if (cleanupResult.error && !faltaColumnaSuspension(cleanupResult.error)) {
+      console.warn('Error limpiando suspended_until:', cleanupResult.error.message);
+    }
+
+    // Resolver reportes pendientes del perfil
     try {
       await supabase
         .from('profile_reports')
         .update({ status: 'RESOLVED' })
         .eq('reported_profile_id', profileId)
         .eq('status', 'PENDING');
-    } catch (e) {
-      console.log('Ignored profile_reports update error', e);
-    }
+    } catch (_) {}
 
     return { profile: data, error: null };
   } catch (error) {
@@ -329,11 +333,78 @@ export const resolveProfileAdmin = async (profileId, newStatus, dias = 15) => {
  * escribirla. Moderar no puede depender de eso: suspender a alguien es más
  * importante que apuntar hasta cuándo.
  */
+/** Longitud mínima del motivo. La misma que exige admin_suspend_account. */
+export const MOTIVO_MINIMO = 10;
+
+/**
+ * Sanciona una cuenta dejando constancia del porqué.
+ *
+ * El motivo no es decoración: se guarda en el perfil, viaja a la pantalla de
+ * la persona sancionada y queda escrito en su chat de apelación. Quien lo
+ * exige de verdad es admin_suspend_account, en la base; aquí se comprueba
+ * también para no hacer un viaje en balde.
+ *
+ * Si la base todavía no tiene ese lote (supabase/sancion_con_motivo.sql), la
+ * cuenta se sanciona igual y se avisa de que el motivo no se pudo guardar:
+ * dejar a un administrador sin poder moderar es peor.
+ */
+export const suspendProfileAdmin = async (profileId, motivo) => {
+  const texto = (motivo || '').trim();
+  if (texto.length < MOTIVO_MINIMO) {
+    return {
+      error: { message: `Explica el motivo de la sanción (al menos ${MOTIVO_MINIMO} caracteres).` },
+      motivoGuardado: false,
+    };
+  }
+
+  try {
+    const { error } = await supabase.rpc('admin_suspend_account', {
+      p_user_id: profileId,
+      p_reason: texto,
+    });
+    if (!error) return { error: null, motivoGuardado: true };
+
+    const noExisteLaRpc =
+      error.code === 'PGRST202' || /admin_suspend_account/.test(error.message || '');
+    if (!noExisteLaRpc) throw error;
+
+    console.warn(
+      'La base no tiene admin_suspend_account. Aplica supabase/sancion_con_motivo.sql en el SQL Editor.'
+    );
+
+    // Sin la RPC: se escribe directamente, y si tampoco existe la columna del
+    // motivo, al menos queda la sanción.
+    const conMotivo = await supabase
+      .from('profiles')
+      .update({
+        status: 'BANNED',
+        suspended_until: null,
+        ban_reason: texto,
+        banned_at: new Date().toISOString(),
+      })
+      .eq('id', profileId);
+
+    if (!conMotivo.error) return { error: null, motivoGuardado: true };
+    if (!faltaColumnaSuspension(conMotivo.error)) throw conMotivo.error;
+
+    const sinMotivo = await supabase
+      .from('profiles')
+      .update({ status: 'BANNED', suspended_until: null })
+      .eq('id', profileId);
+    if (sinMotivo.error) throw sinMotivo.error;
+
+    return { error: null, motivoGuardado: false };
+  } catch (error) {
+    console.error('Error al sancionar la cuenta:', error.message);
+    return { error, motivoGuardado: false };
+  }
+};
+
 const faltaColumnaSuspension = (error) =>
   !!error &&
   (error.code === '42703' ||
     error.code === 'PGRST204' ||
-    /suspended_until/.test(error.message || ''));
+    /suspended_until|ban_reason|banned_at/.test(error.message || ''));
 
 const HACE_UNA_SEMANA = () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -366,6 +437,7 @@ export const getSystemStatsAdmin = async () => {
       actividadesActivas,
       reportesPendientes,
       reportesPerfilPendientes,
+      apelacionesPendientes,
     ] = await Promise.all([
       contar('profiles'),
       contar('profiles', (q) => q.gte('created_at', semana)),
@@ -378,6 +450,7 @@ export const getSystemStatsAdmin = async () => {
       contar('activities', (q) => q.eq('is_active', true)),
       contar('reports', (q) => q.eq('status', 'PENDING')),
       contar('profile_reports', (q) => q.eq('status', 'PENDING')),
+      contar('support_tickets', (q) => q.eq('status', 'OPEN')),
     ]);
 
     // Una actividad sin ningún gusto asociado no la recomienda nunca
@@ -411,6 +484,7 @@ export const getSystemStatsAdmin = async () => {
         actividadesSinGusto,
         reportesPendientes,
         reportesPerfilPendientes,
+        apelacionesPendientes,
       },
       error: null,
     };
@@ -453,7 +527,8 @@ export const setProfileRoleAdmin = async (profileId, newRole) => {
  * sabe el canal de Presence (PresenceContext), que es tiempo real.
  */
 export const getAllUsersAdmin = async () => {
-  const columnas = 'id, full_name, username, avatar_url, points, role, status, created_at, suspended_until';
+  const columnas =
+    'id, full_name, username, avatar_url, points, role, status, created_at, suspended_until, ban_reason, banned_at';
   try {
     let { data, error } = await supabase
       .from('profiles')

@@ -1,15 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Animated,
   Easing,
-  Dimensions,
   Platform,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-
-const { width, height } = Dimensions.get('window');
 
 // En web no existe el driver nativo. Pedirlo igualmente deja la animación en manos
 // de un puente que no está, y además NO se puede mezclar: `Animated.add` combina el
@@ -51,6 +49,19 @@ const FLOATING_ICONS = [
 ];
 
 export const SplashScreen = ({ onFinish }) => {
+  // Las medidas para repartir los iconos se tomaban UNA vez, al cargar el
+  // módulo, con Dimensions.get('window'). En web eso se queda viejo en cuanto
+  // la ventana cambia de tamaño, y además mide la VENTANA, no esta pantalla:
+  // los iconos acababan esparcidos fuera del fondo, en medio del blanco.
+  //
+  // Ahora manda la caja real de la pantalla (onLayout, que se vuelve a disparar
+  // al redimensionar). Hasta que llegue esa medida se usa la de la ventana, por
+  // si onLayout no llega a dispararse en algún entorno.
+  const ventana = useWindowDimensions();
+  const [caja, setCaja] = useState({ width: 0, height: 0 });
+  const width = caja.width || ventana.width;
+  const height = caja.height || ventana.height;
+
   // Animated values
   const bgFade = useRef(new Animated.Value(0)).current;
   const titleScale = useRef(new Animated.Value(0.3)).current;
@@ -278,14 +289,21 @@ export const SplashScreen = ({ onFinish }) => {
   }, []);
 
   return (
-    <Animated.View style={[styles.container, { opacity: bgFade }]}>
+    <Animated.View
+      style={[styles.container, { opacity: bgFade }]}
+      onLayout={(e) => {
+        const { width: w, height: h } = e.nativeEvent.layout;
+        setCaja((previa) => (previa.width === w && previa.height === h ? previa : { width: w, height: h }));
+      }}
+    >
       {/* Floating hobby icons */}
       {FLOATING_ICONS.map((icon, index) => {
         const anim = iconAnims[index];
         const { IconLib } = icon;
-        // Se acota al ancho disponible para que los iconos del borde derecho no
-        // queden cortados en pantallas estrechas.
-        const left = Math.min(icon.x * width, width - icon.size - 8);
+        // Se acotan a la caja para que los iconos del borde no queden cortados
+        // en pantallas estrechas ni se salgan por abajo.
+        const left = Math.max(8, Math.min(icon.x * width, width - icon.size - 8));
+        const top = Math.max(8, Math.min(icon.y * height, height - icon.size - 8));
         return (
           <Animated.View
             key={index}
@@ -293,7 +311,7 @@ export const SplashScreen = ({ onFinish }) => {
               styles.floatingIcon,
               {
                 left,
-                top: icon.y * height,
+                top,
                 // Su propia opacidad de entrada, atenuada por el fundido de salida
                 opacity: Animated.multiply(anim.opacity, contentFade),
                 transform: [
@@ -350,6 +368,10 @@ export const SplashScreen = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // A lo ancho y alto del hueco que le den: sin esto, en web el fondo podía
+    // quedarse en una columna y los iconos repartidos por fuera.
+    width: '100%',
+    height: '100%',
     backgroundColor: '#F0F3F5',
   },
   floatingIcon: {

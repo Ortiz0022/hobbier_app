@@ -54,6 +54,13 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
   // pendiente: una lista de ceros no es información, es ruido.
   const atencion = [
     {
+      key: 'apelaciones-soporte',
+      cantidad: stats.apelacionesPendientes,
+      icono: 'chatbubbles',
+      texto: 'apelaciones de cuentas sancionadas en soporte',
+      seccion: 'support',
+    },
+    {
       key: 'reportes-posts',
       cantidad: stats.reportesPendientes,
       icono: 'flag',
@@ -71,7 +78,7 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
       key: 'suspendidos',
       cantidad: stats.usuariosSuspendidos,
       icono: 'lock-closed',
-      texto: 'usuarios suspendidos ahora mismo',
+      texto: 'usuarios con sanción permanente',
       seccion: 'users',
     },
     {

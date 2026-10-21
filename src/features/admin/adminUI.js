@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing, fonts, card, input } from '../../theme';
@@ -352,6 +352,21 @@ export const adminStyles = StyleSheet.create({
   pagNumeroActivo: {
     color: colors.onPrimary,
   },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.input,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? 9 : 7,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13.5,
+    color: colors.text,
+    padding: 0,
+  },
 });
 
 /** Tonos de insignia, todos de la paleta de la app. */
@@ -439,6 +454,25 @@ export const BotonAccion = ({ texto, icono, tono = 'neutro', onPress }) => {
     </TouchableOpacity>
   );
 };
+
+/** Buscador con lupa y botón de limpiar (aparece solo si hay texto). */
+export const BarraBusqueda = ({ valor, alCambiar, alLimpiar, placeholder }) => (
+  <View style={[adminStyles.searchBar, !valor && { paddingRight: spacing.md }]}>
+    <Ionicons name="search" size={15} color={colors.textFaint} />
+    <TextInput
+      style={adminStyles.searchInput}
+      value={valor}
+      onChangeText={alCambiar}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textFaint}
+    />
+    {!!valor && (
+      <TouchableOpacity onPress={alLimpiar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="close-circle" size={16} color={colors.textFaint} />
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 /** "hace 3 días" / "12 oct 2026" — fechas cortas, que las filas van apretadas. */
 export const fechaCorta = (iso) => {

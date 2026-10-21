@@ -20,6 +20,7 @@ import { AdminOverview } from './sections/AdminOverview';
 import { AdminUsers } from './sections/AdminUsers';
 import { AdminPosts } from './sections/AdminPosts';
 import { AdminAds } from './sections/AdminAds';
+import { AdminSupport } from './sections/AdminSupport';
 import { Paginador, Insignia, BotonAccion, adminStyles } from './adminUI';
 import { ActivityTagsModal } from './components/ActivityTagsModal';
 import {
@@ -57,6 +58,8 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
   // Clave que se incrementa en cada pull-to-refresh para forzar recarga en secciones hijas.
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // Usuario preseleccionado para abrir en soporte
+  const [supportUserId, setSupportUserId] = useState(null);
 
   useEffect(() => {
     if (section === 'activities') loadActivities(paginaCatalogo);
@@ -104,6 +107,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
   // explica qué se está mirando.
   const SECCIONES = {
     overview: { titulo: 'Resumen General', subtitulo: 'Cómo va el sistema ahora mismo' },
+    support: { titulo: 'Soporte y Apelaciones', subtitulo: 'Revisa las apelaciones de cuentas sancionadas y reactiva perfiles' },
     users: { titulo: 'Usuarios', subtitulo: 'Quién está registrado, denunciado o suspendido' },
     posts: { titulo: 'Publicaciones', subtitulo: 'Todo lo que la gente publica en el feed' },
     activities: { titulo: 'Actividades', subtitulo: 'El catálogo que se recomienda a los usuarios' },
@@ -144,24 +148,39 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
         <Text style={styles.subtitle}>{seccion.subtitulo}</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#0C8AA6']}
-            tintColor="#0C8AA6"
-          />
-        }
-      >
-        {section === 'overview' && <AdminOverview onIrASeccion={onNavigateSection} refreshKey={refreshKey} />}
+      {section === 'support' ? (
+        <View style={{ flex: 1 }}>
+          <AdminSupport initialUserId={supportUserId} />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#0C8AA6']}
+              tintColor="#0C8AA6"
+            />
+          }
+        >
+          {section === 'overview' && (
+            <AdminOverview onIrASeccion={onNavigateSection} refreshKey={refreshKey} />
+          )}
 
-        {section === 'users' && <AdminUsers refreshKey={refreshKey} />}
+          {section === 'users' && (
+            <AdminUsers
+              refreshKey={refreshKey}
+              onGoToSupport={(uid) => {
+                setSupportUserId(uid);
+                onNavigateSection('support');
+              }}
+            />
+          )}
 
-        {section === 'posts' && <AdminPosts refreshKey={refreshKey} />}
+          {section === 'posts' && <AdminPosts refreshKey={refreshKey} />}
 
-        {section === 'ads' && <AdminAds />}
+          {section === 'ads' && <AdminAds />}
 
         {/* CATÁLOGO DE ACTIVIDADES */}
         {section === 'activities' && (
@@ -271,6 +290,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
           </View>
         )}
       </ScrollView>
+      )}
 
       {/* MODAL DE CREACIÓN DE ACTIVIDAD */}
       {/* Mismo formulario que usa Perfil. `forCatalog` guarda la actividad con

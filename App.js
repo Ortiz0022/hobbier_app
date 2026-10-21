@@ -19,8 +19,9 @@ import {
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SuspendedScreen } from './src/features/auth/SuspendedScreen';
 import { PresenceProvider } from './src/context/PresenceContext';
-import { NotificationProvider } from './src/context/NotificationContext';
+import { NotificationProvider, useNotify } from './src/context/NotificationContext';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
+import { adminNotificationService } from './src/services/adminNotificationService';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { SplashScreen } from './src/features/auth/SplashScreen';
 import { ResetPasswordScreen } from './src/features/auth/ResetPasswordScreen';
@@ -52,9 +53,21 @@ const MainApp = () => {
   const [adminSection, setAdminSection] = useState('overview');
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
-  // Una cuenta recién creada pasa por el asistente de preferencias ANTES de
-  // entrar: sin gustos ni intereses, las recomendaciones no tienen de dónde salir.
   const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
+  const { notify } = useNotify();
+
+  // Escuchar notificaciones de soporte para administradores en tiempo real
+  React.useEffect(() => {
+    if (!isAdmin) return;
+    const unsubscribe = adminNotificationService.subscribeToNotifications((newNotif) => {
+      notify(newNotif.body, {
+        type: 'info',
+        title: newNotif.title,
+        duration: 5000,
+      });
+    });
+    return unsubscribe;
+  }, [isAdmin, notify]);
 
   if (loading) {
     return (
@@ -209,6 +222,7 @@ const MainApp = () => {
   // hace falta volver a Perfil para cambiar de sección.
   const navItemsAdmin = [
     { key: 'overview', label: t('admin.nav_overview'), icon: 'activity' },
+    { key: 'support', label: t('admin.nav_support'), icon: 'message-circle' },
     { key: 'users', label: t('admin.nav_users'), icon: 'users' },
     { key: 'posts', label: t('admin.nav_posts'), icon: 'image' },
     { key: 'activities', label: t('admin.nav_activities'), icon: 'zap' },

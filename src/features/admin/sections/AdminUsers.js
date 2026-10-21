@@ -10,6 +10,7 @@ import {
   getPendingProfileReportsAdmin,
   resolveProfileAdmin,
   setProfileRoleAdmin,
+  suspendProfileAdmin,
 } from '../../../services/adminService';
 import {
   adminStyles,
@@ -21,22 +22,21 @@ import {
   recortarPagina,
 } from '../adminUI';
 import { AdminsModal } from '../components/AdminsModal';
+import { SancionModal } from '../components/SancionModal';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 
 const POR_PAGINA = 10;
 
 /**
- * ¿La suspensión sigue vigente?
+ * ¿La cuenta está sancionada?
  *
- * Marcar status = 'BANNED' no basta: el bloqueo del login exige ADEMÁS que la
- * fecha esté en el futuro, así que una cuenta cuyo plazo ya venció puede
- * entrar aunque la columna siga en BANNED. El panel cuenta lo mismo que la app
- * impide, no lo que dice la columna.
+ * La sanción es permanente: basta con comprobar que status sea 'BANNED'.
+ * Si suspended_until existe y ya venció, se considera caducada, pero
+ * en el flujo actual suspended_until siempre es NULL (permanente).
  */
 const estaSuspendido = (perfil) =>
   perfil?.status === 'BANNED' &&
-  !!perfil?.suspended_until &&
-  new Date(perfil.suspended_until) > new Date();
+  (!perfil?.suspended_until || new Date(perfil.suspended_until) > new Date());
 
 /** "ago 2026": para "se registró" basta el mes, y ocupa una línea menos. */
 const mesYAnio = (iso) => {
@@ -60,7 +60,7 @@ const mesYAnio = (iso) => {
  * Nombrar administradores se hace desde su propio botón, no desde cada fila:
  * es algo que se hace una vez cada mucho.
  */
-export const AdminUsers = ({ refreshKey }) => {
+export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
   const [usuarios, setUsuarios] = useState([]);
@@ -71,6 +71,8 @@ export const AdminUsers = ({ refreshKey }) => {
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
   const [mostrarAdmins, setMostrarAdmins] = useState(false);
+  // Perfil al que se le va a poner una sanción. null = nadie.
+  const [sancionando, setSancionando] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -135,27 +137,41 @@ export const AdminUsers = ({ refreshKey }) => {
 
   const enPagina = useMemo(() => recortarPagina(visibles, pagina, POR_PAGINA), [visibles, pagina]);
 
+  /**
+   * Sancionar exige escribir el motivo, así que no se resuelve con un
+   * "¿seguro?": abre el formulario. Reactivar sí es un sí o un no.
+   */
   const cambiarEstado = async (perfil, suspender) => {
     if (suspender) {
-      const ok = await confirm({
-        title: 'Suspender cuenta',
-        message: `@${perfil.username} no podrá iniciar sesión durante 15 días.`,
-        confirmLabel: 'Sí, suspender',
-        destructive: true,
-      });
-      if (!ok) return;
+      setSancionando(perfil);
+      return;
     }
 
-    const { error } = await resolveProfileAdmin(perfil.id, suspender ? 'BANNED' : 'ACTIVE');
+    const { error } = await resolveProfileAdmin(perfil.id, 'ACTIVE');
     if (error) {
       notify('No se pudo cambiar el estado de la cuenta.', { type: 'error' });
       return;
     }
+    notify(`@${perfil.username} puede entrar de nuevo.`, { type: 'success' });
+    cargar();
+  };
+
+  const confirmarSancion = async (motivo) => {
+    const perfil = sancionando;
+    if (!perfil) return;
+
+    const { error, motivoGuardado } = await suspendProfileAdmin(perfil.id, motivo);
+    if (error) {
+      notify(error.message || 'No se pudo sancionar la cuenta.', { type: 'error' });
+      return;
+    }
+
+    setSancionando(null);
     notify(
-      suspender
-        ? `@${perfil.username} queda suspendido 15 días.`
-        : `@${perfil.username} puede entrar de nuevo.`,
-      { type: 'success' }
+      motivoGuardado
+        ? `@${perfil.username} ha sido sancionado y ya tiene el motivo en su apelación.`
+        : `@${perfil.username} ha sido sancionado, pero el motivo no se pudo guardar.`,
+      { type: motivoGuardado ? 'success' : 'warning' }
     );
     cargar();
   };
@@ -281,29 +297,33 @@ export const AdminUsers = ({ refreshKey }) => {
                   {suspendido && (
                     <View style={adminStyles.badgeRow}>
                       <Insignia
-                        texto={
-                          u.suspended_until
-                            ? `SUSPENDIDO HASTA ${new Date(u.suspended_until).toLocaleDateString('es-ES', {
-                                day: 'numeric',
-                                month: 'short',
-                              })}`
-                            : 'SUSPENDIDO'
-                        }
+                        texto="SANCIÓN PERMANENTE"
                         tono="alerta"
                       />
                     </View>
                   )}
+
                 </View>
 
                 {/* La acción del día a día, a la altura del nombre. Un admin no
                     se suspende a sí mismo: se quedaría fuera de su panel. */}
                 {!esYo && (
-                  <BotonAccion
-                    texto={suspendido ? 'Reactivar' : 'Suspender'}
-                    icono={suspendido ? 'lock-open' : 'lock-closed'}
-                    tono={suspendido ? 'neutro' : 'rojo'}
-                    onPress={() => cambiarEstado(u, !suspendido)}
-                  />
+                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                    {suspendido && onGoToSupport && (
+                      <BotonAccion
+                        texto="Apelación"
+                        icono="chatbubbles"
+                        tono="marca"
+                        onPress={() => onGoToSupport(u.id)}
+                      />
+                    )}
+                    <BotonAccion
+                      texto={suspendido ? 'Reactivar' : 'Sancionar'}
+                      icono={suspendido ? 'lock-open' : 'lock-closed'}
+                      tono={suspendido ? 'neutro' : 'rojo'}
+                      onPress={() => cambiarEstado(u, !suspendido)}
+                    />
+                  </View>
                 )}
               </View>
 
@@ -337,6 +357,15 @@ export const AdminUsers = ({ refreshKey }) => {
           porPagina={POR_PAGINA}
           total={visibles.length}
           onCambiar={setPagina}
+        />
+      )}
+
+      {/* SANCIONAR: EL MOTIVO ES OBLIGATORIO */}
+      {!!sancionando && (
+        <SancionModal
+          perfil={sancionando}
+          onCancelar={() => setSancionando(null)}
+          onConfirmar={confirmarSancion}
         />
       )}
 
@@ -400,6 +429,16 @@ const estilos = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  motivo: {
+    fontSize: 12,
+    color: colors.textFaint,
+    lineHeight: 17,
+    marginTop: 6,
+  },
+  motivoEtiqueta: {
+    fontWeight: '700',
+    color: colors.danger,
   },
   avatar: {
     width: 42,

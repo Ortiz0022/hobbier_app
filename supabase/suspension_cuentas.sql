@@ -72,14 +72,14 @@ CREATE POLICY "Admin editar perfiles" ON public.profiles
   );
 
 -- ------------------------------------------------------------
--- 3. Al reportar un perfil, queda suspendido 15 días
+-- 3. Al reportar un perfil, queda suspendido de forma permanente
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.suspend_reported_profile()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE public.profiles
   SET status = 'BANNED',
-      suspended_until = NOW() + INTERVAL '15 days'
+      suspended_until = NULL
   WHERE id = NEW.reported_profile_id;
   RETURN NEW;
 END;
