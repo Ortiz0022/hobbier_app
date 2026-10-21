@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Feather from '@expo/vector-icons/Feather';
@@ -54,6 +55,7 @@ export const PendingActivityScreen = ({
   const [isRepeating, setIsRepeating] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [createActivityOpen, setCreateActivityOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserActivities();
@@ -77,6 +79,12 @@ export const PendingActivityScreen = ({
     }
 
     setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadUserActivities();
+    setRefreshing(false);
   };
 
   const setSelectedEvidence = (result) => {
@@ -203,7 +211,18 @@ export const PendingActivityScreen = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0C8AA6']}
+            tintColor="#0C8AA6"
+          />
+        }
+      >
         <ActivitiesHeader 
           profile={profile} 
           onAddActivity={() => setCreateActivityOpen(true)}

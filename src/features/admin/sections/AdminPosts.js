@@ -42,7 +42,7 @@ const POR_PAGINA = 10;
  * Tocar cualquier foto la abre en grande: con la miniatura no se puede juzgar
  * si una evidencia vale o no.
  */
-export const AdminPosts = () => {
+export const AdminPosts = ({ refreshKey }) => {
   const { notify, confirm } = useNotify();
   const [estado, setEstado] = useState('ACTIVE');
   const [posts, setPosts] = useState([]);
@@ -65,7 +65,8 @@ export const AdminPosts = () => {
 
   useEffect(() => {
     cargar(estado, pagina);
-  }, [estado, pagina, cargar]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado, pagina, cargar, refreshKey]);
 
   // Cambiar de filtro empieza por la primera página: la 3 de "Visibles" no
   // tiene nada que ver con la 3 de "Ocultas".

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, ScrollView, SafeAreaView, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -31,6 +31,7 @@ export const RecommendationScreen = ({
   const [recommended, setRecommended] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [pendingActivity, setPendingActivity] = useState(null);
   const [recentFriendPosts, setRecentFriendPosts] = useState([]);
@@ -51,6 +52,12 @@ export const RecommendationScreen = ({
     } catch (err) {
       console.error('Error cargando datos del Home:', err);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadHomeData();
+    setRefreshing(false);
   };
 
   const handleSorprendeme = async () => {
@@ -94,6 +101,14 @@ export const RecommendationScreen = ({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0C8AA6']}
+            tintColor="#0C8AA6"
+          />
+        }
       >
         <HomeHeader profile={profile} />
 

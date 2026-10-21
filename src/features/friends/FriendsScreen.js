@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -49,6 +50,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
 
   // Chat directo
   const [directChatFriend, setDirectChatFriend] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filtro interno de Mis Amigos
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
@@ -175,6 +177,18 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     const { friends } = await getFriendsList(user.id);
     setFriends(friends);
     setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (activeTab === 'friends') await loadFriends();
+    else if (activeTab === 'requests') await loadRequests();
+    else if (activeTab === 'search') {
+      await loadSuggestions();
+      await loadSentRequests();
+    }
+    await loadRoomInvitations();
+    setRefreshing(false);
   };
 
   /**
@@ -357,7 +371,18 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
           )}
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#0C8AA6']}
+              tintColor="#0C8AA6"
+            />
+          }
+        >
           {/* TAB 1: LISTA DE AMIGOS CON BUSCADOR INTERNO */}
           {activeTab === 'friends' && (
             <View>

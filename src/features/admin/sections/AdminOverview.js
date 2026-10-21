@@ -15,7 +15,7 @@ import { adminStyles, TarjetaDato, BotonAccion, BADGE_TONOS } from '../adminUI';
  * pantalla. Lo que no se puede contar con las políticas actuales (misiones
  * completadas, salas) no se inventa: no aparece.
  */
-export const AdminOverview = ({ onIrASeccion }) => {
+export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
   const { onlineUsers } = usePresence();
   const [stats, setStats] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -29,7 +29,8 @@ export const AdminOverview = ({ onIrASeccion }) => {
 
   useEffect(() => {
     cargar();
-  }, [cargar]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargar, refreshKey]);
 
   const enLinea = onlineUsers?.size || 0;
 

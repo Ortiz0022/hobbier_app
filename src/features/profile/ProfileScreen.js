@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -76,6 +77,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   // Documento legal abierto desde el menú: 'privacy' | 'terms' | null
   const [legalDoc, setLegalDoc] = useState(null);
   const [expandedActivityId, setExpandedActivityId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [activeTab, setActiveTab] = useState('fotos');
 
@@ -105,6 +107,12 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   useEffect(() => {
     loadExtras();
   }, [loadExtras]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadExtras();
+    setRefreshing(false);
+  };
 
   // Este perfil es siempre el propio, así que todas las fotos del visor se
   // pueden eliminar. El servidor vuelve a comprobar la autoría de todos modos.
@@ -202,7 +210,18 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0C8AA6']}
+            tintColor="#0C8AA6"
+          />
+        }
+      >
         <View style={styles.headerContainer}>
           <View style={styles.headerRow}>
             <View style={styles.titleCol}>

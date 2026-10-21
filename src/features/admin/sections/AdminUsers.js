@@ -60,7 +60,7 @@ const mesYAnio = (iso) => {
  * Nombrar administradores se hace desde su propio botón, no desde cada fila:
  * es algo que se hace una vez cada mucho.
  */
-export const AdminUsers = () => {
+export const AdminUsers = ({ refreshKey }) => {
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
   const [usuarios, setUsuarios] = useState([]);
@@ -85,7 +85,8 @@ export const AdminUsers = () => {
 
   useEffect(() => {
     cargar();
-  }, [cargar]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargar, refreshKey]);
 
   const suspendidos = useMemo(() => usuarios.filter(estaSuspendido).length, [usuarios]);
   const reportados = useMemo(() => usuarios.filter((u) => !!reportes[u.id]).length, [usuarios, reportes]);
