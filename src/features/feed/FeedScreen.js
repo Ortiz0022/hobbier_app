@@ -29,7 +29,15 @@ import { MessagesInboxScreen } from '../messages/screens/MessagesInboxScreen';
 import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 import { useDirectUnreadCount } from '../messages/hooks/useDirectUnreadCount';
 import { SponsoredCard } from '../../components/SponsoredCard';
-import { getMyAds, logAdEvent } from '../../services/adsService';
+import { AdInfoModal } from '../../components/AdInfoModal';
+import { LocationAskModal } from '../../components/LocationAskModal';
+import {
+  getMyAds,
+  logAdEvent,
+  syncAdCity,
+  necesitaPreguntarUbicacion,
+  posponerPreguntaUbicacion,
+} from '../../services/adsService';
 
 
 
@@ -76,6 +84,8 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [ads, setAds] = useState([]);
+  const [adInfo, setAdInfo] = useState(null);
+  const [pedirUbicacion, setPedirUbicacion] = useState(false);
   // Una impresión por anuncio y carga del feed: volver a pasar por encima al
   // hacer scroll no la cuenta otra vez.
   const adsVistosRef = useRef(new Set());
@@ -191,6 +201,42 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     setLoadMoreError(false);
     friendIdsRef.current = friendIds;
     return true;
+  };
+
+  // Ciudad para anuncios cercanos: va aparte para no frenar el feed mientras
+  // se responde el permiso. Si cambió, se vuelven a pedir los anuncios.
+  // Si aún no decidió el permiso, primero se explica con LocationAskModal.
+  const actualizarCiudad = async (pedirPermiso) => {
+    const cambio = await syncAdCity(user.id, profile?.ads_city, { pedirPermiso });
+    if (!cambio) return;
+    const { ads: misAnuncios } = await getMyAds(3);
+    setAds(misAnuncios);
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelado = false;
+    let espera;
+    necesitaPreguntarUbicacion().then((preguntar) => {
+      if (cancelado) return;
+      // Un momento después, para que primero se vea el feed.
+      if (preguntar) espera = setTimeout(() => setPedirUbicacion(true), 1200);
+      else actualizarCiudad(false);
+    });
+    return () => {
+      cancelado = true;
+      clearTimeout(espera);
+    };
+  }, [user?.id]);
+
+  const aceptarUbicacion = () => {
+    setPedirUbicacion(false);
+    actualizarCiudad(true);
+  };
+
+  const posponerUbicacion = () => {
+    setPedirUbicacion(false);
+    posponerPreguntaUbicacion();
   };
 
   const loadFeed = async () => {
@@ -309,7 +355,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   };
 
   const handleAdInfo = (ad) => {
-    notify(ad.matched ? t('ads.why_matched') : t('ads.why_generic'), { title: t('ads.why_title') });
+    setAdInfo(ad);
   };
 
   if (messagesView?.screen === 'CHAT') {
@@ -523,6 +569,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
       />
 
       {/* MODAL DE PERFIL DE USUARIO */}
+      <AdInfoModal ad={adInfo} onClose={() => setAdInfo(null)} />
+
+      <LocationAskModal visible={pedirUbicacion} onAccept={aceptarUbicacion} onLater={posponerUbicacion} />
+
       <UserProfileModal
         visible={!!selectedUserProfile}
         userProfile={selectedUserProfile}

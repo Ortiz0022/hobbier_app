@@ -23,7 +23,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Hobbier usa tu ubicación aproximada solo para mostrarte primero actividades y eventos de tu zona. Solo guardamos el nombre de tu cantón o ciudad."
+        }
+      ]
     ],
     "extra": {
       "eas": {

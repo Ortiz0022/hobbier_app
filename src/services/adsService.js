@@ -1,3 +1,6 @@
+import { Platform } from 'react-native';
+import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
 import { readImageForUpload } from './activityService';
 
@@ -5,7 +8,7 @@ import { readImageForUpload } from './activityService';
 // ANUNCIOS PATROCINADOS
 // ============================================================
 // El esquema y las reglas viven en
-// supabase/migrations/20261018_sponsored_ads.sql. Resumen:
+// supabase/migrations/20261018_sponsored_ads.sql (y 20261021_ads_auto_location.sql). Resumen:
 // - El admin crea los anuncios (tabla ads) y elige sus gustos (ad_likes).
 // - El usuario NO lee la tabla: pide los suyos con get_my_ads, que cruza en el
 //   servidor sus gustos y su ciudad. Así no ve precios ni notas internas.
@@ -30,21 +33,97 @@ export const logAdEvent = async (adId, kind) => {
   if (error) console.warn('No se pudo registrar el evento del anuncio:', error.message);
 };
 
-export const updateAdPreferences = async (userId, { personalized, city }) => {
+// ---------- Ciudad automática (para anuncios cercanos) ----------
+// Se pide el permiso de ubicación una sola vez; con él se saca el cantón o
+// ciudad y SOLO eso se guarda en profiles.ads_city (nunca coordenadas). Sin
+// permiso, la persona ve solo los anuncios para todo el país. Se hace una vez
+// por sesión de la app.
+//
+// El permiso NO se pide de golpe: antes el feed muestra LocationAskModal
+// (explica para qué es) y solo si la persona toca "Activar" sale el aviso del
+// navegador o del sistema, que no se puede personalizar. Como en Instagram,
+// se pregunta UNA sola vez: si dice "Ahora no", no se le vuelve a insistir.
+// Si más adelante activa la ubicación desde los ajustes del teléfono o del
+// navegador, syncAdCity lo detecta solo al abrir la app.
+let ciudadSincronizada = false;
+
+const CLAVE_YA_PREGUNTADO = 'hobbier.ubicacion_preguntada';
+
+export const necesitaPreguntarUbicacion = async () => {
   try {
+    const permiso = await Location.getForegroundPermissionsAsync();
+    if (permiso.status !== 'undetermined' || !permiso.canAskAgain) return false;
+    return !(await AsyncStorage.getItem(CLAVE_YA_PREGUNTADO));
+  } catch {
+    return false;
+  }
+};
+
+export const posponerPreguntaUbicacion = async () => {
+  try {
+    await AsyncStorage.setItem(CLAVE_YA_PREGUNTADO, '1');
+  } catch {
+    // Sin almacenamiento se volverá a preguntar la próxima vez; no pasa nada.
+  }
+};
+
+// En el teléfono el propio sistema traduce coordenadas a lugar. En la web
+// expo-location no puede, así que se pregunta a OpenStreetMap (Nominatim).
+// Su política pide como mucho 1 petición por segundo: aquí es 1 por sesión.
+const ciudadDesdeCoordenadas = async ({ latitude, longitude }) => {
+  if (Platform.OS !== 'web') {
+    const [d] = await Location.reverseGeocodeAsync({ latitude, longitude });
+    return d?.city || d?.subregion || d?.district || '';
+  }
+  const url =
+    'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=es' +
+    `&lat=${latitude.toFixed(2)}&lon=${longitude.toFixed(2)}`;
+  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!resp.ok) throw new Error(`Nominatim respondió ${resp.status}`);
+  const { address: a = {} } = await resp.json();
+  // En Costa Rica el cantón viene como county ("Hojancha", "Liberia"). En la
+  // capital no viene y city es "Área Metropolitana de San José", así que se usa
+  // city_district ("Ciudad de San José") limpio.
+  const ciudad = /^área metropolitana/i.test(a.city || '') ? '' : a.city;
+  const lugar = a.county || a.town || ciudad || a.city_district || a.municipality || a.village || '';
+  return lugar.replace(/^(cant[oó]n|ciudad)\s+(de\s+)?/i, '');
+};
+
+// Devuelve true si la ciudad cambió (para volver a pedir los anuncios).
+// pedirPermiso: solo cuando la persona tocó "Activar" en LocationAskModal.
+export const syncAdCity = async (userId, ciudadActual, { pedirPermiso = false } = {}) => {
+  if (!userId || (ciudadSincronizada && !pedirPermiso)) return false;
+  ciudadSincronizada = true;
+  try {
+    let permiso = await Location.getForegroundPermissionsAsync();
+    // Sin decidir y sin haber tocado "Activar": no se toca nada todavía.
+    if (permiso.status === 'undetermined' && !pedirPermiso) return false;
+    if (permiso.status === 'undetermined' && permiso.canAskAgain) {
+      permiso = await Location.requestForegroundPermissionsAsync();
+    }
+    let ciudad = null;
+    if (permiso.status === 'granted') {
+      // Precisión baja (~3 km): basta para saber el cantón y gasta menos batería.
+      const posicion =
+        (await Location.getLastKnownPositionAsync({ maxAge: 6 * 60 * 60 * 1000 })) ||
+        (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest }));
+      ciudad = (await ciudadDesdeCoordenadas(posicion.coords)).trim() || null;
+      // Con permiso pero sin nombre de lugar, se conserva la última conocida.
+      if (!ciudad) return false;
+    }
+    // Si quitó el permiso, se borra la ciudad guardada.
+    if (ciudad === (ciudadActual || null)) return false;
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        ads_personalized: personalized,
-        ads_city: city?.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ ads_city: ciudad, updated_at: new Date().toISOString() })
       .eq('id', userId);
     if (error) throw error;
-    return { error: null };
+    return true;
   } catch (error) {
-    console.error('Error al guardar las preferencias de anuncios:', error.message);
-    return { error };
+    // Sin ciudad la app funciona igual: solo no habrá anuncios cercanos.
+    console.warn('No se pudo detectar la ciudad para los anuncios:', error.message);
+    return false;
   }
 };
 

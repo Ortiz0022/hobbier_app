@@ -446,19 +446,18 @@
     "default_cta": "Learn more",
     "open_error": "Could not open the ad link.",
     "why_title": "Why am I seeing this ad?",
-    "why_matched": "This ad matches one of the likes you chose in your preferences. The advertiser does not receive any of your data. You can turn off personalized ads in Profile > Ads.",
-    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free.",
-    "prefs_title": "Ads",
-    "prefs_intro": "Hobbier shows a few discreet ads from local businesses and activities. That keeps the app free. Advertisers never receive your data.",
-    "prefs_personalized": "Ads based on my likes",
-    "prefs_personalized_on": "You will see ads related to your likes (for example, races if you like running).",
-    "prefs_personalized_off": "You will only see general ads that do not use your likes.",
-    "prefs_city": "Your city (optional)",
-    "prefs_city_help": "To show you events near you. We do not use your GPS.",
-    "prefs_city_placeholder": "e.g. San José",
-    "prefs_save": "Save",
-    "prefs_saving": "Saving...",
-    "prefs_saved": "Ad preferences saved.",
-    "prefs_error": "Could not save your ad preferences."
+    "nearby": "Near you",
+    "why_reason_likes": "It matches one of the likes you chose in your preferences.",
+    "why_reason_nearby": "It is from your area, based on your phone's location permission.",
+    "why_privacy": "From your location we only store the name of your canton or city. The advertiser never receives any of your data.",
+    "why_ok": "Got it",
+    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free."
+  },
+  "location_ask": {
+    "title": "Discover what is happening near you",
+    "body": "Turn on your location to see races, workshops and activities in your area first.",
+    "privacy": "We only store the name of your canton or city, never your coordinates. You can remove the permission at any time.",
+    "accept": "Turn on location",
+    "later": "Not now"
   }
 }
