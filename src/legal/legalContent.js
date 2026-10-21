@@ -41,8 +41,11 @@ const es = {
           '• Actividad social: tus amistades, solicitudes e invitaciones.\n' +
           '• Reportes: si reportas una publicación, el motivo y el texto que escribas.\n' +
           '• Estado de conexión: mientras usas la app, otros usuarios con sesión iniciada pueden saber que estás en línea.\n' +
-          '• Anuncios: tu ciudad, solo si decides escribirla en Perfil > Anuncios, y qué anuncios ves o tocas.\n\n' +
-          'No recogemos tu ubicación GPS, tus contactos del teléfono ni datos de pago.',
+          '• Anuncios: tu cantón o ciudad, solo si das permiso de ubicación en el teléfono, y qué anuncios ves o tocas.\n\n' +
+          'De la ubicación solo guardamos el nombre de tu cantón o ciudad: nunca tus coordenadas ni tu recorrido. ' +
+          'Si usas Hobbier desde el navegador, para saber el nombre del lugar enviamos tus coordenadas aproximadas ' +
+          '(redondeadas a cerca de 1 km) a OpenStreetMap (Nominatim), que no las asocia a tu cuenta. ' +
+          'No recogemos tus contactos del teléfono ni datos de pago.',
       },
       {
         heading: '3. Para qué los usamos',
@@ -53,8 +56,9 @@ const es = {
           '• Moderar el contenido y atender los reportes.\n' +
           '• Mostrarte anuncios discretos de negocios y actividades relacionados con tus gustos y tu ciudad. ' +
           'El cruce se hace en nuestros servidores: el anunciante nunca recibe tus datos, solo cifras totales ' +
-          '(cuántas personas vieron o tocaron su anuncio). Puedes desactivar los anuncios personalizados en ' +
-          'Perfil > Anuncios y entonces solo verás anuncios generales.\n\n' +
+          '(cuántas personas vieron o tocaron su anuncio). Los anuncios para todo el país se muestran siempre; ' +
+          'si das permiso de ubicación, además verás primero los de tu zona. Puedes quitar ese permiso cuando ' +
+          'quieras en los ajustes del teléfono o del navegador y borraremos tu ciudad guardada.\n\n' +
           'No vendemos tus datos.',
       },
       {
@@ -188,8 +192,11 @@ const en = {
           '• Social activity: your friendships, requests and invitations.\n' +
           '• Reports: if you report a post, the reason and any text you write.\n' +
           '• Online status: while you use the app, other signed-in users can tell that you are online.\n' +
-          '• Ads: your city, only if you choose to enter it in Profile > Ads, and which ads you see or tap.\n\n' +
-          'We do not collect your GPS location, your phone contacts or payment data.',
+          '• Ads: your canton or city, only if you grant location permission on your phone, and which ads you see or tap.\n\n' +
+          'From your location we only store the name of your canton or city: never your coordinates or movements. ' +
+          'If you use Hobbier in a web browser, to find the place name we send your approximate coordinates ' +
+          '(rounded to about 1 km) to OpenStreetMap (Nominatim), which does not link them to your account. ' +
+          'We do not collect your phone contacts or payment data.',
       },
       {
         heading: '3. How we use it',
@@ -200,8 +207,9 @@ const en = {
           '• To moderate content and handle reports.\n' +
           '• To show you discreet ads from businesses and activities related to your likes and your city. ' +
           'The matching happens on our servers: advertisers never receive your data, only totals ' +
-          '(how many people saw or tapped their ad). You can turn off personalized ads in ' +
-          'Profile > Ads, and you will then only see general ads.\n\n' +
+          '(how many people saw or tapped their ad). Nationwide ads are always shown; if you grant ' +
+          'location permission, ads from your area are shown first. You can remove that permission at any ' +
+          'time in your phone or browser settings and we will delete your stored city.\n\n' +
           'We do not sell your data.',
       },
       {

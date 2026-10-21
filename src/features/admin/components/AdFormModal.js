@@ -239,7 +239,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
             >
               <CatalogPicker tabla="likes" selectedIds={gustos} onChange={setGustos} compact />
             </CampoBase>
-            <CampoBase etiqueta="Ciudad" ayuda="Vacío = cualquier ciudad. Se compara con la ciudad que el usuario indica en Perfil.">
+            <CampoBase etiqueta="Ciudad" ayuda="Vacío = todo el país. Con ciudad (o cantón), solo lo ve quien esté ahí según la ubicación del teléfono, y le sale primero.">
               {entrada('city', { placeholder: 'Ej. San José', maxLength: 60 })}
             </CampoBase>
             <CampoBase etiqueta="Vigencia *" error={visibles.fechas}>
