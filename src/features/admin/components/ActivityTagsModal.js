@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -11,7 +13,7 @@ import {
 } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { useNotify } from '../../../context/NotificationContext';
 import { CatalogPicker } from '../../onboarding/components/CatalogPicker';
 import { getActivityTagsAdmin, updateActivityTagsAdmin } from '../../../services/adminService';
@@ -31,6 +33,8 @@ import { capitalizarTitulo } from '../../../utils/titleCase';
  * el catálogo entero. Con cientos de gustos, una lista completa no sirve.
  */
 export const ActivityTagsModal = ({ activity, onClose, onSaved }) => {
+  const { theme, colors, estilos } = useThemeValues(getActivityTagsModalTheme);
+
   const { notify } = useNotify();
   const [gustos, setGustos] = useState([]);
   const [intereses, setIntereses] = useState([]);
@@ -135,6 +139,11 @@ export const ActivityTagsModal = ({ activity, onClose, onSaved }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getActivityTagsModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -204,7 +213,7 @@ const estilos = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? 36 : spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   btnCancelar: {
     flex: 1,
@@ -233,6 +242,8 @@ const estilos = StyleSheet.create({
   btnGuardarTexto: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, "onAccent"),
   },
+});
+  return { theme, colors, estilos };
 });

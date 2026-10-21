@@ -1,8 +1,10 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, View, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts, card, input } from '../../theme';
+import { radii, spacing, fonts } from "../../theme";
 
 /**
  * Piezas comunes de las pantallas del panel de administración.
@@ -13,7 +15,208 @@ import { colors, radii, spacing, fonts, card, input } from '../../theme';
  * azulados) y por eso parecía otra aplicación.
  */
 
-export const adminStyles = StyleSheet.create({
+
+
+/** Tonos de insignia, todos de la paleta de la app. */
+
+
+export const Insignia = ({ texto, tono = 'neutro' }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+
+  const t = BADGE_TONOS[tono] || BADGE_TONOS.neutro;
+  return (
+    <View style={[adminStyles.badge, { backgroundColor: t.bg, borderColor: t.border }]}>
+      <Text style={[adminStyles.badgeText, { color: t.text }]}>{texto}</Text>
+    </View>
+  );
+};
+
+/** Cifra del resumen. `onPress` opcional: si lleva, la tarjeta navega. */
+export const TarjetaDato = ({ icono, valor, etiqueta, pista, tono = 'marca', onPress }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+
+  const t = BADGE_TONOS[tono] || BADGE_TONOS.marca;
+  const Contenedor = onPress ? TouchableOpacity : View;
+  return (
+    <Contenedor
+      style={adminStyles.statCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole={onPress ? 'button' : undefined}
+    >
+      <View style={[adminStyles.statIconBubble, { backgroundColor: t.bg }]}>
+        <Ionicons name={icono} size={17} color={t.text} />
+      </View>
+      <Text style={adminStyles.statValue}>{valor}</Text>
+      <Text style={adminStyles.statLabel}>{etiqueta}</Text>
+      {!!pista && <Text style={adminStyles.statHint}>{pista}</Text>}
+    </Contenedor>
+  );
+};
+
+export const ControlSegmentado = ({ opciones, valor, onChange }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+  return (<View style={adminStyles.segmentRow}>
+    {opciones.map((op) => {
+      const activo = op.key === valor;
+      return (
+        <TouchableOpacity
+          key={op.key}
+          style={[adminStyles.segment, activo && adminStyles.segmentActive]}
+          onPress={() => onChange(op.key)}
+          activeOpacity={0.85}
+        >
+          {!!op.icono && (
+            <Ionicons name={op.icono} size={14} color={activo ? colors.primary : colors.textMuted} />
+          )}
+          <Text style={[adminStyles.segmentText, activo && adminStyles.segmentTextActive]}>
+            {op.label}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>);
+};
+
+export const TarjetaVacia = ({ icono = 'sparkles', texto }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+  return (<View style={adminStyles.emptyCard}>
+    <Ionicons name={icono} size={40} color={colors.primaryDark} style={{ marginBottom: spacing.sm }} />
+    <Text style={adminStyles.emptyText}>{texto}</Text>
+  </View>);
+};
+
+/**
+ * Botón pequeño de fila. 'neutro' para lo reversible, 'marca' para lo que da
+ * permisos y 'rojo' para lo que quita acceso o esconde contenido.
+ */
+export const BotonAccion = ({ texto, icono, tono = 'neutro', onPress }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+
+  const t = BADGE_TONOS[tono === 'rojo' ? 'alerta' : tono] || BADGE_TONOS.neutro;
+  return (
+    <TouchableOpacity
+      style={[adminStyles.smallBtn, { backgroundColor: t.bg, borderColor: t.border }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      {!!icono && <Ionicons name={icono} size={13} color={t.text} />}
+      <Text style={[adminStyles.smallBtnText, { color: t.text }]}>{texto}</Text>
+    </TouchableOpacity>
+  );
+};
+
+/** Buscador con lupa y botón de limpiar (aparece solo si hay texto). */
+export const BarraBusqueda = ({ valor, alCambiar, alLimpiar, placeholder }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+  return (<View style={[adminStyles.searchBar, !valor && { paddingRight: spacing.md }]}>
+    <Ionicons name="search" size={15} color={colors.textFaint} />
+    <TextInput {...theme.textInputProps}
+      style={adminStyles.searchInput}
+      value={valor}
+      onChangeText={alCambiar}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textFaint}
+    />
+    {!!valor && (
+      <TouchableOpacity onPress={alLimpiar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="close-circle" size={16} color={colors.textFaint} />
+      </TouchableOpacity>
+    )}
+  </View>);
+};
+
+/** "hace 3 días" / "12 oct 2026" — fechas cortas, que las filas van apretadas. */
+export const fechaCorta = (iso) => {
+  if (!iso) return '—';
+  const fecha = new Date(iso);
+  const dias = Math.floor((Date.now() - fecha.getTime()) / 86400000);
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return 'ayer';
+  if (dias < 7) return `hace ${dias} días`;
+  return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+/** Cuántos números caben sin apretar en una pantalla de móvil. */
+const NUMEROS_VISIBLES = 5;
+
+/**
+ * Las páginas que se enseñan alrededor de la actual. Con muchas páginas no
+ * caben todas, así que se mueve una ventana: estando en la 7 de 20 se ven de
+ * la 5 a la 9. Las flechas siguen llegando a cualquier sitio.
+ */
+export const ventanaDePaginas = (pagina, paginas, cuantas = NUMEROS_VISIBLES) => {
+  const inicio = Math.max(1, Math.min(pagina - Math.floor(cuantas / 2), paginas - cuantas + 1));
+  const fin = Math.min(paginas, inicio + cuantas - 1);
+  const numeros = [];
+  for (let i = inicio; i <= fin; i += 1) numeros.push(i);
+  return numeros;
+};
+
+/**
+ * Paginación de las listas del panel.
+ *
+ * El panel enseña cosas que hay que revisar una por una (cuentas, fotos,
+ * actividades); una lista infinita obliga a recordar por dónde iba el scroll y
+ * no deja volver al mismo sitio. Con páginas numeradas, "la página 3" es un
+ * sitio al que se puede volver de un toque, sin pasar por las de en medio.
+ *
+ * Si todo cabe en una página no se pinta nada: no hay nada que paginar.
+ */
+export const Paginador = ({ pagina, porPagina, total, onCambiar }) => {
+  const { theme, colors, card, input, adminStyles, BADGE_TONOS } = useThemeValues(getAdminUITheme);
+
+  const paginas = Math.max(1, Math.ceil(total / porPagina));
+  if (paginas <= 1) return null;
+
+  const primera = pagina <= 1;
+  const ultima = pagina >= paginas;
+
+  const Flecha = ({ icono, apagada, destino, etiqueta }) => (
+    <TouchableOpacity
+      style={[adminStyles.pagCirculo, apagada && adminStyles.pagCirculoApagado]}
+      onPress={() => !apagada && onCambiar(destino)}
+      disabled={apagada}
+      activeOpacity={0.85}
+      accessibilityLabel={etiqueta}
+    >
+      <Ionicons name={icono} size={16} color={colors.textFaint} />
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={adminStyles.paginador}>
+      <Flecha icono="chevron-back" apagada={primera} destino={pagina - 1} etiqueta="Página anterior" />
+
+      {ventanaDePaginas(pagina, paginas).map((n) => {
+        const activa = n === pagina;
+        return (
+          <TouchableOpacity
+            key={n}
+            style={[adminStyles.pagCirculo, activa && adminStyles.pagCirculoActivo]}
+            onPress={() => !activa && onCambiar(n)}
+            activeOpacity={0.85}
+            accessibilityLabel={'Página ' + n}
+            accessibilityState={{ selected: activa }}
+          >
+            <Text style={[adminStyles.pagNumero, activa && adminStyles.pagNumeroActivo]}>{n}</Text>
+          </TouchableOpacity>
+        );
+      })}
+
+      <Flecha icono="chevron-forward" apagada={ultima} destino={pagina + 1} etiqueta="Página siguiente" />
+    </View>
+  );
+};
+
+/** Trozo de la lista que toca a esta página (para las listas ya cargadas). */
+export const recortarPagina = (lista, pagina, porPagina) =>
+  lista.slice((pagina - 1) * porPagina, pagina * porPagina);
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminUITheme = createThemeStyles((theme) => {
+const { colors, card, input } = theme;
+const adminStyles = StyleSheet.create({
   // --- Tarjeta base: la de la app, plana y con borde gris claro ---
   card: {
     ...card,
@@ -56,7 +259,7 @@ export const adminStyles = StyleSheet.create({
   segmentActive: {
     // La pastilla activa es BLANCA, no turquesa: así no compite con los botones
     // de acción, que son los que llevan el color de marca.
-    backgroundColor: colors.surface,
+    backgroundColor: theme.color(colors.surface, 'selected'),
     elevation: 2,
     ...Platform.select({
       web: { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)' },
@@ -85,7 +288,7 @@ export const adminStyles = StyleSheet.create({
     padding: spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     marginTop: spacing.md,
   },
   emptyText: {
@@ -107,7 +310,7 @@ export const adminStyles = StyleSheet.create({
     minWidth: 140,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: radii.input,
     padding: spacing.md + 2,
   },
@@ -141,7 +344,7 @@ export const adminStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: radii.input,
     padding: spacing.md,
     marginBottom: 10,
@@ -292,7 +495,7 @@ export const adminStyles = StyleSheet.create({
     fontWeight: '700',
   },
   bigBtnTextDelete: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontSize: 14,
     fontWeight: '700',
   },
@@ -331,14 +534,14 @@ export const adminStyles = StyleSheet.create({
     height: 38,
     borderRadius: radii.round,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pagCirculoActivo: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderColor: theme.color(colors.primary, 'border'),
   },
   pagCirculoApagado: {
     // Apagado, no escondido: que se vea que esta es la primera o la última página.
@@ -350,13 +553,13 @@ export const adminStyles = StyleSheet.create({
     color: colors.textFaint,
   },
   pagNumeroActivo: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, "onAccent"),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderRadius: radii.input,
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? 9 : 7,
@@ -368,193 +571,11 @@ export const adminStyles = StyleSheet.create({
     padding: 0,
   },
 });
-
-/** Tonos de insignia, todos de la paleta de la app. */
-export const BADGE_TONOS = {
-  marca: { bg: colors.primarySoft, border: colors.primarySoft, text: colors.primaryDark },
-  alerta: { bg: colors.dangerSoft, border: colors.dangerSoft, text: colors.danger },
-  acento: { bg: colors.accent, border: colors.accent, text: colors.onPrimary },
-  neutro: { bg: colors.surfaceMuted, border: colors.surfaceMuted, text: colors.textFaint },
+const BADGE_TONOS = {
+  marca: { bg: colors.primarySoft, border: theme.color(colors.primarySoft, 'border'), text: colors.primaryDark },
+  alerta: { bg: colors.dangerSoft, border: theme.color(colors.dangerSoft, 'border'), text: colors.danger },
+  acento: { bg: colors.accent, border: theme.color(colors.accent, 'border'), text: colors.onPrimary },
+  neutro: { bg: colors.surfaceMuted, border: theme.color(colors.surfaceMuted, 'border'), text: colors.textFaint },
 };
-
-export const Insignia = ({ texto, tono = 'neutro' }) => {
-  const t = BADGE_TONOS[tono] || BADGE_TONOS.neutro;
-  return (
-    <View style={[adminStyles.badge, { backgroundColor: t.bg, borderColor: t.border }]}>
-      <Text style={[adminStyles.badgeText, { color: t.text }]}>{texto}</Text>
-    </View>
-  );
-};
-
-/** Cifra del resumen. `onPress` opcional: si lleva, la tarjeta navega. */
-export const TarjetaDato = ({ icono, valor, etiqueta, pista, tono = 'marca', onPress }) => {
-  const t = BADGE_TONOS[tono] || BADGE_TONOS.marca;
-  const Contenedor = onPress ? TouchableOpacity : View;
-  return (
-    <Contenedor
-      style={adminStyles.statCard}
-      onPress={onPress}
-      activeOpacity={0.85}
-      accessibilityRole={onPress ? 'button' : undefined}
-    >
-      <View style={[adminStyles.statIconBubble, { backgroundColor: t.bg }]}>
-        <Ionicons name={icono} size={17} color={t.text} />
-      </View>
-      <Text style={adminStyles.statValue}>{valor}</Text>
-      <Text style={adminStyles.statLabel}>{etiqueta}</Text>
-      {!!pista && <Text style={adminStyles.statHint}>{pista}</Text>}
-    </Contenedor>
-  );
-};
-
-export const ControlSegmentado = ({ opciones, valor, onChange }) => (
-  <View style={adminStyles.segmentRow}>
-    {opciones.map((op) => {
-      const activo = op.key === valor;
-      return (
-        <TouchableOpacity
-          key={op.key}
-          style={[adminStyles.segment, activo && adminStyles.segmentActive]}
-          onPress={() => onChange(op.key)}
-          activeOpacity={0.85}
-        >
-          {!!op.icono && (
-            <Ionicons name={op.icono} size={14} color={activo ? colors.primary : colors.textMuted} />
-          )}
-          <Text style={[adminStyles.segmentText, activo && adminStyles.segmentTextActive]}>
-            {op.label}
-          </Text>
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-);
-
-export const TarjetaVacia = ({ icono = 'sparkles', texto }) => (
-  <View style={adminStyles.emptyCard}>
-    <Ionicons name={icono} size={40} color={colors.primaryDark} style={{ marginBottom: spacing.sm }} />
-    <Text style={adminStyles.emptyText}>{texto}</Text>
-  </View>
-);
-
-/**
- * Botón pequeño de fila. 'neutro' para lo reversible, 'marca' para lo que da
- * permisos y 'rojo' para lo que quita acceso o esconde contenido.
- */
-export const BotonAccion = ({ texto, icono, tono = 'neutro', onPress }) => {
-  const t = BADGE_TONOS[tono === 'rojo' ? 'alerta' : tono] || BADGE_TONOS.neutro;
-  return (
-    <TouchableOpacity
-      style={[adminStyles.smallBtn, { backgroundColor: t.bg, borderColor: t.border }]}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
-      {!!icono && <Ionicons name={icono} size={13} color={t.text} />}
-      <Text style={[adminStyles.smallBtnText, { color: t.text }]}>{texto}</Text>
-    </TouchableOpacity>
-  );
-};
-
-/** Buscador con lupa y botón de limpiar (aparece solo si hay texto). */
-export const BarraBusqueda = ({ valor, alCambiar, alLimpiar, placeholder }) => (
-  <View style={[adminStyles.searchBar, !valor && { paddingRight: spacing.md }]}>
-    <Ionicons name="search" size={15} color={colors.textFaint} />
-    <TextInput
-      style={adminStyles.searchInput}
-      value={valor}
-      onChangeText={alCambiar}
-      placeholder={placeholder}
-      placeholderTextColor={colors.textFaint}
-    />
-    {!!valor && (
-      <TouchableOpacity onPress={alLimpiar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="close-circle" size={16} color={colors.textFaint} />
-      </TouchableOpacity>
-    )}
-  </View>
-);
-
-/** "hace 3 días" / "12 oct 2026" — fechas cortas, que las filas van apretadas. */
-export const fechaCorta = (iso) => {
-  if (!iso) return '—';
-  const fecha = new Date(iso);
-  const dias = Math.floor((Date.now() - fecha.getTime()) / 86400000);
-  if (dias <= 0) return 'hoy';
-  if (dias === 1) return 'ayer';
-  if (dias < 7) return `hace ${dias} días`;
-  return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-/** Cuántos números caben sin apretar en una pantalla de móvil. */
-const NUMEROS_VISIBLES = 5;
-
-/**
- * Las páginas que se enseñan alrededor de la actual. Con muchas páginas no
- * caben todas, así que se mueve una ventana: estando en la 7 de 20 se ven de
- * la 5 a la 9. Las flechas siguen llegando a cualquier sitio.
- */
-export const ventanaDePaginas = (pagina, paginas, cuantas = NUMEROS_VISIBLES) => {
-  const inicio = Math.max(1, Math.min(pagina - Math.floor(cuantas / 2), paginas - cuantas + 1));
-  const fin = Math.min(paginas, inicio + cuantas - 1);
-  const numeros = [];
-  for (let i = inicio; i <= fin; i += 1) numeros.push(i);
-  return numeros;
-};
-
-/**
- * Paginación de las listas del panel.
- *
- * El panel enseña cosas que hay que revisar una por una (cuentas, fotos,
- * actividades); una lista infinita obliga a recordar por dónde iba el scroll y
- * no deja volver al mismo sitio. Con páginas numeradas, "la página 3" es un
- * sitio al que se puede volver de un toque, sin pasar por las de en medio.
- *
- * Si todo cabe en una página no se pinta nada: no hay nada que paginar.
- */
-export const Paginador = ({ pagina, porPagina, total, onCambiar }) => {
-  const paginas = Math.max(1, Math.ceil(total / porPagina));
-  if (paginas <= 1) return null;
-
-  const primera = pagina <= 1;
-  const ultima = pagina >= paginas;
-
-  const Flecha = ({ icono, apagada, destino, etiqueta }) => (
-    <TouchableOpacity
-      style={[adminStyles.pagCirculo, apagada && adminStyles.pagCirculoApagado]}
-      onPress={() => !apagada && onCambiar(destino)}
-      disabled={apagada}
-      activeOpacity={0.85}
-      accessibilityLabel={etiqueta}
-    >
-      <Ionicons name={icono} size={16} color={colors.textFaint} />
-    </TouchableOpacity>
-  );
-
-  return (
-    <View style={adminStyles.paginador}>
-      <Flecha icono="chevron-back" apagada={primera} destino={pagina - 1} etiqueta="Página anterior" />
-
-      {ventanaDePaginas(pagina, paginas).map((n) => {
-        const activa = n === pagina;
-        return (
-          <TouchableOpacity
-            key={n}
-            style={[adminStyles.pagCirculo, activa && adminStyles.pagCirculoActivo]}
-            onPress={() => !activa && onCambiar(n)}
-            activeOpacity={0.85}
-            accessibilityLabel={'Página ' + n}
-            accessibilityState={{ selected: activa }}
-          >
-            <Text style={[adminStyles.pagNumero, activa && adminStyles.pagNumeroActivo]}>{n}</Text>
-          </TouchableOpacity>
-        );
-      })}
-
-      <Flecha icono="chevron-forward" apagada={ultima} destino={pagina + 1} etiqueta="Página siguiente" />
-    </View>
-  );
-};
-
-/** Trozo de la lista que toca a esta página (para las listas ya cargadas). */
-export const recortarPagina = (lista, pagina, porPagina) =>
-  lista.slice((pagina - 1) * porPagina, pagina * porPagina);
+  return { theme, colors, card, input, adminStyles, BADGE_TONOS };
+});

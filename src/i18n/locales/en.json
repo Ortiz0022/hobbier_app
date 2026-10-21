@@ -1,4 +1,8 @@
 {
+  "theme": {
+    "switch_light": "Switch to light mode",
+    "switch_dark": "Switch to dark mode"
+  },
   "common": {
     "loading": "Loading Hobbier...",
     "save": "Save",

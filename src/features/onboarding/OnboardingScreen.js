@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Animated,
@@ -15,9 +17,9 @@ import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { SelectableCard } from '../../components/SelectableCard';
 import { StepProgressBar } from '../../components/StepProgressBar';
-import { TOKENS } from '../../theme/designTokens';
+
 import { capitalizarTitulo } from '../../utils/titleCase';
-import { getCatalogIcon, getCatalogTint } from './catalogIcons';
+import { getCatalogIcon, getCatalogIconsTheme } from "./catalogIcons";
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 // Se reutilizan las reglas de fecha del registro en lugar de escribir otras:
@@ -60,6 +62,8 @@ const STEPS = [
  * volvería a mandarla aquí, en bucle.
  */
 export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) => {
+  const { theme, TOKENS, getCatalogTint, styles } = useThemeValues(getOnboardingScreenTheme);
+
   const { user } = useAuth();
   const { notify } = useNotify();
   const [loading, setLoading] = useState(true);
@@ -504,14 +508,14 @@ export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) 
             accessibilityRole="button"
           >
             {saving ? (
-              <ActivityIndicator color={TOKENS.colors.white} />
+              <ActivityIndicator color={theme.color(TOKENS.colors.white, 'onAccent')} />
             ) : (
               <>
                 <Text style={styles.primaryButtonText}>
                   {modoEdicion ? 'Guardar cambios' : esUltimo ? 'Guardar Preferencias' : 'Continuar'}
                 </Text>
                 {!modoEdicion && !esUltimo ? (
-                  <Feather name="arrow-right" size={18} color={TOKENS.colors.white} />
+                  <Feather name="arrow-right" size={18} color={theme.color(TOKENS.colors.white, 'onAccent')} />
                 ) : null}
               </>
             )}
@@ -522,14 +526,20 @@ export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) 
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getOnboardingScreenTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
+const { getCatalogTint } = getCatalogIconsTheme(theme);
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: TOKENS.colors.white,
+    backgroundColor: theme.color(TOKENS.colors.white, 'background'),
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: TOKENS.colors.white,
+    backgroundColor: theme.color(TOKENS.colors.white, 'background'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -653,7 +663,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TOKENS.colors.white,
+    backgroundColor: theme.color(TOKENS.colors.white, 'card'),
     // Sin borde, la sombra es lo ÚNICO que despega la flecha del fondo blanco
     // de la pantalla. Sacarla la haría desaparecer.
     elevation: 4,
@@ -673,7 +683,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: TOKENS.spacing.lg,
     paddingTop: TOKENS.spacing.sm,
     paddingBottom: TOKENS.spacing.lg,
-    backgroundColor: TOKENS.colors.white,
+    backgroundColor: theme.color(TOKENS.colors.white, 'card'),
   },
   primaryButton: {
     // El fondo, el relleno y el radio se perdieron al resolver el merge de
@@ -700,8 +710,10 @@ const styles = StyleSheet.create({
     }),
   },
   primaryButtonText: {
-    color: TOKENS.colors.white,
+    color: theme.color(TOKENS.colors.white, "onAccent"),
     fontSize: 16,
     fontWeight: '700',
   },
+});
+  return { theme, TOKENS, getCatalogTint, styles };
 });

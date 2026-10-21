@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -23,22 +25,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { formatDateTime } from '../utils/dateFormat';
 
 // Mismos tokens exactos que usa ProfileScreen para que ambos perfiles luzcan idénticos.
-const COLORS = {
-  bg: '#FFFFFF',
-  surface: '#FFFFFF',
-  border: '#F0F3F5',
-  textPrimary: '#08333D',
-  textSecondary: '#64748B',
-  textMuted: '#8A908B',
-  cyan: '#00C9FD',
-  cyanIcon: '#0C8AA6',
-  cyanSoft: 'rgba(0, 201, 253, 0.09)',
-  cyanBorder: 'rgba(0, 201, 253, 0.22)',
-  cyanCardBorder: '#D4F1F9',
-  gold: '#FFB300',
-  orange: '#FF5A00',
-  danger: '#ef4444',
-};
+
 
 const TABS = [
   { key: 'fotos', label: 'Fotos' },
@@ -46,6 +33,8 @@ const TABS = [
 ];
 
 export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage }) => {
+  const { theme, COLORS, styles } = useThemeValues(getUserProfileModalTheme);
+
   const { user } = useAuth();
   const { notify } = useNotify();
   const { language } = useLanguage();
@@ -243,7 +232,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 }}
                 activeOpacity={0.8}
               >
-                <Feather name="message-circle" size={16} color="#FFFFFF" />
+                <Feather name="message-circle" size={16} color={theme.color("#FFFFFF", 'text')} />
                 <Text style={styles.messageButtonText}>Enviar mensaje</Text>
               </TouchableOpacity>
             )}
@@ -599,6 +588,26 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getUserProfileModalTheme = createThemeStyles((theme) => {
+const COLORS = {
+  bg: theme.color('#FFFFFF', 'card'),
+  surface: theme.color('#FFFFFF', 'card'),
+  border: theme.color('#F0F3F5', 'border'),
+  textPrimary: theme.color('#08333D', 'text'),
+  textSecondary: theme.color('#64748B', 'muted'),
+  textMuted: theme.color('#8A908B', 'muted'),
+  cyan: theme.color('#00C9FD', 'primary'),
+  cyanIcon: theme.color('#0C8AA6', 'primary'),
+  cyanSoft: theme.color('rgba(0, 201, 253, 0.09)', 'card'),
+  cyanBorder: theme.color('rgba(0, 201, 253, 0.22)', 'border'),
+  cyanCardBorder: theme.color('#D4F1F9', 'border'),
+  gold: theme.color('#FFB300', 'accent'),
+  orange: theme.color('#FF5A00', 'accent'),
+  danger: theme.color('#ef4444', 'danger'),
+};
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
@@ -611,7 +620,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: theme.color(COLORS.border, 'border'),
   },
   modalHeaderTitle: {
     fontSize: 17,
@@ -623,7 +632,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fee2e2', // Fondo rojito suave para reportar
+    backgroundColor: theme.color('#fee2e2', 'card'), // Fondo rojito suave para reportar
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -649,7 +658,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 46,
     borderWidth: 3,
-    borderColor: COLORS.cyanCardBorder,
+    borderColor: theme.color(COLORS.cyanCardBorder, 'border'),
     marginBottom: 12,
   },
   avatarLarge: {
@@ -660,7 +669,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: COLORS.cyanIcon,
+    borderColor: theme.color(COLORS.cyanIcon, 'border'),
     marginBottom: 12,
   },
   avatarText: {
@@ -728,7 +737,7 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 8px rgba(12, 138, 166, 0.25)',
   },
   messageButtonText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'onAccent'),
     fontSize: 14,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -739,12 +748,12 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 18,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
   },
   userCardAvatarImage: {
     width: 46,
@@ -762,7 +771,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   userCardAvatarText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
     fontSize: 16,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -814,7 +823,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: theme.color(COLORS.border, 'border'),
     marginBottom: 16,
   },
   tabItem: {
@@ -825,7 +834,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabItemActive: {
-    borderBottomColor: COLORS.cyan,
+    borderBottomColor: theme.color(COLORS.cyan, "primary"),
   },
   tabItemText: {
     fontSize: 13,
@@ -841,15 +850,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   activityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     marginHorizontal: -20,
   },
   activityCardActive: {
-    borderColor: COLORS.cyanCardBorder,
+    borderColor: theme.color(COLORS.cyanCardBorder, "primary"),
     elevation: 4,
     ...Platform.select({
       web: {
@@ -877,7 +886,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderWidth: 1,
-    borderColor: COLORS.cyanBorder,
+    borderColor: theme.color(COLORS.cyanBorder, 'border'),
     flexShrink: 1,
     marginRight: 8,
   },
@@ -902,7 +911,7 @@ const styles = StyleSheet.create({
   pointsBadgeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: theme.color(COLORS.textPrimary, 'onAccent'),
   },
   titleText: {
     fontSize: 15.5,
@@ -931,7 +940,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.color(COLORS.border, 'border'),
   },
   igGrid: {
     flexDirection: 'row',
@@ -970,12 +979,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     marginBottom: 10,
   },
   emptyIcon: {
@@ -995,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   viewerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(8, 51, 61, 0.7)',
+    backgroundColor: theme.color('rgba(8, 51, 61, 0.7)', "scrim"),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -1038,7 +1047,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
   },
   viewerCaption: {
     padding: 18,
@@ -1051,7 +1060,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: COLORS.cyanBorder,
+    borderColor: theme.color(COLORS.cyanBorder, 'border'),
   },
   viewerCategoryBadgeText: {
     color: COLORS.textPrimary,
@@ -1080,4 +1089,6 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '600',
   },
+});
+  return { theme, COLORS, styles };
 });

@@ -1,13 +1,17 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors, radii, spacing, fonts, card } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { isRoomClosed } from '../utils/roomHelpers';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatDate } from '../../../utils/dateFormat';
 
 export const RoomCard = ({ room, onPress }) => {
+  const { theme, colors, card, styles } = useThemeValues(getRoomCardTheme);
+
   const { language } = useLanguage();
   const isClosed = isRoomClosed(room);
   const { url: coverUrl, loading } = useSignedUrl('room-images', room.image_path);
@@ -61,6 +65,11 @@ export const RoomCard = ({ room, onPress }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRoomCardTheme = createThemeStyles((theme) => {
+const { colors, card } = theme;
 const styles = StyleSheet.create({
   card: {
     ...card,
@@ -134,4 +143,6 @@ const styles = StyleSheet.create({
   statusTextClosed: {
     color: colors.textFaint,
   },
+});
+  return { theme, colors, card, styles };
 });

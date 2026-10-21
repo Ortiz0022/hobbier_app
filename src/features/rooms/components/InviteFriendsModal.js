@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,7 +18,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { roomsService } from '../../../services/roomsService';
 import { getFriendsList } from '../../../services/socialService';
 import { useNotify } from '../../../context/NotificationContext';
-import { colors, spacing, fonts, radii, primaryButton } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 
 /**
  * Permite al anfitrión invitar amigos a una sala que ya existe.
@@ -24,6 +26,8 @@ import { colors, spacing, fonts, radii, primaryButton } from '../../../theme';
  * deshabilitados para no mandar invitaciones repetidas.
  */
 export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds = [], onInvited }) => {
+  const { theme, colors, primaryButton, styles } = useThemeValues(getInviteFriendsModalTheme);
+
   const { notify } = useNotify();
 
   const [friends, setFriends] = useState([]);
@@ -188,6 +192,11 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getInviteFriendsModalTheme = createThemeStyles((theme) => {
+const { colors, primaryButton } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -195,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   content: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.color(colors.surface, 'background'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -247,7 +256,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   friendItemSelected: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: theme.color(colors.primarySoft, 'selected'),
   },
   friendAvatar: {
     width: 40,
@@ -298,11 +307,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
   },
   sendBtnText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontWeight: 'bold',
     fontSize: 16,
   },
   sendBtnTextDisabled: {
     color: colors.textMuted,
   },
+});
+  return { theme, colors, primaryButton, styles };
 });

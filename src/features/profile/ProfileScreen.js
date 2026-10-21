@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -29,31 +31,11 @@ import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
 // Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
 // ActivityCard e InlineEvidenceUploader (pantalla "Actividad").
-const COLORS = {
-  bg: '#FFFFFF',
-  surface: '#FFFFFF',
-  border: '#F0F3F5',
-  textPrimary: '#08333D',
-  textSecondary: '#64748B',
-  textMuted: '#8A908B',
-  cyan: '#00C9FD',
-  cyanIcon: '#0C8AA6',
-  cyanSoft: 'rgba(0, 201, 253, 0.09)',
-  cyanBorder: 'rgba(0, 201, 253, 0.22)',
-  cyanCardBorder: '#D4F1F9',
-  cyanDropzoneBg: 'rgba(0, 201, 253, 0.05)',
-  cyanDropzoneBorder: 'rgba(0, 201, 253, 0.35)',
-  gold: '#FFB300',
-  goldSoft: '#FFF9EB',
-  goldBorder: 'rgba(255, 179, 0, 0.3)',
-  orange: '#FF5A00',
-  disabledBg: '#F1F3F5',
-  disabledText: '#9AA0A6',
-  danger: '#ef4444',
-  dangerSoft: '#FEF2F2',
-};
+
 
 export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNavigateToAdmin }) => {
+  const { theme, COLORS, styles } = useThemeValues(getProfileScreenTheme);
+
   const { profile, refreshProfile, signOut, isAdmin } = useAuth();
   const { notify, confirm } = useNotify();
   const { t, language, setLanguage, languages } = useLanguage();
@@ -219,8 +201,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#0C8AA6']}
-            tintColor="#0C8AA6"
+            colors={[theme.color('#0C8AA6', 'primary')]}
+            tintColor={theme.color("#0C8AA6", 'primary')}
           />
         }
       >
@@ -232,6 +214,19 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
             </View>
 
             <View style={styles.actionsRow}>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: theme.isDark }}
+                accessibilityLabel={t(theme.isDark ? 'theme.switch_light' : 'theme.switch_dark')}
+                onPress={theme.toggleTheme}
+                hitSlop={6}
+                style={({ hovered, pressed }) => [
+                  styles.themeToggle,
+                  theme.isDark && (hovered || pressed) && { backgroundColor: theme.palette.selected },
+                ]}
+              >
+                <Feather name={theme.isDark ? 'sun' : 'moon'} size={17} color={COLORS.cyanIcon} />
+              </Pressable>
               <TouchableOpacity
                 style={styles.iconBtn}
                 onPress={() => setMenuOpen(true)}
@@ -534,7 +529,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
             {editing && (
               <View style={styles.avatarEditOverlay}>
-                <Feather name="camera" size={12} color="#ffffff" />
+                <Feather name="camera" size={12} color={theme.color("#ffffff", 'text')} />
                 <Text style={styles.avatarEditOverlayText}>{t('profile.change_avatar')}</Text>
               </View>
             )}
@@ -578,7 +573,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
             <Text style={styles.detailsTitle}>{t('profile.edit_profile')}</Text>
 
             <Text style={styles.inputLabel}>{t('profile.full_name')}</Text>
-            <TextInput
+            <TextInput {...theme.textInputProps}
               style={styles.input}
               value={fullName}
               onChangeText={setFullName}
@@ -617,7 +612,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                 disabled={saving}
               >
                 {saving ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={theme.color("#fff", 'text')} />
                 ) : (
                   <Text style={styles.saveBtnText}>{t('profile.save_changes')}</Text>
                 )}
@@ -824,10 +819,48 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   );
 };
 
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getProfileScreenTheme = createThemeStyles((theme) => {
+const COLORS = {
+  bg: theme.color('#FFFFFF', 'card'),
+  surface: theme.color('#FFFFFF', 'card'),
+  border: theme.color('#F0F3F5', 'border'),
+  textPrimary: theme.color('#08333D', 'text'),
+  textSecondary: theme.color('#64748B', 'muted'),
+  textMuted: theme.color('#8A908B', 'muted'),
+  cyan: theme.color('#00C9FD', 'primary'),
+  cyanIcon: theme.color('#0C8AA6', 'primary'),
+  cyanSoft: theme.color('rgba(0, 201, 253, 0.09)', 'card'),
+  cyanBorder: theme.color('rgba(0, 201, 253, 0.22)', 'border'),
+  cyanCardBorder: theme.color('#D4F1F9', 'border'),
+  cyanDropzoneBg: theme.color('rgba(0, 201, 253, 0.05)', 'secondary'),
+  cyanDropzoneBorder: theme.color('rgba(0, 201, 253, 0.35)', 'border'),
+  gold: theme.color('#FFB300', 'accent'),
+  goldSoft: theme.color('#FFF9EB', 'card'),
+  goldBorder: theme.color('rgba(255, 179, 0, 0.3)', 'border'),
+  orange: theme.color('#FF5A00', 'accent'),
+  disabledBg: theme.color('#F1F3F5', 'secondary'),
+  disabledText: theme.color('#9AA0A6', 'muted'),
+  danger: theme.color('#ef4444', 'danger'),
+  dangerSoft: theme.color('#FEF2F2', 'card'),
+};
 const styles = StyleSheet.create({
+  themeToggle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.color('#F0F3F5', 'secondary'),
+    borderWidth: 1,
+    borderColor: theme.color('#F0F3F5', 'border'),
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: theme.color(COLORS.bg, 'background'),
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -866,15 +899,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(8, 51, 61, 0.15)',
+    backgroundColor: theme.color('rgba(8, 51, 61, 0.15)', "scrim"),
   },
   menuDropdown: {
     position: 'absolute',
@@ -885,7 +918,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     elevation: 8,
     boxShadow: '0px 4px 16px rgba(0,0,0,0.1)',
   },
@@ -924,7 +957,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 46,
     borderWidth: 3,
-    borderColor: COLORS.cyanCardBorder,
+    borderColor: theme.color(COLORS.cyanCardBorder, 'border'),
   },
   avatarLarge: {
     width: 92,
@@ -934,7 +967,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: COLORS.cyanIcon,
+    borderColor: theme.color(COLORS.cyanIcon, 'border'),
   },
   avatarText: {
     color: COLORS.textMuted,
@@ -948,7 +981,7 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     gap: 4,
-    backgroundColor: 'rgba(8, 51, 61, 0.8)',
+    backgroundColor: theme.color('rgba(8, 51, 61, 0.8)', "scrim"),
     paddingVertical: 5,
     borderBottomLeftRadius: 46,
     borderBottomRightRadius: 46,
@@ -956,7 +989,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarEditOverlayText: {
-    color: '#ffffff',
+    color: theme.color('#ffffff', 'text'),
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1011,7 +1044,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: theme.color(COLORS.border, 'border'),
     marginBottom: 16,
   },
   tabItem: {
@@ -1022,7 +1055,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabItemActive: {
-    borderBottomColor: COLORS.cyan,
+    borderBottomColor: theme.color(COLORS.cyan, "primary"),
   },
   tabItemText: {
     fontSize: 13,
@@ -1038,15 +1071,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   activityCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     marginHorizontal: -20,
   },
   activityCardActive: {
-    borderColor: COLORS.cyanCardBorder,
+    borderColor: theme.color(COLORS.cyanCardBorder, "primary"),
     elevation: 4,
     ...Platform.select({
       web: {
@@ -1074,7 +1107,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderWidth: 1,
-    borderColor: COLORS.cyanBorder,
+    borderColor: theme.color(COLORS.cyanBorder, 'border'),
     flexShrink: 1,
     marginRight: 8,
   },
@@ -1099,7 +1132,7 @@ const styles = StyleSheet.create({
   pointsBadgeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: theme.color(COLORS.textPrimary, 'onAccent'),
   },
   titleText: {
     fontSize: 15.5,
@@ -1128,7 +1161,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: theme.color(COLORS.border, 'border'),
   },
   igGrid: {
     flexDirection: 'row',
@@ -1167,12 +1200,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     marginBottom: 10,
   },
   emptyText: {
@@ -1181,12 +1214,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   detailsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
   },
   detailsTitle: {
     fontSize: 15.5,
@@ -1202,9 +1235,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'secondary'),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1220,7 +1253,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cyanDropzoneBg,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: COLORS.cyanDropzoneBorder,
+    borderColor: theme.color(COLORS.cyanDropzoneBorder, 'border'),
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1238,7 +1271,7 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
@@ -1258,7 +1291,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 10,
   },
   dropzoneText: {
@@ -1310,13 +1343,13 @@ const styles = StyleSheet.create({
     }),
   },
   saveBtnText: {
-    color: '#ffffff',
+    color: theme.color('#ffffff', 'onAccent'),
     fontWeight: '700',
     fontSize: 14,
   },
   viewerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(8, 51, 61, 0.7)',
+    backgroundColor: theme.color('rgba(8, 51, 61, 0.7)', "scrim"),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -1359,7 +1392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: theme.color(COLORS.border, 'border'),
   },
   // Esquina opuesta a la X: así nadie la pulsa por error al querer cerrar
   viewerDeleteBtn: {
@@ -1384,7 +1417,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: COLORS.cyanBorder,
+    borderColor: theme.color(COLORS.cyanBorder, 'border'),
   },
   viewerCategoryBadgeText: {
     color: COLORS.textPrimary,
@@ -1456,12 +1489,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: '#FAFAFA',
+    borderColor: theme.color(COLORS.border, 'border'),
+    backgroundColor: theme.color('#FAFAFA', 'card'),
   },
   langOptionItemActive: {
-    borderColor: COLORS.cyan,
-    backgroundColor: COLORS.cyanSoft,
+    borderColor: theme.color(COLORS.cyan, "primary"),
+    backgroundColor: theme.color(COLORS.cyanSoft, 'selected'),
   },
   langOptionLeft: {
     flexDirection: 'row',
@@ -1491,4 +1524,5 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 });
-
+  return { theme, COLORS, styles };
+});

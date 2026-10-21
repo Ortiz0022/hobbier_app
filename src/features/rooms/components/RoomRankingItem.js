@@ -1,12 +1,16 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { usePresence } from '../../../context/PresenceContext';
 
 
 
 export const RoomRankingItem = ({ user, position, isFinal }) => {
+  const { theme, colors, styles } = useThemeValues(getRoomRankingItemTheme);
+
   const { isUserOnline } = usePresence();
   const isOnline = isUserOnline(user.id);
 
@@ -22,8 +26,8 @@ export const RoomRankingItem = ({ user, position, isFinal }) => {
   };
 
   const getAvatarStyle = () => {
-    if (isFirst) return [styles.avatar, { borderWidth: 2, borderColor: colors.accent }];
-    if (isSecond) return [styles.avatar, { borderWidth: 2, borderColor: colors.primaryDark }];
+    if (isFirst) return [styles.avatar, { borderWidth: 2, borderColor: theme.color(colors.accent, 'border') }];
+    if (isSecond) return [styles.avatar, { borderWidth: 2, borderColor: theme.color(colors.primaryDark, 'border') }];
     return styles.avatar;
   };
 
@@ -75,6 +79,11 @@ export const RoomRankingItem = ({ user, position, isFinal }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRoomRankingItemTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -86,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   firstPlaceContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     paddingVertical: 18, 
     elevation: 4,
     borderWidth: 0,
@@ -103,7 +112,7 @@ const styles = StyleSheet.create({
     }),
   },
   podiumContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     elevation: 2,
     borderWidth: 0,
     ...Platform.select({
@@ -119,9 +128,9 @@ const styles = StyleSheet.create({
     }),
   },
   defaultContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     elevation: 0,
   },
   positionContainer: {
@@ -141,8 +150,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.color(colors.accent, 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'card'),
   },
   medal: {
     width: 28,
@@ -153,12 +162,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   secondMedal: {
-    backgroundColor: '#FFFFFF',
-    borderColor: colors.primaryDark,
+    backgroundColor: theme.color('#FFFFFF', 'card'),
+    borderColor: theme.color(colors.primaryDark, 'border'),
   },
   thirdMedal: {
-    backgroundColor: '#FFFFFF',
-    borderColor: colors.textMuted,
+    backgroundColor: theme.color('#FFFFFF', 'card'),
+    borderColor: theme.color(colors.textMuted, 'border'),
   },
   medalText: {
     fontWeight: 'bold',
@@ -223,7 +232,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pointsTextFirst: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
   },
   pointsTextSecond: {
     color: colors.primaryDark,
@@ -241,8 +250,10 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.color('#4CAF50', 'card'),
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: theme.color('#FFFFFF', 'border'),
   }
+});
+  return { theme, colors, styles };
 });

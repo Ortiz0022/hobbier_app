@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Modal, Pressable, TouchableOpacity, Switch, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
@@ -6,7 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { updateAdPreferences } from '../../../services/adsService';
-import { colors, radii, spacing, fonts, input } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 
 /**
  * Preferencias de anuncios del usuario.
@@ -17,6 +19,8 @@ import { colors, radii, spacing, fonts, input } from '../../../theme';
  *   propósito: no hace falta pedir el GPS para saber qué carreras le quedan cerca.
  */
 export const AdPreferencesModal = ({ visible, onClose }) => {
+  const { theme, colors, input, styles } = useThemeValues(getAdPreferencesModalTheme);
+
   const { profile, refreshProfile } = useAuth();
   const { notify } = useNotify();
   const { t } = useLanguage();
@@ -73,7 +77,7 @@ export const AdPreferencesModal = ({ visible, onClose }) => {
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ads.prefs_city')}</Text>
           <Text style={styles.help}>{t('ads.prefs_city_help')}</Text>
           <View style={styles.input}>
-            <TextInput
+            <TextInput {...theme.textInputProps}
               style={styles.inputText}
               value={ciudad}
               onChangeText={setCiudad}
@@ -102,6 +106,11 @@ export const AdPreferencesModal = ({ visible, onClose }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdPreferencesModalTheme = createThemeStyles((theme) => {
+const { colors, input } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -187,6 +196,8 @@ const styles = StyleSheet.create({
   btnSaveText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
   },
+});
+  return { theme, colors, input, styles };
 });

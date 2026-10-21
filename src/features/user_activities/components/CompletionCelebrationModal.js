@@ -1,10 +1,14 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
 export const CompletionCelebrationModal = ({ visible, result, onProfile, onClose }) => {
+  const { theme, colors, styles } = useThemeValues(getCompletionCelebrationModalTheme);
+
   const { t } = useLanguage();
   return (
     <Modal
@@ -59,9 +63,14 @@ export const CompletionCelebrationModal = ({ visible, result, onProfile, onClose
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCompletionCelebrationModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(5, 31, 37, 0.62)',
+    flex: 1, backgroundColor: theme.color('rgba(5, 31, 37, 0.62)', "scrim"),
     alignItems: 'center', justifyContent: 'center', padding: 20,
   },
   card: {
@@ -78,7 +87,7 @@ const styles = StyleSheet.create({
   },
   iconRing: {
     width: 110, height: 110, borderRadius: 55,
-    borderWidth: 1, borderColor: colors.salmonSoft,
+    borderWidth: 1, borderColor: theme.color(colors.salmonSoft, 'border'),
     alignItems: 'center', justifyContent: 'center', marginBottom: 18,
   },
   iconCircle: {
@@ -99,10 +108,10 @@ const styles = StyleSheet.create({
   },
   pointsPill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#FFF5EA', borderRadius: 999,
+    backgroundColor: theme.color('#FFF5EA', 'card'), borderRadius: 999,
     paddingHorizontal: 13, paddingVertical: 8, marginTop: 16,
   },
-  pointsText: { color: colors.accentDark, fontSize: 13, fontWeight: '500' },
+  pointsText: { color: theme.color(colors.accentDark, 'onAccent'), fontSize: 13, fontWeight: '500' },
   message: {
     color: colors.textMuted, fontSize: 12, lineHeight: 18,
     textAlign: 'center', maxWidth: 290, marginTop: 15, marginBottom: 20,
@@ -112,7 +121,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 9,
     backgroundColor: colors.primary, borderRadius: 18,
   },
-  profileButtonText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  profileButtonText: { color: theme.color(colors.onPrimary, 'onAccent'), fontSize: 14, fontWeight: '600' },
   closeButton: { paddingVertical: 13, paddingHorizontal: 20 },
   closeButtonText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
+});
+  return { theme, colors, styles };
 });

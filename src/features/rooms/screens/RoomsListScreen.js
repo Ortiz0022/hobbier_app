@@ -1,12 +1,16 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { useRooms } from '../hooks/useRooms';
 import { usePendingInvitations } from '../hooks/usePendingInvitations';
 import { RoomCard } from '../components/RoomCard';
-import { colors, spacing, fonts, radii, primaryButton, card } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 
 export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
+  const { theme, colors, primaryButton, card, styles } = useThemeValues(getRoomsListScreenTheme);
+
   const { rooms, loading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms();
   const {
     invitations,
@@ -149,10 +153,15 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRoomsListScreenTheme = createThemeStyles((theme) => {
+const { colors, primaryButton, card } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   centerContainer: {
     flex: 1,
@@ -218,7 +227,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   primaryBtnText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -254,7 +263,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     backgroundColor: colors.surfaceAccent,
-    borderColor: colors.primarySoft,
+    borderColor: theme.color(colors.primarySoft, 'border'),
   },
   invitationInfo: {
     flex: 1,
@@ -304,7 +313,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     backgroundColor: colors.surfaceMuted,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   finishedIcon: {
     marginRight: spacing.sm,
@@ -331,4 +340,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primaryDark,
   },
+});
+  return { theme, colors, primaryButton, card, styles };
 });

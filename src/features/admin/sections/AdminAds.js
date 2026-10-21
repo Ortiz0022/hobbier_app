@@ -1,18 +1,13 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../../components/scaledText';
 import { useNotify } from '../../../context/NotificationContext';
 import { capitalizarTitulo } from '../../../utils/titleCase';
-import { colors, spacing, fonts } from '../../../theme';
-import {
-  adminStyles,
-  Insignia,
-  BotonAccion,
-  TarjetaVacia,
-  ControlSegmentado,
-  TarjetaDato,
-} from '../adminUI';
+import { spacing, fonts } from "../../../theme";
+import { Insignia, BotonAccion, TarjetaVacia, ControlSegmentado, TarjetaDato, getAdminUITheme } from "../adminUI";
 import { AdFormModal } from '../components/AdFormModal';
 import {
   getAdsAdmin,
@@ -44,6 +39,8 @@ const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFra
  * Esas cifras son lo que se le enseña al anunciante para justificar el precio.
  */
 export const AdminAds = () => {
+  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
+
   const { notify, confirm } = useNotify();
   const [ads, setAds] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -196,13 +193,20 @@ export const AdminAds = () => {
   );
 };
 
-const Cifra = ({ valor, etiqueta }) => (
-  <View style={estilos.cifra}>
+const Cifra = ({ valor, etiqueta }) => {
+  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
+  return (<View style={estilos.cifra}>
     <Text style={estilos.cifraValor}>{valor}</Text>
     <Text style={estilos.cifraEtiqueta}>{etiqueta}</Text>
-  </View>
-);
+  </View>);
+};
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminAdsTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const estilos = StyleSheet.create({
   crearBtn: {
     backgroundColor: colors.primary,
@@ -212,7 +216,7 @@ const estilos = StyleSheet.create({
     marginBottom: spacing.md + 4,
   },
   crearBtnTexto: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontSize: 15,
     fontWeight: '700',
   },
@@ -248,7 +252,7 @@ const estilos = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   cifra: {
     flex: 1,
@@ -269,4 +273,6 @@ const estilos = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
   },
+});
+  return { theme, colors, adminStyles, estilos };
 });

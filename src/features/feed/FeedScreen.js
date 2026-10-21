@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
@@ -28,41 +30,9 @@ import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 import { useDirectUnreadCount } from '../messages/hooks/useDirectUnreadCount';
 import { SponsoredCard } from '../../components/SponsoredCard';
 import { getMyAds, logAdEvent } from '../../services/adsService';
-import { colors } from '../../theme';
 
-const getPillStyle = (title, index) => {
-  const t = (title || '').toLowerCase();
 
-  const bgList = ['#dbeafe', '#ffe4e6', '#dcfce7', '#fef3c7', '#f3e8ff'];
-  const backgroundColor = bgList[index % bgList.length];
 
-  let emoji = '🎨';
-
-  if (t.includes('pint') || t.includes('dibuj') || t.includes('arte') || t.includes('creativ')) {
-    emoji = '🎨';
-  } else if (t.includes('jardin') || t.includes('plant') || t.includes('flor') || t.includes('urbana')) {
-    emoji = '🪴';
-  } else if (t.includes('cocin') || t.includes('recet') || t.includes('pan') || t.includes('comida') || t.includes('bebida') || t.includes('té')) {
-    emoji = '🍳';
-  } else if (t.includes('corr') || t.includes('ejercic') || t.includes('deport') || t.includes('bicicleta') || t.includes('fit')) {
-    emoji = '🏃';
-  } else if (t.includes('libr') || t.includes('lectur') || t.includes('le') || t.includes('capítulo')) {
-    emoji = '📚';
-  } else if (t.includes('music') || t.includes('cant') || t.includes('guitarr')) {
-    emoji = '🎵';
-  } else if (t.includes('foto') || t.includes('camar')) {
-    emoji = '📸';
-  } else if (t.includes('ajedrez') || t.includes('juego') || t.includes('carta')) {
-    emoji = '♟️';
-  } else if (t.includes('idioma') || t.includes('hablar')) {
-    emoji = '🗣️';
-  }
-
-  return {
-    backgroundColor,
-    emoji,
-  };
-};
 
 // Publicaciones por página del scroll infinito.
 const FEED_PAGE_SIZE = 10;
@@ -94,6 +64,8 @@ const intercalarAnuncios = (posts, ads) => {
 };
 
 export const FeedScreen = ({ onActivityAccepted }) => {
+  const { theme, colors, getPillStyle, styles } = useThemeValues(getFeedScreenTheme);
+
   const { user, profile } = useAuth();
   const { notify, confirm } = useNotify();
   const { t } = useLanguage();
@@ -365,7 +337,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#386756" />
+        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
         <Text style={styles.loadingText}>{t('feed.loading')}</Text>
       </View>
     );
@@ -482,7 +454,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         accessibilityRole="button"
         accessibilityLabel={unreadCount > 0 ? t('feed.messages_unread').replace('{count}', unreadCount) : t('feed.messages_label')}
       >
-        <Feather name="message-circle" size={24} color="#121B22" />
+        <Feather name="message-circle" size={24} color={theme.color("#121B22", 'text')} />
         {unreadCount > 0 && (
           <View style={styles.messagesBadge}>
             <Text style={styles.messagesBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -493,7 +465,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   );
 
   const listFooter = loadingMore ? (
-    <ActivityIndicator color="#1e293b" style={styles.loadMoreSpinner} />
+    <ActivityIndicator color={theme.color("#1e293b", 'text')} style={styles.loadMoreSpinner} />
   ) : loadMoreError ? (
     <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore}>
       <Text style={styles.loadMoreBtnText}>{t('feed.load_more_error')}</Text>
@@ -536,8 +508,8 @@ export const FeedScreen = ({ onActivityAccepted }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#386756']}
-            tintColor="#386756"
+            colors={[theme.color('#386756', 'success')]}
+            tintColor={theme.color("#386756", 'success')}
           />
         }
       />
@@ -573,19 +545,58 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   );
 };
 
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getFeedScreenTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const getPillStyle = (title, index) => {
+  const t = (title || '').toLowerCase();
+
+  const bgList = [theme.color('#dbeafe', 'card'), theme.color('#ffe4e6', 'card'), theme.color('#dcfce7', 'card'), theme.color('#fef3c7', 'card'), theme.color('#f3e8ff', 'card')];
+  const backgroundColor = bgList[index % bgList.length];
+
+  let emoji = '🎨';
+
+  if (t.includes('pint') || t.includes('dibuj') || t.includes('arte') || t.includes('creativ')) {
+    emoji = '🎨';
+  } else if (t.includes('jardin') || t.includes('plant') || t.includes('flor') || t.includes('urbana')) {
+    emoji = '🪴';
+  } else if (t.includes('cocin') || t.includes('recet') || t.includes('pan') || t.includes('comida') || t.includes('bebida') || t.includes('té')) {
+    emoji = '🍳';
+  } else if (t.includes('corr') || t.includes('ejercic') || t.includes('deport') || t.includes('bicicleta') || t.includes('fit')) {
+    emoji = '🏃';
+  } else if (t.includes('libr') || t.includes('lectur') || t.includes('le') || t.includes('capítulo')) {
+    emoji = '📚';
+  } else if (t.includes('music') || t.includes('cant') || t.includes('guitarr')) {
+    emoji = '🎵';
+  } else if (t.includes('foto') || t.includes('camar')) {
+    emoji = '📸';
+  } else if (t.includes('ajedrez') || t.includes('juego') || t.includes('carta')) {
+    emoji = '♟️';
+  } else if (t.includes('idioma') || t.includes('hablar')) {
+    emoji = '🗣️';
+  }
+
+  return {
+    backgroundColor,
+    emoji,
+  };
+};
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#64748b',
+    color: theme.color('#64748b', "muted"),
     marginTop: 12,
     fontSize: 15,
     fontWeight: '500',
@@ -602,7 +613,7 @@ const styles = StyleSheet.create({
   },
   logoTitle: {
     fontSize: 24, // DynaPuff es más robusta
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     fontFamily: 'DynaPuff',
     marginBottom: 0, // Restaurando márgenes naturales
     textAlign: 'center',
@@ -626,18 +637,18 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: colors.accent,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: theme.color('#ffffff', 'border'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   messagesBadgeText: {
-    color: '#ffffff',
+    color: theme.color('#ffffff', 'text'),
     fontSize: 10,
     fontWeight: '700',
     lineHeight: 12,
   },
   emptyCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'card'),
     marginHorizontal: 20,
     borderRadius: 20,
     padding: 32,
@@ -663,32 +674,32 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     marginBottom: 6,
   },
   emptySubtitle: {
-    color: '#64748b',
+    color: theme.color('#64748b', "muted"),
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 16,
   },
   refreshEmptyBtn: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.color('#f1f5f9', 'card'),
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
   },
   refreshEmptyBtnText: {
-    color: '#334155',
+    color: theme.color('#334155', 'text'),
     fontWeight: '600',
     fontSize: 14,
   },
   postCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
     marginBottom: 20,
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F3F5',
+    borderBottomWidth: theme.isDark ? 0 : 1,
+    borderBottomColor: theme.color('#F0F3F5', 'background'),
   },
   postHeader: {
     paddingHorizontal: 16,
@@ -709,12 +720,12 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     borderWidth: 2,
-    borderColor: '#00DBFF',
+    borderColor: theme.color('#00DBFF', 'border'),
   },
   authorAvatarImage: {
     width: 42,
@@ -722,10 +733,10 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     marginRight: 10,
     borderWidth: 2,
-    borderColor: '#00DBFF',
+    borderColor: theme.color('#00DBFF', 'border'),
   },
   authorInitial: {
-    color: '#334155',
+    color: theme.color('#334155', 'text'),
     fontSize: 18,
     fontWeight: '700',
   },
@@ -735,12 +746,12 @@ const styles = StyleSheet.create({
   authorHandle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   authorAction: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#475569',
+    color: theme.color('#475569', 'muted'),
     marginTop: 1,
   },
   optionsBtn: {
@@ -749,13 +760,13 @@ const styles = StyleSheet.create({
   optionsIcon: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     letterSpacing: -1,
   },
   postImage: {
     width: '100%',
     height: 460,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.color('#f1f5f9', 'background'),
   },
   postFooter: {
     flexDirection: 'row',
@@ -763,7 +774,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
   },
   postFooterRight: {
     flexDirection: 'row',
@@ -774,31 +785,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#EAF7FA',
+    backgroundColor: theme.color('#EAF7FA', 'card'),
     borderWidth: 1,
-    borderColor: '#BDECF3',
+    borderColor: theme.color('#BDECF3', 'border'),
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   doAlsoBtnText: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
     fontSize: 12,
   },
   pointsPill: {
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   pointsPillText: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
     fontSize: 13,
   },
   loadMoreBtn: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'card'),
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
@@ -806,10 +817,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
   },
   loadMoreBtnText: {
-    color: '#334155',
+    color: theme.color('#334155', 'text'),
     fontSize: 15,
     fontWeight: '700',
   },
@@ -817,4 +828,5 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
 });
-
+  return { theme, colors, getPillStyle, styles };
+});

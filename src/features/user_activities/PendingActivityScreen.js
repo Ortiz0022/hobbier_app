@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,7 +23,7 @@ import {
   getUserActivities,
   uploadEvidenceImage,
 } from '../../services/activityService';
-import { colors } from '../../theme';
+
 import { ActivitiesHeader } from './components/ActivitiesHeader';
 import { ActivityCard } from './components/ActivityCard';
 import { ActivityEvidenceModal } from './components/ActivityEvidenceModal';
@@ -40,6 +42,8 @@ export const PendingActivityScreen = ({
   onNavigateToProfile,
   onNavigateToRecommendations,
 }) => {
+  const { theme, colors, styles } = useThemeValues(getPendingActivityScreenTheme);
+
   const { user, profile, refreshProfile } = useAuth();
   const { notify } = useNotify();
   const { t } = useLanguage();
@@ -218,8 +222,8 @@ export const PendingActivityScreen = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#0C8AA6']}
-            tintColor="#0C8AA6"
+            colors={[theme.color('#0C8AA6', 'primary')]}
+            tintColor={theme.color("#0C8AA6", 'primary')}
           />
         }
       >
@@ -396,10 +400,15 @@ export const PendingActivityScreen = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getPendingActivityScreenTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FBFCFA' },
+  container: { flex: 1, backgroundColor: theme.color('#FBFCFA', 'background') },
   loadingContainer: {
-    flex: 1, backgroundColor: '#FBFCFA', alignItems: 'center', justifyContent: 'center',
+    flex: 1, backgroundColor: theme.color('#FBFCFA', 'background'), alignItems: 'center', justifyContent: 'center',
   },
   loadingIcon: {
     width: 56, height: 56, borderRadius: 19, backgroundColor: colors.primarySoft,
@@ -429,7 +438,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.color(colors.border, 'border'),
   },
   filterDropdownText: {
     color: colors.primaryDark,
@@ -482,7 +491,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: theme.color('#D1D5DB', 'card'),
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -513,7 +522,7 @@ const styles = StyleSheet.create({
   missionBoard: { paddingBottom: 8 },
   achievementBanner: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFF1E3', borderRadius: 14,
+    backgroundColor: theme.color('#FFF1E3', 'card'), borderRadius: 14,
     padding: 14, marginBottom: 17,
   },
   achievementCopy: { flex: 1, paddingRight: 12 },
@@ -527,14 +536,14 @@ const styles = StyleSheet.create({
   achievementMeta: { color: colors.textFaint, fontSize: 10, marginTop: 2 },
   achievementIcon: {
     width: 50, height: 50, borderRadius: 17,
-    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backgroundColor: theme.color('rgba(255, 255, 255, 0.78)', 'card'),
     alignItems: 'center', justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center', paddingHorizontal: 24, paddingVertical: 38,
   },
   emptyIcon: {
-    width: 64, height: 64, borderRadius: 22, backgroundColor: '#FFF1E3',
+    width: 64, height: 64, borderRadius: 22, backgroundColor: theme.color('#FFF1E3', 'card'),
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   emptyHistoryIcon: { backgroundColor: colors.primarySoft },
@@ -551,7 +560,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: 17,
     paddingHorizontal: 17, paddingVertical: 12, marginTop: 20,
   },
-  discoverButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '600' },
+  discoverButtonText: { color: theme.color(colors.onPrimary, 'onAccent'), fontSize: 13, fontWeight: '600' },
   switchButton: { paddingHorizontal: 18, paddingVertical: 12, marginTop: 10 },
   switchButtonText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
+});
+  return { theme, colors, styles };
 });

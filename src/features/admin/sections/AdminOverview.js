@@ -1,11 +1,13 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing } from '../../../theme';
+import { spacing } from "../../../theme";
 import { usePresence } from '../../../context/PresenceContext';
 import { getSystemStatsAdmin } from '../../../services/adminService';
-import { adminStyles, TarjetaDato, BotonAccion, BADGE_TONOS } from '../adminUI';
+import { TarjetaDato, BotonAccion, getAdminUITheme } from "../adminUI";
 
 /**
  * Pantalla principal del panel: el estado del sistema de un vistazo.
@@ -16,6 +18,8 @@ import { adminStyles, TarjetaDato, BotonAccion, BADGE_TONOS } from '../adminUI';
  * completadas, salas) no se inventa: no aparece.
  */
 export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
+  const { theme, colors, adminStyles, BADGE_TONOS } = useThemeValues(getAdminOverviewTheme);
+
   const { onlineUsers } = usePresence();
   const [stats, setStats] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -193,3 +197,10 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
     </View>
   );
 };
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminOverviewTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles, BADGE_TONOS } = getAdminUITheme(theme);
+  return { theme, colors, adminStyles, BADGE_TONOS };
+});

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
@@ -41,6 +43,8 @@ import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';
 import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
 
 export const FriendsScreen = ({ onBack, isProfileView = false }) => {
+  const { theme, styles } = useThemeValues(getFriendsScreenTheme);
+
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
   const { isUserOnline } = usePresence();
@@ -277,7 +281,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
             {onBack && (
               <TouchableOpacity onPress={onBack} style={{ marginRight: 12 }}>
-                <Feather name="arrow-left" size={24} color="#08333D" />
+                <Feather name="arrow-left" size={24} color={theme.color("#08333D", 'text')} />
               </TouchableOpacity>
             )}
             <Text style={[styles.title, { marginBottom: 0 }]}>
@@ -297,7 +301,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <Feather
                   name="user-plus"
                   size={14}
-                  color={activeTab === 'search' ? '#053E4A' : '#8A908B'}
+                  color={activeTab === 'search' ? theme.color('#053E4A', 'text') : theme.color('#8A908B', 'muted')}
                 />
                 <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>
                   {t('friends.connect_tab')}
@@ -312,7 +316,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <Feather
                   name="bell"
                   size={14}
-                  color={activeTab === 'requests' ? '#053E4A' : '#8A908B'}
+                  color={activeTab === 'requests' ? theme.color('#053E4A', 'text') : theme.color('#8A908B', 'muted')}
                 />
                 {requests.length > 0 && (
                   <View style={styles.badge}>
@@ -335,7 +339,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                 <Feather
                   name="grid"
                   size={14}
-                  color={activeTab === 'rooms' ? '#053E4A' : '#8A908B'}
+                  color={activeTab === 'rooms' ? theme.color('#053E4A', 'text') : theme.color('#8A908B', 'muted')}
                 />
                 {roomInvitations.length > 0 && (
                   <View style={styles.redBadgeDot} />
@@ -350,7 +354,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
       )}
 
       {activeTab === 'rooms' ? (
-        <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        <View style={{ flex: 1, backgroundColor: theme.color('#FFFFFF', 'card') }}>
           {roomScreen === 'LIST' && (
             <RoomsListScreen
               onNavigateToCreate={() => setRoomScreen('CREATE')}
@@ -378,8 +382,8 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#0C8AA6']}
-              tintColor="#0C8AA6"
+              colors={[theme.color('#0C8AA6', 'primary')]}
+              tintColor={theme.color("#0C8AA6", 'primary')}
             />
           }
         >
@@ -387,22 +391,22 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
           {activeTab === 'friends' && (
             <View>
               <View style={styles.searchBarContainer}>
-                <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
-                <TextInput
+                <Feather name="search" size={18} color={theme.color("#8A908B", 'muted')} style={styles.searchIcon} />
+                <TextInput {...theme.textInputProps}
                   style={styles.searchInput}
                   placeholder={t('friends.search_friends_placeholder')}
-                  placeholderTextColor="#8A908B"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
                   value={friendSearchQuery}
                   onChangeText={setFriendSearchQuery}
                   autoCapitalize="none"
                 />
               </View>
 
-              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+              {loading && <ActivityIndicator color={theme.color("#00DBFF", 'primary')} style={{ marginTop: 24 }} />}
 
               {!loading && filteredFriends.length === 0 && (
                 <View style={styles.emptyCard}>
-                  <Feather name="users" size={36} color="#8A908B" style={styles.emptyIcon} />
+                  <Feather name="users" size={36} color={theme.color("#8A908B", 'muted')} style={styles.emptyIcon} />
                   <Text style={styles.emptyTitle}>
                     {friendSearchQuery.trim() ? t('friends.no_matches') : t('friends.no_friends_yet')}
                   </Text>
@@ -449,7 +453,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Feather name="trash-2" size={14} color="#EF4444" />
+                    <Feather name="trash-2" size={14} color={theme.color("#EF4444", 'danger')} />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
@@ -460,22 +464,22 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
           {activeTab === 'search' && (
             <View>
               <View style={styles.searchBarContainer}>
-                <Feather name="search" size={18} color="#8A908B" style={styles.searchIcon} />
-                <TextInput
+                <Feather name="search" size={18} color={theme.color("#8A908B", 'muted')} style={styles.searchIcon} />
+                <TextInput {...theme.textInputProps}
                   style={styles.searchInput}
                   placeholder={t('friends.search_users_placeholder')}
-                  placeholderTextColor="#8A908B"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
                   value={searchQuery}
                   onChangeText={handleSearch}
                   autoCapitalize="none"
                 />
               </View>
 
-              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+              {loading && <ActivityIndicator color={theme.color("#00DBFF", 'primary')} style={{ marginTop: 24 }} />}
 
               {!loading && searchQuery.trim() !== '' && searchResults.length === 0 && (
                 <View style={styles.emptyCard}>
-                  <Feather name="user-x" size={32} color="#8A908B" style={styles.emptyIcon} />
+                  <Feather name="user-x" size={32} color={theme.color("#8A908B", 'muted')} style={styles.emptyIcon} />
                   <Text style={styles.emptyTitle}>{t('friends.no_results')}</Text>
                   <Text style={styles.emptyText}>{t('friends.no_users_found')}</Text>
                 </View>
@@ -510,12 +514,12 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                     // Ya son amigos: ni "Agregar" ni "Enviada", y su perfil se abre
                     // al tocar la fila.
                     <View style={styles.friendBadge}>
-                      <Feather name="users" size={14} color="#0C8AA6" />
+                      <Feather name="users" size={14} color={theme.color("#0C8AA6", 'primary')} />
                       <Text style={styles.friendBadgeText}>{t('friends.already_friends')}</Text>
                     </View>
                   ) : sentMap[targetUser.id] ? (
                     <View style={styles.sentBadge}>
-                      <Feather name="check" size={14} color="#8A908B" />
+                      <Feather name="check" size={14} color={theme.color("#8A908B", 'muted')} />
                       <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
                     </View>
                   ) : (
@@ -526,10 +530,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       activeOpacity={0.8}
                     >
                       {sendingMap[targetUser.id] ? (
-                        <ActivityIndicator color="#0C8AA6" size="small" />
+                        <ActivityIndicator color={theme.color("#0C8AA6", 'primary')} size="small" />
                       ) : (
                         <>
-                          <Feather name="user-plus" size={16} color="#0C8AA6" />
+                          <Feather name="user-plus" size={16} color={theme.color("#0C8AA6", 'primary')} />
                           <Text style={styles.addBtnText}>{t('friends.add_friend')}</Text>
                         </>
                       )}
@@ -541,18 +545,18 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
               {/* SUGERENCIAS (CUANDO NO SE ESTÁ BUSCANDO NADA) */}
               {!loading && searchQuery.trim() === '' && (
                 <View style={{ marginTop: 16 }}>
-                  <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: '#08333D', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 16, fontFamily: 'Poppins_700Bold', color: theme.color('#08333D', 'text'), marginBottom: 4 }}>
                     {t('friends.suggestions_for_you')}
                   </Text>
-                  <Text style={{ fontSize: 13, color: '#727773', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 13, color: theme.color('#727773', 'muted'), marginBottom: 16 }}>
                     {t('friends.hobbiers_shared_interests')}
                   </Text>
 
                   {suggestionsLoading ? (
-                    <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />
+                    <ActivityIndicator color={theme.color("#00DBFF", 'primary')} style={{ marginTop: 24 }} />
                   ) : suggestions.length === 0 ? (
                     <View style={styles.emptyCard}>
-                      <Feather name="smile" size={32} color="#8A908B" style={styles.emptyIcon} />
+                      <Feather name="smile" size={32} color={theme.color("#8A908B", 'muted')} style={styles.emptyIcon} />
                       <Text style={styles.emptyTitle}>{t('friends.no_suggestions')}</Text>
                       <Text style={styles.emptyText}>{t('friends.add_more_interests')}</Text>
                     </View>
@@ -574,20 +578,20 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                           <Text style={styles.userName}>{sug.profile.full_name}</Text>
                           <Text style={styles.userHandle}>@{sug.profile.username}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
-                            <Feather name="users" size={12} color="#0C8AA6" />
-                            <Text style={{ fontSize: 12, color: '#0C8AA6', fontWeight: '600' }}>
+                            <Feather name="users" size={12} color={theme.color("#0C8AA6", 'primary')} />
+                            <Text style={{ fontSize: 12, color: theme.color('#0C8AA6', 'primary'), fontWeight: '600' }}>
                               {t('friends.shared_interests', { count: sug.sharedCount })}
                             </Text>
                           </View>
                         </View>
                         {idsAmigos.has(sug.profile.id) ? (
                           <View style={styles.friendBadge}>
-                            <Feather name="users" size={14} color="#0C8AA6" />
+                            <Feather name="users" size={14} color={theme.color("#0C8AA6", 'primary')} />
                             <Text style={styles.friendBadgeText}>{t('friends.already_friends')}</Text>
                           </View>
                         ) : sentMap[sug.profile.id] ? (
                           <View style={styles.sentBadge}>
-                            <Feather name="check" size={14} color="#8A908B" />
+                            <Feather name="check" size={14} color={theme.color("#8A908B", 'muted')} />
                             <Text style={styles.sentBadgeText}>{t('friends.sent')}</Text>
                           </View>
                         ) : (
@@ -598,10 +602,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                             activeOpacity={0.8}
                           >
                             {sendingMap[sug.profile.id] ? (
-                              <ActivityIndicator color="#0C8AA6" size="small" />
+                              <ActivityIndicator color={theme.color("#0C8AA6", 'primary')} size="small" />
                             ) : (
                               <>
-                                <Feather name="user-plus" size={16} color="#0C8AA6" />
+                                <Feather name="user-plus" size={16} color={theme.color("#0C8AA6", 'primary')} />
                                 <Text style={styles.addBtnText}>{t('friends.add_friend')}</Text>
                               </>
                             )}
@@ -618,10 +622,10 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
           {/* TAB 3: SOLICITUDES PENDIENTES */}
           {activeTab === 'requests' && (
             <View>
-              {loading && <ActivityIndicator color="#00DBFF" style={{ marginTop: 24 }} />}
+              {loading && <ActivityIndicator color={theme.color("#00DBFF", 'primary')} style={{ marginTop: 24 }} />}
               {!loading && requests.length === 0 && (
                 <View style={styles.emptyCard}>
-                  <Feather name="inbox" size={36} color="#8A908B" style={styles.emptyIcon} />
+                  <Feather name="inbox" size={36} color={theme.color("#8A908B", 'muted')} style={styles.emptyIcon} />
                   <Text style={styles.emptyTitle}>{t('friends.inbox_clean')}</Text>
                   <Text style={styles.emptyText}>{t('friends.no_pending_requests')}</Text>
                 </View>
@@ -650,7 +654,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       onPress={() => handleResponse(req.id, 'ACCEPTED')}
                       activeOpacity={0.8}
                     >
-                      <Feather name="check" size={14} color="#FFFFFF" />
+                      <Feather name="check" size={14} color={theme.color("#FFFFFF", 'text')} />
                       <Text style={styles.btnText}>{t('friends.accept')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -658,7 +662,7 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
                       onPress={() => handleResponse(req.id, 'REJECTED')}
                       activeOpacity={0.8}
                     >
-                      <Feather name="x" size={14} color="#8A908B" />
+                      <Feather name="x" size={14} color={theme.color("#8A908B", 'muted')} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -682,10 +686,14 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getFriendsScreenTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'background'),
   },
   header: {
     paddingHorizontal: 20,
@@ -695,13 +703,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 21,
     fontWeight: '700',
-    color: '#08333D',
+    color: theme.color('#08333D', 'text'),
     letterSpacing: -0.3,
     marginBottom: 16,
   },
   tabsRow: {
     flexDirection: 'row',
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
     borderRadius: 16,
     padding: 4,
     gap: 4,
@@ -717,7 +725,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   activeTab: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'selected'),
     elevation: 2,
     ...Platform.select({
       web: {
@@ -732,12 +740,12 @@ const styles = StyleSheet.create({
     }),
   },
   tabText: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     fontSize: 13,
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#053E4A',
+    color: theme.color('#053E4A', 'text'),
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
   },
@@ -745,7 +753,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#00DBFF',
+    backgroundColor: theme.color('#00DBFF', 'primary'),
     position: 'absolute',
     top: 6,
     right: 10,
@@ -754,7 +762,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF3B30',
+    backgroundColor: theme.color('#FF3B30', 'dangerSurface'),
     position: 'absolute',
     top: 6,
     right: 10,
@@ -767,9 +775,9 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'secondary'),
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderRadius: 16,
     paddingHorizontal: 14,
     marginBottom: 16,
@@ -793,15 +801,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     marginTop: 16,
   },
   emptyIcon: {
@@ -811,11 +819,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     marginBottom: 4,
   },
   emptyText: {
-    color: '#727773',
+    color: theme.color('#727773', 'muted'),
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
@@ -823,12 +831,12 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 18,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
   },
   avatarRing: {
     marginRight: 12,
@@ -842,12 +850,12 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitial: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
     fontSize: 16,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -862,9 +870,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.color('#4CAF50', 'card'),
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: theme.color('#FFFFFF', 'border'),
   },
   userInfo: {
     flex: 1,
@@ -873,24 +881,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
-    color: '#121B22',
+    color: theme.color('#121B22', "muted"),
   },
   userHandle: {
     fontSize: 13,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     marginTop: 1,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E5F6F8',
+    backgroundColor: theme.color('#E5F6F8', 'card'),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   addBtnText: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -898,14 +906,14 @@ const styles = StyleSheet.create({
   sentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   sentBadgeText: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -915,14 +923,14 @@ const styles = StyleSheet.create({
   friendBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF7FA',
+    backgroundColor: theme.color('#EAF7FA', 'card'),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   friendBadgeText: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontSize: 13,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -935,28 +943,30 @@ const styles = StyleSheet.create({
   acceptBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2A6347',
+    backgroundColor: theme.color('#2A6347', 'primary'),
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 5,
   },
   rejectBtn: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.color('#F8FAFC', 'card'),
     borderRadius: 12,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
   },
   btnText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'onAccent'),
     fontSize: 12,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
   },
   removeBtn: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: theme.color('#FFF5F5', 'card'),
     borderRadius: 12,
     padding: 9,
   },
+});
+  return { theme, styles };
 });

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React from 'react';
 import {
   StyleSheet,
@@ -12,7 +14,7 @@ import {
 import Feather from '@expo/vector-icons/Feather';
 import { Text } from '../components/scaledText';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, fonts } from '../theme';
+import { fonts } from "../theme";
 import { getLegalDocument } from './legalContent';
 
 /**
@@ -20,6 +22,8 @@ import { getLegalDocument } from './legalContent';
  * `doc`: 'privacy' | 'terms' | null (null = cerrado).
  */
 export const LegalDocumentModal = ({ doc, onClose }) => {
+  const { theme, colors, styles } = useThemeValues(getLegalDocumentModalTheme);
+
   const { t, language } = useLanguage();
   const document = doc ? getLegalDocument(doc, language) : null;
 
@@ -54,10 +58,15 @@ export const LegalDocumentModal = ({ doc, onClose }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getLegalDocumentModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
@@ -67,7 +76,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
   },
   headerTitle: {
     flex: 1,
@@ -102,4 +111,6 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: colors.text,
   },
+});
+  return { theme, colors, styles };
 });

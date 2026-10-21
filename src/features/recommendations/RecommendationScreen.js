@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, SafeAreaView, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +25,8 @@ export const RecommendationScreen = ({
   onNavigateToFeed,
   onNavigateToActivities,
 }) => {
+  const { theme, styles } = useThemeValues(getRecommendationScreenTheme);
+
   const { user, profile } = useAuth();
   const { notify } = useNotify();
   const { t } = useLanguage();
@@ -105,8 +109,8 @@ export const RecommendationScreen = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#0C8AA6']}
-            tintColor="#0C8AA6"
+            colors={[theme.color('#0C8AA6', 'primary')]}
+            tintColor={theme.color("#0C8AA6", 'primary')}
           />
         }
       >
@@ -158,10 +162,14 @@ export const RecommendationScreen = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRecommendationScreenTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBFCFA',
+    backgroundColor: theme.color('#FBFCFA', 'background'),
   },
   scrollContent: {
     width: '100%',
@@ -171,4 +179,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 36,
   },
+});
+  return { theme, styles };
 });

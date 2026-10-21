@@ -1,12 +1,14 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { Text, TextInput } from '../../../components/scaledText';
 import { SelectableCard } from '../../../components/SelectableCard';
-import { TOKENS } from '../../../theme/designTokens';
+
 import { useLanguage } from '../../../context/LanguageContext';
-import { getCatalogIcon, getCatalogTint } from '../catalogIcons';
+import { getCatalogIcon, getCatalogIconsTheme } from "../catalogIcons";
 import {
   fetchCatalogoInicial,
   buscarEnCatalogo,
@@ -33,6 +35,8 @@ const MINIMO_LETRAS = 2;
  * No se pueden crear opciones nuevas: los catálogos los administra el admin.
  */
 export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5, compact = false }) => {
+  const { theme, TOKENS, getCatalogTint, styles } = useThemeValues(getCatalogPickerTheme);
+
   const { t } = useLanguage();
 
   const [texto, setTexto] = useState('');
@@ -151,7 +155,7 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5, 
     <View>
       <View style={[styles.buscador, compact && styles.buscadorCompact]}>
         <Feather name="search" size={compact ? 16 : 18} color={TOKENS.colors.textMuted} />
-        <TextInput
+        <TextInput {...theme.textInputProps}
           style={styles.buscadorInput}
           placeholder={t('onboarding.search_placeholder')}
           placeholderTextColor={TOKENS.colors.inactiveBorder}
@@ -215,6 +219,12 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5, 
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCatalogPickerTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
+const { getCatalogTint } = getCatalogIconsTheme(theme);
 const styles = StyleSheet.create({
   buscador: {
     flexDirection: 'row',
@@ -222,7 +232,7 @@ const styles = StyleSheet.create({
     gap: TOKENS.spacing.sm,
     backgroundColor: TOKENS.colors.inactiveBg,
     borderWidth: 1.5,
-    borderColor: TOKENS.colors.inactiveBorder,
+    borderColor: theme.color(TOKENS.colors.inactiveBorder, 'border'),
     borderRadius: TOKENS.radius.full,
     paddingHorizontal: TOKENS.spacing.md,
     height: 46,
@@ -278,4 +288,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: TOKENS.colors.badgeInfoText,
   },
+});
+  return { theme, TOKENS, getCatalogTint, styles };
 });

@@ -1,8 +1,10 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { View, StyleSheet, Image, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { capitalizarTitulo } from '../../../utils/titleCase';
 import { fechaCorta } from '../adminUI';
 
@@ -15,6 +17,8 @@ import { fechaCorta } from '../adminUI';
  * recortar y se cierra tocando fuera o con la cruz.
  */
 export const PostViewerModal = ({ post, onClose }) => {
+  const { theme, colors, styles } = useThemeValues(getPostViewerModalTheme);
+
   if (!post) return null;
 
   const actividad = post.user_activity?.activity;
@@ -30,7 +34,7 @@ export const PostViewerModal = ({ post, onClose }) => {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Cerrar la foto"
         >
-          <Ionicons name="close" size={22} color={colors.onPrimary} />
+          <Ionicons name="close" size={22} color={theme.color(colors.onPrimary, 'text')} />
         </TouchableOpacity>
 
         {/* El pie no se cierra al tocarlo: aquí se lee, no se navega. */}
@@ -48,6 +52,11 @@ export const PostViewerModal = ({ post, onClose }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getPostViewerModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -66,7 +75,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radii.round,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: theme.color('rgba(255,255,255,0.15)', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -83,11 +92,13 @@ const styles = StyleSheet.create({
   pieTitulo: {
     fontSize: 15,
     fontFamily: fonts.heading,
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'text'),
   },
   pieTexto: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.color('rgba(255,255,255,0.8)', 'text'),
     marginTop: 2,
   },
+});
+  return { theme, colors, styles };
 });

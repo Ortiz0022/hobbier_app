@@ -1,7 +1,9 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 
@@ -31,6 +33,8 @@ const getCategoryStyle = (categoryObj, title = '') => {
 };
 
 export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
+  const { theme, colors, styles } = useThemeValues(getActivityCardTheme);
+
   const { t } = useLanguage();
   const activity = item.activity || {};
   const category = getCategoryStyle(activity.category, activity.title);
@@ -94,12 +98,17 @@ export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getActivityCardTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E8ECEF',
+    borderColor: theme.color('#E8ECEF', 'border'),
     paddingHorizontal: 13,
     paddingVertical: 11,
     marginBottom: 8,
@@ -154,7 +163,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   pointsText: {
-    color: colors.text,
+    color: theme.color(colors.text, 'onAccent'),
     fontSize: 8.5,
     fontWeight: '600',
   },
@@ -179,7 +188,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 7,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: theme.color('#F3F4F6', 'border'),
   },
   statusRow: {
     flex: 1,
@@ -207,4 +216,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '600',
   },
+});
+  return { theme, colors, styles };
 });

@@ -1,10 +1,12 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React from "react";
 import { StyleSheet, TouchableOpacity, View, Platform } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 // Envoltorio con tope de escalado: sin él, la letra grande del sistema
 // desbordaría la tarjeta. Ver la sección de accesibilidad del README.
 import { Text } from "./scaledText";
-import { TOKENS } from "../theme/designTokens";
+
 // Los nombres se guardan tal como vienen del catálogo y se MUESTRAN con cada
 // palabra en mayúscula: cambiarlos en la base rompería los cruces por nombre
 // exacto (el import de mockapi y las claves de traducción).
@@ -56,6 +58,8 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
   onPress,
   compact = false,
 }) => {
+  const { theme, TOKENS, compactStyles, styles } = useThemeValues(getSelectableCardTheme);
+
   if (compact) {
     return (
       <TouchableOpacity
@@ -95,7 +99,7 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
             <MaterialCommunityIcons
               name="check"
               size={10}
-              color={TOKENS.colors.white}
+              color={theme.color(TOKENS.colors.white, 'onAccent')}
             />
           </View>
         ) : null}
@@ -122,7 +126,7 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
           <MaterialCommunityIcons
             name="check"
             size={14}
-            color={TOKENS.colors.white}
+            color={theme.color(TOKENS.colors.white, 'onAccent')}
           />
         </View>
       ) : null}
@@ -146,6 +150,15 @@ export const SelectableCard: React.FC<SelectableCardProps> = ({
 
 /* ─── Estilos del modo compacto (chips) ─── */
 
+
+
+/* ─── Estilos del modo normal (pastillas de fila completa) ─── */
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getSelectableCardTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
 const compactStyles = StyleSheet.create({
   chip: {
     flexDirection: "row",
@@ -157,12 +170,12 @@ const compactStyles = StyleSheet.create({
     borderWidth: 1.5,
   },
   chipUnselected: {
-    backgroundColor: TOKENS.colors.inactiveBg,
-    borderColor: TOKENS.colors.inactiveBorder,
+    backgroundColor: theme.color(TOKENS.colors.inactiveBg, 'selected'),
+    borderColor: theme.color(TOKENS.colors.inactiveBorder, "primary"),
   },
   chipSelected: {
-    backgroundColor: TOKENS.colors.white,
-    borderColor: TOKENS.colors.active,
+    backgroundColor: theme.color(TOKENS.colors.white, 'selected'),
+    borderColor: theme.color(TOKENS.colors.active, "primary"),
     elevation: 2,
     ...Platform.select({
       web: {
@@ -201,9 +214,6 @@ const compactStyles = StyleSheet.create({
     marginLeft: 2,
   },
 });
-
-/* ─── Estilos del modo normal (pastillas de fila completa) ─── */
-
 const styles = StyleSheet.create({
   card: {
     // Fila completa: una opción por renglón, en pastilla alargada.
@@ -221,12 +231,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   cardUnselected: {
-    backgroundColor: TOKENS.colors.inactiveBg,
-    borderColor: TOKENS.colors.inactiveBorder,
+    backgroundColor: theme.color(TOKENS.colors.inactiveBg, 'selected'),
+    borderColor: theme.color(TOKENS.colors.inactiveBorder, "primary"),
   },
   cardSelected: {
-    backgroundColor: TOKENS.colors.white,
-    borderColor: TOKENS.colors.active,
+    backgroundColor: theme.color(TOKENS.colors.white, 'selected'),
+    borderColor: theme.color(TOKENS.colors.active, "primary"),
     elevation: 3,
     ...Platform.select({
       web: {
@@ -268,4 +278,6 @@ const styles = StyleSheet.create({
   labelSelected: {
     color: TOKENS.colors.textDark,
   },
+});
+  return { theme, TOKENS, compactStyles, styles };
 });

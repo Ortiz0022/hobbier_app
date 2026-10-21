@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
@@ -16,10 +18,12 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { supportService } from '../../../services/supportService';
-import { colors, radii, spacing, fonts } from '../../../theme';
-import { adminStyles, Insignia, BotonAccion, BarraBusqueda } from '../adminUI';
+import { radii, spacing, fonts } from "../../../theme";
+import { Insignia, BotonAccion, BarraBusqueda, getAdminUITheme } from "../adminUI";
 
 export const AdminSupport = ({ initialUserId = null }) => {
+  const { theme, colors, adminStyles, styles } = useThemeValues(getAdminSupportTheme);
+
   const { user: currentAdmin } = useAuth();
   const { notify, confirm } = useNotify();
   const { width } = useWindowDimensions();
@@ -300,10 +304,10 @@ export const AdminSupport = ({ initialUserId = null }) => {
                 activeOpacity={0.8}
               >
                 {reactivating ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={theme.color("#FFF", 'text')} />
                 ) : (
                   <>
-                    <Feather name="check-circle" size={14} color="#FFF" />
+                    <Feather name="check-circle" size={14} color={theme.color("#FFF", 'text')} />
                     <Text style={styles.reactivateButtonText}>Reactivar</Text>
                   </>
                 )}
@@ -340,10 +344,10 @@ export const AdminSupport = ({ initialUserId = null }) => {
                 activeOpacity={0.8}
               >
                 {reactivating ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={theme.color("#FFF", 'text')} />
                 ) : (
                   <>
-                    <Feather name="check-circle" size={13} color="#FFF" />
+                    <Feather name="check-circle" size={13} color={theme.color("#FFF", 'text')} />
                     <Text style={styles.reactivateButtonText}>Reactivar</Text>
                   </>
                 )}
@@ -404,13 +408,13 @@ export const AdminSupport = ({ initialUserId = null }) => {
                         @{targetUser?.username || 'Usuario'}
                       </Text>
                     )}
-                    <Text style={[styles.msgText, isAdmin && { color: '#FFF' }]}>
+                    <Text style={[styles.msgText, isAdmin && { color: theme.color('#FFF', 'text') }]}>
                       {item.content}
                     </Text>
                     <Text
                       style={[
                         styles.msgTime,
-                        isAdmin ? { color: 'rgba(255,255,255,0.7)' } : { color: colors.textMuted },
+                        isAdmin ? { color: theme.color('rgba(255,255,255,0.7)', 'text') } : { color: colors.textMuted },
                       ]}
                     >
                       {item.created_at
@@ -429,7 +433,7 @@ export const AdminSupport = ({ initialUserId = null }) => {
 
         {/* Entrada de respuesta */}
         <View style={styles.replyBar}>
-          <TextInput
+          <TextInput {...theme.textInputProps}
             style={styles.replyInput}
             value={replyText}
             onChangeText={setReplyText}
@@ -449,9 +453,9 @@ export const AdminSupport = ({ initialUserId = null }) => {
             activeOpacity={0.8}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={theme.color("#FFF", 'text')} />
             ) : (
-              <Feather name="send" size={18} color="#FFF" />
+              <Feather name="send" size={18} color={theme.color("#FFF", 'text')} />
             )}
           </TouchableOpacity>
         </View>
@@ -592,10 +596,16 @@ export const AdminSupport = ({ initialUserId = null }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminSupportTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'background'),
   },
   splitLayout: {
     flex: 1,
@@ -603,16 +613,16 @@ const styles = StyleSheet.create({
   },
   listWrapper: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.color('#FAFAFA', 'card'),
     borderRightWidth: 1,
-    borderRightColor: colors.surfaceMuted,
+    borderRightColor: theme.color(colors.surfaceMuted, 'border'),
   },
   listWrapperDesktop: {
     maxWidth: 360,
   },
   chatPane: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
   },
   filtersRow: {
     flexDirection: 'row',
@@ -623,10 +633,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: radii.round,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.color('#E2E8F0', 'card'),
   },
   filterChipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.color(colors.primary, 'selected'),
   },
   filterChipText: {
     fontSize: 12.5,
@@ -634,7 +644,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   filterChipTextActive: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
   },
   centerLoading: {
     flex: 1,
@@ -662,21 +672,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ticketCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     marginHorizontal: spacing.md,
     marginVertical: 4,
     padding: spacing.md,
     borderRadius: radii.card,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   ticketCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surfaceAccent,
+    borderColor: theme.color(colors.primary, "primary"),
+    backgroundColor: theme.color(colors.surfaceAccent, 'selected'),
   },
   ticketCardUnread: {
     borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
+    borderLeftColor: theme.color(colors.accent, 'border'),
   },
   ticketCardTop: {
     flexDirection: 'row',
@@ -734,7 +744,7 @@ const styles = StyleSheet.create({
   // Detalle de chat
   detailContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
   },
   emptyDetailContainer: {
     flex: 1,
@@ -761,8 +771,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'card'),
   },
   detailHeaderTop: {
     flexDirection: 'row',
@@ -835,7 +845,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.danger,
+    borderColor: theme.color(colors.danger, 'border'),
     backgroundColor: 'transparent',
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -851,7 +861,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.danger,
+    borderColor: theme.color(colors.danger, 'border'),
     backgroundColor: 'transparent',
     paddingVertical: 5,
     paddingHorizontal: 10,
@@ -864,7 +874,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   reactivateButtonText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'onAccent'),
     fontSize: 12.5,
     fontWeight: '700',
   },
@@ -874,7 +884,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: radii.round,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.color('#E8F5E9', 'card'),
   },
   reactivatedBadgeText: {
     color: colors.success,
@@ -902,7 +912,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
   },
   msgBubbleAdmin: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.color(colors.primary, 'selected'),
     borderBottomRightRadius: 4,
   },
   msgBubbleUser: {
@@ -946,13 +956,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
-    backgroundColor: '#FFFFFF',
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     gap: spacing.sm,
   },
   replyInput: {
     flex: 1,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderRadius: radii.input,
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
@@ -969,6 +979,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendReplyBtnDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: theme.color('#CBD5E1', 'secondary'),
   },
+});
+  return { theme, colors, adminStyles, styles };
 });

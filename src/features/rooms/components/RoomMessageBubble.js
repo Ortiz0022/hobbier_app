@@ -1,8 +1,10 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { useRecyclingState } from '@shopify/flash-list';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatMessageStamp } from '../../../utils/dateFormat';
@@ -12,6 +14,8 @@ import { formatMessageStamp } from '../../../utils/dateFormat';
 const unhiddenMessagesCache = new Set();
 
 export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHighlighted, showSenderName = true, onRetry, onDiscard }) => {
+  const { theme, colors, styles } = useThemeValues(getRoomMessageBubbleTheme);
+
   const { language } = useLanguage();
   const isEvidence = message.message_type === 'EVIDENCE';
   // Estados locales del envío optimista (ver useChatMessages). Mientras el mensaje
@@ -107,7 +111,7 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                   onPress={() => setViewerOpen(false)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Feather name="x" size={22} color="#FFF" />
+                  <Feather name="x" size={22} color={theme.color("#FFF", 'text')} />
                 </TouchableOpacity>
               </Pressable>
             </Modal>
@@ -202,6 +206,11 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRoomMessageBubbleTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -262,14 +271,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
   },
   bubbleMe: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.color(colors.primary, 'selected'),
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
     backgroundColor: colors.surface,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   bubbleSending: {
     opacity: 0.65,
@@ -281,14 +290,14 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     backgroundColor: colors.surfaceAccent,
     borderWidth: 1,
-    borderColor: colors.primarySoft,
+    borderColor: theme.color(colors.primarySoft, 'border'),
   },
   messageText: {
     fontSize: 15,
     lineHeight: 20,
   },
   messageTextMe: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'text'),
   },
   messageTextOther: {
     color: colors.text,
@@ -329,22 +338,22 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   pointsText: {
-    color: '#FFF',
+    color: theme.color('#FFF', "onAccent"),
     fontWeight: 'bold',
     fontSize: 12,
   },
   replyQuote: {
     backgroundColor: 'rgba(0,0,0,0.04)',
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderLeftColor: theme.color(colors.primary, 'border'),
     borderRadius: 6,
     paddingVertical: 4,
     paddingHorizontal: 8,
     marginBottom: spacing.xs,
   },
   replyQuoteMe: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderLeftColor: colors.onPrimary,
+    backgroundColor: theme.color('rgba(255,255,255,0.15)', 'card'),
+    borderLeftColor: theme.color(colors.onPrimary, 'border'),
   },
   replyQuoteAuthor: {
     fontSize: 11.5,
@@ -352,14 +361,14 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
   },
   replyQuoteAuthorMe: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'text'),
   },
   replyQuoteText: {
     fontSize: 12.5,
     color: colors.textMuted,
   },
   replyQuoteTextMe: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'text'),
     opacity: 0.85,
   },
   footerRow: {
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: theme.color('rgba(255,255,255,0.15)', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -431,7 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderWidth: 1.5,
-    borderColor: "black",
+    borderColor: theme.color("black", 'border'),
     borderStyle: 'dashed',
     backgroundColor: 'transparent',
     maxWidth: '85%',
@@ -455,4 +464,6 @@ const styles = StyleSheet.create({
   toxicIconOverlay: {
     position: 'absolute',
   }
+});
+  return { theme, colors, styles };
 });

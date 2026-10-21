@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import {
   View,
@@ -17,9 +19,11 @@ import { useNotify } from '../../../context/NotificationContext';
 import { directMessagesService } from '../../../services/directMessagesService';
 import { useDirectInbox } from '../hooks/useDirectInbox';
 import { formatMessageTime } from '../utils/formatMessageTime';
-import { colors, spacing, fonts, radii, input } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 
 export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
+  const { theme, colors, input, styles } = useThemeValues(getMessagesInboxScreenTheme);
+
   const { user } = useAuth();
   const { language } = useLanguage();
   const { notify, confirm } = useNotify();
@@ -145,7 +149,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
 
       <View style={styles.searchBar}>
         <Feather name="search" size={18} color={colors.textMuted} />
-        <TextInput
+        <TextInput {...theme.textInputProps}
           style={styles.searchInput}
           placeholder="Buscar amigos..."
           placeholderTextColor={colors.textMuted}
@@ -193,10 +197,15 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getMessagesInboxScreenTheme = createThemeStyles((theme) => {
+const { colors, input } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   header: {
     flexDirection: 'row',
@@ -331,7 +340,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.input,
   },
   retryButtonText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontWeight: '700',
   },
+});
+  return { theme, colors, input, styles };
 });

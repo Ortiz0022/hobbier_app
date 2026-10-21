@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -9,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
 const getActivityIcon = (title = '') => {
@@ -30,6 +32,8 @@ export const DoAlsoModal = ({
   onAccept,
   onClose,
 }) => {
+  const { theme, colors, styles } = useThemeValues(getDoAlsoModalTheme);
+
   const { t } = useLanguage();
   
   if (!post) return null;
@@ -146,10 +150,15 @@ export const DoAlsoModal = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getDoAlsoModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 31, 37, 0.58)',
+    backgroundColor: theme.color('rgba(5, 31, 37, 0.58)', "scrim"),
     justifyContent: 'flex-end',
   },
   sheet: {
@@ -168,7 +177,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D9DEDC',
+    backgroundColor: theme.color('#D9DEDC', 'card'),
     alignSelf: 'center',
     marginBottom: 8,
   },
@@ -213,13 +222,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FFF5EA',
+    backgroundColor: theme.color('#FFF5EA', 'card'),
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 6,
   },
   pointsText: {
-    color: colors.accentDark,
+    color: theme.color(colors.accentDark, 'onAccent'),
     fontSize: 11,
     fontWeight: '500',
   },
@@ -243,7 +252,7 @@ const styles = StyleSheet.create({
     height: 116,
     borderRadius: 58,
     borderWidth: 1,
-    borderColor: colors.salmonSoft,
+    borderColor: theme.color(colors.salmonSoft, 'border'),
   },
   visualStar: {
     position: 'absolute',
@@ -302,7 +311,7 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   acceptButtonText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontSize: 15,
     fontWeight: '600',
   },
@@ -319,4 +328,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+});
+  return { theme, colors, styles };
 });

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
@@ -20,35 +22,11 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 // `x` e `y` son fracciones de la pantalla (0 a 1), no píxeles: así la constelación
 // se reparte igual de bien en un móvil estrecho que en una ventana ancha.
 // La franja central (y entre 0.38 y 0.64) se deja libre para el título.
-const FLOATING_ICONS = [
-  // Zona superior
-  { IconLib: MaterialCommunityIcons, name: 'palette-outline', size: 26, color: '#DF9C8E', x: 0.44, y: 0.07 },
-  { IconLib: MaterialCommunityIcons, name: 'chef-hat', size: 30, color: '#0C8AA6', x: 0.68, y: 0.10 },
-  { IconLib: MaterialCommunityIcons, name: 'book-open-variant', size: 38, color: '#0C8AA6', x: 0.10, y: 0.13 },
-  { IconLib: Feather, name: 'edit-3', size: 28, color: '#FF8F21', x: 0.78, y: 0.19 },
-  { IconLib: Feather, name: 'headphones', size: 24, color: '#8A908B', x: 0.24, y: 0.23 },
-  { IconLib: Ionicons, name: 'telescope-outline', size: 26, color: '#8A908B', x: 0.52, y: 0.26 },
-  { IconLib: Ionicons, name: 'leaf-outline', size: 24, color: '#0C8AA6', x: 0.86, y: 0.30 },
-  { IconLib: MaterialCommunityIcons, name: 'cards-playing-outline', size: 26, color: '#DF9C8E', x: 0.07, y: 0.31 },
 
-  // Laterales, a la altura del título
-  { IconLib: Feather, name: 'coffee', size: 22, color: '#FF8F21', x: 0.08, y: 0.43 },
-  { IconLib: MaterialCommunityIcons, name: 'guitar-acoustic', size: 28, color: '#DF9C8E', x: 0.06, y: 0.56 },
-  { IconLib: Ionicons, name: 'camera', size: 30, color: '#FF8F21', x: 0.82, y: 0.55 },
-  { IconLib: Ionicons, name: 'musical-notes-outline', size: 22, color: '#0C8AA6', x: 0.90, y: 0.61 },
-
-  // Zona inferior
-  { IconLib: MaterialCommunityIcons, name: 'flower-outline', size: 24, color: '#FF8F21', x: 0.58, y: 0.69 },
-  { IconLib: Ionicons, name: 'basketball-outline', size: 26, color: '#FF8F21', x: 0.84, y: 0.72 },
-  { IconLib: MaterialCommunityIcons, name: 'bicycle', size: 36, color: '#8A908B', x: 0.14, y: 0.74 },
-  { IconLib: MaterialCommunityIcons, name: 'puzzle-outline', size: 24, color: '#0C8AA6', x: 0.32, y: 0.80 },
-  { IconLib: Ionicons, name: 'game-controller-outline', size: 24, color: '#8A908B', x: 0.70, y: 0.81 },
-  { IconLib: Feather, name: 'scissors', size: 20, color: '#8A908B', x: 0.88, y: 0.86 },
-  { IconLib: MaterialCommunityIcons, name: 'yoga', size: 28, color: '#0C8AA6', x: 0.16, y: 0.88 },
-  { IconLib: MaterialCommunityIcons, name: 'chess-knight', size: 26, color: '#DF9C8E', x: 0.46, y: 0.90 },
-];
 
 export const SplashScreen = ({ onFinish }) => {
+  const { theme, FLOATING_ICONS, styles } = useThemeValues(getSplashScreenTheme);
+
   // Las medidas para repartir los iconos se tomaban UNA vez, al cargar el
   // módulo, con Dimensions.get('window'). En web eso se queda viejo en cuanto
   // la ventana cambia de tamaño, y además mide la VENTANA, no esta pantalla:
@@ -357,7 +335,7 @@ export const SplashScreen = ({ onFinish }) => {
               marginTop: 24,
             }}
           >
-            <Ionicons name="chevron-down" size={28} color="#0C8AA6" />
+            <Ionicons name="chevron-down" size={28} color={theme.color("#0C8AA6", 'primary')} />
           </Animated.View>
         </TouchableOpacity>
       </Animated.View>
@@ -365,6 +343,37 @@ export const SplashScreen = ({ onFinish }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getSplashScreenTheme = createThemeStyles((theme) => {
+const FLOATING_ICONS = [
+  // Zona superior
+  { IconLib: MaterialCommunityIcons, name: 'palette-outline', size: 26, color: theme.color('#DF9C8E', 'muted'), x: 0.44, y: 0.07 },
+  { IconLib: MaterialCommunityIcons, name: 'chef-hat', size: 30, color: theme.color('#0C8AA6', 'primary'), x: 0.68, y: 0.10 },
+  { IconLib: MaterialCommunityIcons, name: 'book-open-variant', size: 38, color: theme.color('#0C8AA6', 'primary'), x: 0.10, y: 0.13 },
+  { IconLib: Feather, name: 'edit-3', size: 28, color: theme.color('#FF8F21', 'accent'), x: 0.78, y: 0.19 },
+  { IconLib: Feather, name: 'headphones', size: 24, color: theme.color('#8A908B', 'muted'), x: 0.24, y: 0.23 },
+  { IconLib: Ionicons, name: 'telescope-outline', size: 26, color: theme.color('#8A908B', 'muted'), x: 0.52, y: 0.26 },
+  { IconLib: Ionicons, name: 'leaf-outline', size: 24, color: theme.color('#0C8AA6', 'primary'), x: 0.86, y: 0.30 },
+  { IconLib: MaterialCommunityIcons, name: 'cards-playing-outline', size: 26, color: theme.color('#DF9C8E', 'muted'), x: 0.07, y: 0.31 },
+
+  // Laterales, a la altura del título
+  { IconLib: Feather, name: 'coffee', size: 22, color: theme.color('#FF8F21', 'accent'), x: 0.08, y: 0.43 },
+  { IconLib: MaterialCommunityIcons, name: 'guitar-acoustic', size: 28, color: theme.color('#DF9C8E', 'muted'), x: 0.06, y: 0.56 },
+  { IconLib: Ionicons, name: 'camera', size: 30, color: theme.color('#FF8F21', 'accent'), x: 0.82, y: 0.55 },
+  { IconLib: Ionicons, name: 'musical-notes-outline', size: 22, color: theme.color('#0C8AA6', 'primary'), x: 0.90, y: 0.61 },
+
+  // Zona inferior
+  { IconLib: MaterialCommunityIcons, name: 'flower-outline', size: 24, color: theme.color('#FF8F21', 'accent'), x: 0.58, y: 0.69 },
+  { IconLib: Ionicons, name: 'basketball-outline', size: 26, color: theme.color('#FF8F21', 'accent'), x: 0.84, y: 0.72 },
+  { IconLib: MaterialCommunityIcons, name: 'bicycle', size: 36, color: theme.color('#8A908B', 'muted'), x: 0.14, y: 0.74 },
+  { IconLib: MaterialCommunityIcons, name: 'puzzle-outline', size: 24, color: theme.color('#0C8AA6', 'primary'), x: 0.32, y: 0.80 },
+  { IconLib: Ionicons, name: 'game-controller-outline', size: 24, color: theme.color('#8A908B', 'muted'), x: 0.70, y: 0.81 },
+  { IconLib: Feather, name: 'scissors', size: 20, color: theme.color('#8A908B', 'muted'), x: 0.88, y: 0.86 },
+  { IconLib: MaterialCommunityIcons, name: 'yoga', size: 28, color: theme.color('#0C8AA6', 'primary'), x: 0.16, y: 0.88 },
+  { IconLib: MaterialCommunityIcons, name: 'chess-knight', size: 26, color: theme.color('#DF9C8E', 'muted'), x: 0.46, y: 0.90 },
+];
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -372,7 +381,7 @@ const styles = StyleSheet.create({
     // quedarse en una columna y los iconos repartidos por fuera.
     width: '100%',
     height: '100%',
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'background'),
   },
   floatingIcon: {
     position: 'absolute',
@@ -386,14 +395,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 40,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     fontFamily: 'DynaPuff',
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     marginTop: 10,
     fontWeight: '500',
   },
+});
+  return { theme, FLOATING_ICONS, styles };
 });

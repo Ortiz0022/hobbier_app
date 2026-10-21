@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -12,7 +14,7 @@ import {
 import { Text, TextInput } from './scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { capitalizarTitulo } from '../utils/titleCase';
-import { TOKENS } from '../theme/designTokens';
+
 
 // Razón que pide al usuario escribir el motivo con sus propias palabras
 const OTHER_REASON = 'Otro';
@@ -36,6 +38,8 @@ export const ReportModal = ({
   subtitle = '¿Qué ocurre con esta publicación?',
   reasons = DEFAULT_REASONS,
 }) => {
+  const { theme, TOKENS, styles } = useThemeValues(getReportModalTheme);
+
   const [selectedReason, setSelectedReason] = useState(null);
   const [otherDetails, setOtherDetails] = useState('');
 
@@ -86,7 +90,7 @@ export const ReportModal = ({
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 style={styles.closeBtn}
               >
-                <Feather name="x" size={20} color="#121B22" />
+                <Feather name="x" size={20} color={theme.color("#121B22", 'text')} />
               </TouchableOpacity>
             </View>
 
@@ -118,12 +122,12 @@ export const ReportModal = ({
             {/* Campo libre para explicar el motivo cuando se elige "Otro" */}
             {isOther && (
               <View style={styles.detailsWrapper}>
-                <TextInput
+                <TextInput {...theme.textInputProps}
                   style={styles.detailsInput}
                   value={otherDetails}
                   onChangeText={setOtherDetails}
                   placeholder="Cuéntanos el motivo del reporte"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.color("#94A3B8", "muted")}
                   multiline
                   autoFocus
                   maxLength={MAX_DETAILS_LENGTH}
@@ -149,7 +153,7 @@ export const ReportModal = ({
               activeOpacity={0.85}
             >
               {submitting ? (
-                <ActivityIndicator color={canSubmit ? '#FFFFFF' : '#94A3B8'} />
+                <ActivityIndicator color={canSubmit ? theme.color('#FFFFFF', 'text') : theme.color('#94A3B8', "muted")} />
               ) : (
                 <Text
                   style={[
@@ -169,6 +173,11 @@ export const ReportModal = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getReportModalTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
 const styles = StyleSheet.create({
   keyboardWrapper: {
     flex: 1,
@@ -179,7 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
@@ -192,7 +201,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.color('#E2E8F0', 'card'),
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -205,7 +214,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     letterSpacing: -0.2,
   },
   closeBtn: {
@@ -213,7 +222,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: theme.color('#64748B', "muted"),
     marginBottom: 12,
   },
   optionsList: {
@@ -229,13 +238,13 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
+    borderColor: theme.color('#CBD5E1', 'border'),
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   radioCircleSelected: {
-    borderColor: TOKENS.colors.primary,
+    borderColor: theme.color(TOKENS.colors.primary, "primary"),
   },
   radioInnerDot: {
     width: 10,
@@ -246,11 +255,11 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 15,
     fontWeight: '400',
-    color: '#1E293B',
+    color: theme.color('#1E293B', 'text'),
   },
   optionTextSelected: {
     fontWeight: '600',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   detailsWrapper: {
     marginTop: 4,
@@ -258,8 +267,8 @@ const styles = StyleSheet.create({
   detailsInput: {
     minHeight: 88,
     borderWidth: 1,
-    borderColor: TOKENS.colors.inactiveBorder,
-    backgroundColor: TOKENS.colors.inactiveBg,
+    borderColor: theme.color(TOKENS.colors.inactiveBorder, 'border'),
+    backgroundColor: theme.color(TOKENS.colors.inactiveBg, 'secondary'),
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingTop: 12,
@@ -275,7 +284,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.color('#F1F5F9', "border"),
     marginTop: 12,
     marginBottom: 16,
   },
@@ -286,19 +295,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitBtnDisabled: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.color('#F1F5F9', 'secondary'),
   },
   submitBtnActive: {
-    backgroundColor: TOKENS.colors.primary,
+    backgroundColor: theme.color(TOKENS.colors.primary, 'selected'),
   },
   submitBtnText: {
     fontSize: 15,
     fontWeight: '600',
   },
   submitBtnTextDisabled: {
-    color: '#94A3B8',
+    color: theme.color('#94A3B8', "muted"),
   },
   submitBtnTextActive: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'onAccent'),
   },
+});
+  return { theme, TOKENS, styles };
 });

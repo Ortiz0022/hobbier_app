@@ -1,10 +1,14 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
 export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
+  const { theme, colors, styles } = useThemeValues(getInProgressCardTheme);
+
   const { t } = useLanguage();
   const activity = pendingActivity?.activity;
   const points = activity?.points_awarded || 0;
@@ -66,20 +70,25 @@ export const InProgressCard = ({ pendingActivity, onPress, onCreate }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getInProgressCardTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   activeCard: {
     position: 'relative', overflow: 'hidden',
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.primarySoft, borderRadius: 22,
+    backgroundColor: theme.color(colors.primarySoft, "card"), borderRadius: 22,
     padding: 14, marginBottom: 26,
   },
   cardOrb: {
     position: 'absolute', width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(12, 138, 166, 0.08)', right: -28, top: -28,
+    backgroundColor: theme.color('rgba(12, 138, 166, 0.08)', 'card'), right: -28, top: -28,
   },
   activeIcon: {
     width: 44, height: 44, borderRadius: 15,
-    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.color(colors.onPrimary, 'selected'), alignItems: 'center', justifyContent: 'center',
   },
   copy: { flex: 1 },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -101,15 +110,17 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#FFF5EA', borderRadius: 22,
+    backgroundColor: theme.color('#FFF5EA', 'card'), borderRadius: 22,
     padding: 14, marginBottom: 26,
   },
   emptyIcon: {
     width: 44, height: 44, borderRadius: 15,
-    backgroundColor: '#FFE2C2', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.color('#FFE2C2', 'card'), alignItems: 'center', justifyContent: 'center',
   },
   emptyAction: {
     width: 37, height: 37, borderRadius: 19,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
+});
+  return { theme, colors, styles };
 });

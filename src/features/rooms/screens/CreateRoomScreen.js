@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -19,12 +21,14 @@ import { getFriendsList } from '../../../services/socialService';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { useLanguage } from '../../../context/LanguageContext';
-import { colors, spacing, fonts, radii, input, primaryButton, card } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 import { CalendarDateField } from '../../../components/CalendarDateField';
 import { toISODate } from '../../auth/validation';
 import { formatLongDate } from '../../../utils/dateFormat';
 
 export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
+  const { theme, colors, input, primaryButton, card, styles } = useThemeValues(getCreateRoomScreenTheme);
+
   const { user } = useAuth();
   const { notify } = useNotify();
   const { language } = useLanguage();
@@ -196,7 +200,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
         
         {/* Nombre */}
         <Text style={styles.sectionTitle}>Nombre de la Sala</Text>
-        <TextInput 
+        <TextInput {...theme.textInputProps}
           style={styles.textInput}
           placeholder="Ej: Reto Verano 2026"
           value={name}
@@ -243,7 +247,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
             value={hasDeadline} 
             onValueChange={setHasDeadline} 
             trackColor={{ false: colors.surfaceMuted, true: colors.primarySoft }}
-            thumbColor={hasDeadline ? colors.primary : '#f4f3f4'}
+            thumbColor={hasDeadline ? colors.primary : theme.color('#f4f3f4', 'text')}
           />
         </View>
 
@@ -337,10 +341,15 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCreateRoomScreenTheme = createThemeStyles((theme) => {
+const { colors, input, primaryButton, card } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   centerContainer: {
     flex: 1,
@@ -355,7 +364,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
   },
   backBtn: {
     padding: spacing.xs,
@@ -415,14 +424,14 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   activityItemSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.color(colors.primary, 'selected'),
   },
   activityItemText: {
     color: colors.textMuted,
     fontWeight: '600',
   },
   activityItemTextSelected: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'text'),
   },
   switchRow: {
     flexDirection: 'row',
@@ -455,8 +464,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayOptionSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
+    backgroundColor: theme.color(colors.primarySoft, 'selected'),
+    borderColor: theme.color(colors.primary, "primary"),
     borderWidth: 1,
   },
   dayOptionText: {
@@ -485,7 +494,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   friendItemSelected: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: theme.color(colors.primarySoft, 'selected'),
   },
   friendAvatar: {
     width: 40,
@@ -517,14 +526,16 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? spacing.xxl : spacing.lg,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   submitButton: {
     ...primaryButton,
   },
   submitButtonText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontWeight: 'bold',
     fontSize: 16,
   },
+});
+  return { theme, colors, input, primaryButton, card, styles };
 });

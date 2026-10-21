@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -14,14 +16,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { getCategoryLabel } from '../../utils/category';
 import { capitalizarTitulo } from '../../utils/titleCase';
-import { colors, radii, spacing, fonts, card } from '../../theme';
+import { radii, spacing, fonts } from "../../theme";
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { AdminOverview } from './sections/AdminOverview';
 import { AdminUsers } from './sections/AdminUsers';
 import { AdminPosts } from './sections/AdminPosts';
 import { AdminAds } from './sections/AdminAds';
 import { AdminSupport } from './sections/AdminSupport';
-import { Paginador, Insignia, BotonAccion, adminStyles } from './adminUI';
+import { Paginador, Insignia, BotonAccion, getAdminUITheme } from "./adminUI";
 import { ActivityTagsModal } from './components/ActivityTagsModal';
 import {
   getAllActivitiesAdmin,
@@ -44,6 +46,8 @@ import {
 const POR_PAGINA_CATALOGO = 10;
 
 export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit }) => {
+  const { theme, colors, card, styles, adminStyles } = useThemeValues(getAdminScreenTheme);
+
   const { isAdmin } = useAuth();
   const { notify } = useNotify();
   const [loading, setLoading] = useState(false);
@@ -159,8 +163,8 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#0C8AA6']}
-              tintColor="#0C8AA6"
+              colors={[theme.color('#0C8AA6', 'primary')]}
+              tintColor={theme.color("#0C8AA6", 'primary')}
             />
           }
         >
@@ -318,10 +322,16 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminScreenTheme = createThemeStyles((theme) => {
+const { colors, card } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   header: {
     padding: spacing.xl,
@@ -350,7 +360,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.round,
     backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   exitBtnText: {
     fontSize: 12,
@@ -404,7 +414,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md + 4,
   },
   createBtnText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontSize: 15,
     fontWeight: '700',
   },
@@ -433,12 +443,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   activeToggle: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: theme.color(colors.primarySoft, 'selected'),
   },
   inactiveToggle: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'selected'),
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, "primary"),
   },
   statusToggleText: {
     fontSize: 11,
@@ -461,7 +471,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 6,
@@ -475,7 +485,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
     gap: spacing.sm,
   },
   sinEtiquetas: {
@@ -485,4 +495,6 @@ const styles = StyleSheet.create({
   etiquetasAccion: {
     flexDirection: 'row',
   },
+});
+  return { theme, colors, card, styles, adminStyles };
 });

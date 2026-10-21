@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import {
   View,
@@ -18,7 +20,7 @@ import { CatalogPicker } from '../../onboarding/components/CatalogPicker';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { saveAdAdmin, uploadAdImage } from '../../../services/adsService';
-import { colors, radii, spacing, fonts, input } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 
 // El calendario trabaja con "dd/mm/aaaa"; la base, con "aaaa-mm-dd".
 const isoACampo = (iso) => {
@@ -37,14 +39,15 @@ const enDias = (dias) => {
 
 // Fuera del componente a propósito: definida dentro, se crearía de nuevo en
 // cada render y el campo de texto perdería el foco a cada tecla.
-const CampoBase = ({ etiqueta, ayuda, error, children }) => (
-  <View style={estilos.campo}>
+const CampoBase = ({ etiqueta, ayuda, error, children }) => {
+  const { theme, colors, input, estilos } = useThemeValues(getAdFormModalTheme);
+  return (<View style={estilos.campo}>
     <Text style={estilos.etiqueta}>{etiqueta}</Text>
     {!!ayuda && <Text style={estilos.ayuda}>{ayuda}</Text>}
     {children}
     {!!error && <Text style={estilos.error}>{error}</Text>}
-  </View>
-);
+  </View>);
+};
 
 /**
  * Alta y edición de un anuncio patrocinado.
@@ -53,6 +56,8 @@ const CampoBase = ({ etiqueta, ayuda, error, children }) => (
  * tal cual saldrá en el feed, para revisar el texto antes de publicarla.
  */
 export const AdFormModal = ({ ad, onClose, onSaved }) => {
+  const { theme, colors, input, estilos } = useThemeValues(getAdFormModalTheme);
+
   const { user } = useAuth();
   const { notify } = useNotify();
   const editando = !!ad?.id;
@@ -153,7 +158,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
 
   const entrada = (campo, props = {}) => (
     <View style={[estilos.input, props.multiline && estilos.inputMulti]}>
-      <TextInput
+      <TextInput {...theme.textInputProps}
         style={[estilos.inputTexto, props.multiline && { minHeight: 64, textAlignVertical: 'top' }]}
         value={form[campo]}
         onChangeText={set(campo)}
@@ -289,6 +294,11 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdFormModalTheme = createThemeStyles((theme) => {
+const { colors, input } = theme;
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -404,7 +414,7 @@ const estilos = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? 36 : spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   btnCancelar: {
     flex: 1,
@@ -430,6 +440,8 @@ const estilos = StyleSheet.create({
   btnGuardarTexto: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, "onAccent"),
   },
+});
+  return { theme, colors, input, estilos };
 });

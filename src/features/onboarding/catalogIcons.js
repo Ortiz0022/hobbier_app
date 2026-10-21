@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 /**
  * Icono de cada opción de los catálogos (gustos, intereses y recursos).
  *
@@ -13,7 +15,7 @@
  * MaterialCommunityIcons instalado.
  */
 
-import { TOKENS } from '../../theme/designTokens';
+
 
 export const FALLBACK_ICON = 'tag-outline';
 
@@ -68,9 +70,16 @@ export const getCatalogIcon = (name) => {
  * No es un color por opción como en la maqueta original: eso obligaría a
  * inventar tonos que no usa ninguna otra pantalla.
  */
-export const getCatalogTint = (name) => {
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCatalogIconsTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
+const getCatalogTint = (name) => {
   const texto = (name || '').trim().toLowerCase();
   let suma = 0;
   for (let i = 0; i < texto.length; i += 1) suma += texto.charCodeAt(i);
   return TOKENS.iconTints[suma % TOKENS.iconTints.length];
 };
+  return { theme, TOKENS, getCatalogTint };
+});

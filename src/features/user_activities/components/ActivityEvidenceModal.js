@@ -1,7 +1,9 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { InlineEvidenceUploader } from './InlineEvidenceUploader';
 import { useLanguage } from '../../../context/LanguageContext';
 
@@ -16,6 +18,8 @@ export const ActivityEvidenceModal = ({
   onComplete,
   onClose,
 }) => {
+  const { theme, colors, styles } = useThemeValues(getActivityEvidenceModalTheme);
+
   const { t } = useLanguage();
   const activity = item?.activity || {};
   const points = activity.points_awarded || 10;
@@ -75,9 +79,14 @@ export const ActivityEvidenceModal = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getActivityEvidenceModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(5, 31, 37, 0.58)', justifyContent: 'flex-end',
+    flex: 1, backgroundColor: theme.color('rgba(5, 31, 37, 0.58)', "scrim"), justifyContent: 'flex-end',
   },
   sheet: {
     width: '100%', maxWidth: 560, maxHeight: '92%', alignSelf: 'center',
@@ -85,7 +94,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22, paddingTop: 12, paddingBottom: 24,
   },
   grabber: {
-    width: 42, height: 4, borderRadius: 2, backgroundColor: '#D9DEDC',
+    width: 42, height: 4, borderRadius: 2, backgroundColor: theme.color('#D9DEDC', 'card'),
     alignSelf: 'center', marginBottom: 8,
   },
   closeButton: {
@@ -103,4 +112,6 @@ const styles = StyleSheet.create({
     fontWeight: '600', letterSpacing: -0.4, marginTop: 9, paddingRight: 30,
   },
   subtitle: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: 5 },
+});
+  return { theme, colors, styles };
 });

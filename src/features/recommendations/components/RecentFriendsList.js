@@ -1,10 +1,12 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
-const placeholderColors = [colors.salmonSoft, '#BDECF3', '#FFE2C2'];
+
 
 const formatRelativeTime = (dateValue) => {
   const date = new Date(dateValue);
@@ -22,6 +24,8 @@ const formatRelativeTime = (dateValue) => {
 };
 
 export const RecentFriendsList = ({ recentFriendPosts = [], onNavigateToFeed }) => {
+  const { theme, colors, placeholderColors, styles } = useThemeValues(getRecentFriendsListTheme);
+
   const { t } = useLanguage();
   return (
     <View style={styles.sectionContainer}>
@@ -133,6 +137,12 @@ export const RecentFriendsList = ({ recentFriendPosts = [], onNavigateToFeed }) 
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRecentFriendsListTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const placeholderColors = [colors.salmonSoft, theme.color('#BDECF3', 'card'), theme.color('#FFE2C2', 'card')];
 const styles = StyleSheet.create({
   sectionContainer: { marginBottom: 12 },
   sectionHeaderRow: {
@@ -151,7 +161,7 @@ const styles = StyleSheet.create({
   horizontalList: { gap: 12, paddingRight: 2 },
   activityCard: {
     width: 178, backgroundColor: colors.surface, borderRadius: 22,
-    borderWidth: 1, borderColor: colors.surfaceMuted, overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.color(colors.surfaceMuted, 'border'), overflow: 'hidden',
   },
   mediaContainer: {
     height: 132, backgroundColor: colors.surfaceMuted, position: 'relative',
@@ -163,7 +173,7 @@ const styles = StyleSheet.create({
   placeholderText: { color: colors.primaryDark, fontSize: 11 },
   pointsPill: {
     position: 'absolute', top: 10, right: 10, flexDirection: 'row',
-    alignItems: 'center', gap: 3, backgroundColor: '#FFF5EA',
+    alignItems: 'center', gap: 3, backgroundColor: theme.color('#FFF5EA', 'card'),
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5,
   },
   pointsPillText: { color: colors.accentDark, fontSize: 10, fontWeight: '600' },
@@ -171,7 +181,7 @@ const styles = StyleSheet.create({
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   avatar: {
     width: 25, height: 25, borderRadius: 13,
-    borderWidth: 1, borderColor: colors.salmonSoft,
+    borderWidth: 1, borderColor: theme.color(colors.salmonSoft, 'border'),
   },
   avatarPlaceholder: {
     width: 25, height: 25, borderRadius: 13, backgroundColor: colors.primarySoft,
@@ -197,14 +207,16 @@ const styles = StyleSheet.create({
   emptyAvatars: { width: 55, height: 50, position: 'relative' },
   miniAvatar: {
     position: 'absolute', width: 38, height: 38, borderRadius: 19,
-    borderWidth: 2, borderColor: colors.onPrimary,
+    borderWidth: 2, borderColor: theme.color(colors.onPrimary, 'border'),
   },
   miniAvatarBack: { top: 0, right: 0, backgroundColor: colors.salmonSoft },
   miniAvatarFront: {
-    bottom: 0, left: 0, backgroundColor: '#D7F3F7',
+    bottom: 0, left: 0, backgroundColor: theme.color('#D7F3F7', 'card'),
     alignItems: 'center', justifyContent: 'center',
   },
   emptyCopy: { flex: 1 },
   emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '500' },
   emptyText: { color: colors.textFaint, fontSize: 11, lineHeight: 16, marginTop: 3 },
+});
+  return { theme, colors, placeholderColors, styles };
 });

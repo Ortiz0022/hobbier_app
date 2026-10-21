@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useState, useRef } from 'react';
 import { StyleSheet, View, TouchableOpacity, Modal, Pressable, ScrollView } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
@@ -42,6 +44,8 @@ const sameDay = (a, b) => a && b && a.getFullYear() === b.getFullYear() && a.get
  * initialDate (mes que se ve al abrir si aún no hay valor), invalid.
  */
 export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDate, invalid = false }) => {
+  const { theme, styles } = useThemeValues(getCalendarDateFieldTheme);
+
   const { language } = useLanguage();
   const labels = LABELS[language] || LABELS.es;
   const locale = toLocale(language);
@@ -126,11 +130,11 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
         accessibilityRole="button"
         accessibilityLabel={selected ? formatLongDate(selected, language) : labels.placeholder}
       >
-        <Feather name="calendar" size={18} color={selected ? '#0C8AA6' : '#8A908B'} />
+        <Feather name="calendar" size={18} color={selected ? theme.color('#0C8AA6', 'primary') : theme.color('#8A908B', 'muted')} />
         <Text style={[styles.fieldText, !selected && styles.placeholder]} numberOfLines={1}>
           {selected ? formatLongDate(selected, language) : labels.placeholder}
         </Text>
-        <Feather name="chevron-down" size={16} color="#8A908B" />
+        <Feather name="chevron-down" size={16} color={theme.color("#8A908B", 'muted')} />
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -145,7 +149,7 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
                   style={styles.navBtn}
                   accessibilityLabel={labels.prev}
                 >
-                  <Feather name="chevron-left" size={22} color={canGoPrev ? '#121B22' : '#D0D5D9'} />
+                  <Feather name="chevron-left" size={22} color={canGoPrev ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
                 </TouchableOpacity>
               ) : (
                 <View style={styles.navBtn} />
@@ -158,7 +162,7 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
                 accessibilityLabel={labels.pickYear}
               >
                 <Text style={styles.title}>{monthYearLabel}</Text>
-                <Feather name={mode === 'years' ? 'chevron-up' : 'chevron-down'} size={16} color="#0C8AA6" />
+                <Feather name={mode === 'years' ? 'chevron-up' : 'chevron-down'} size={16} color={theme.color("#0C8AA6", 'primary')} />
               </TouchableOpacity>
 
               {mode === 'days' ? (
@@ -168,7 +172,7 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
                   style={styles.navBtn}
                   accessibilityLabel={labels.next}
                 >
-                  <Feather name="chevron-right" size={22} color={canGoNext ? '#121B22' : '#D0D5D9'} />
+                  <Feather name="chevron-right" size={22} color={canGoNext ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
                 </TouchableOpacity>
               ) : (
                 <View style={styles.navBtn} />
@@ -253,28 +257,32 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCalendarDateFieldTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     height: 48,
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'secondary'),
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderRadius: 14,
     paddingHorizontal: 12,
   },
   fieldInvalid: {
-    borderColor: '#A94403',
+    borderColor: theme.color('#A94403', "danger"),
   },
   fieldText: {
     flex: 1,
     fontSize: 15,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   placeholder: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
   },
   overlay: {
     flex: 1,
@@ -286,7 +294,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 24,
     padding: 16,
   },
@@ -310,12 +318,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: '#EAF7FA',
+    backgroundColor: theme.color('#EAF7FA', 'card'),
   },
   title: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#053E4A',
+    color: theme.color('#053E4A', 'text'),
   },
   weekRow: {
     flexDirection: 'row',
@@ -326,7 +334,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '700',
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
   },
   grid: {
     flexDirection: 'row',
@@ -346,22 +354,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   daySelected: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'selected'),
   },
   dayToday: {
     borderWidth: 1.5,
-    borderColor: '#0C8AA6',
+    borderColor: theme.color('#0C8AA6', 'border'),
   },
   dayText: {
     fontSize: 14,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   dayTextSelected: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
     fontWeight: '700',
   },
   dayDisabled: {
-    color: '#D0D5D9',
+    color: theme.color('#D0D5D9', 'muted'),
   },
   yearsScroll: {
     height: YEAR_ROW_HEIGHT * 6,
@@ -382,14 +390,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   yearPillSelected: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'selected'),
   },
   yearText: {
     fontSize: 15,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   yearTextSelected: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
     fontWeight: '700',
   },
   closeBtn: {
@@ -401,6 +409,8 @@ const styles = StyleSheet.create({
   closeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
   },
+});
+  return { theme, styles };
 });

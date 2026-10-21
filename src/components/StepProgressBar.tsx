@@ -1,6 +1,8 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { TOKENS } from '../theme/designTokens';
+
 
 interface StepProgressBarProps {
   /** Paso actual, empezando en 1. */
@@ -15,6 +17,8 @@ interface StepProgressBarProps {
  * que comunica "avanzaste", y de paso empata con la transición de la pantalla.
  */
 export const StepProgressBar: React.FC<StepProgressBarProps> = ({ currentStep, totalSteps }) => {
+  const { theme, TOKENS, styles } = useThemeValues(getStepProgressBarTheme);
+
   const destino = totalSteps > 0 ? currentStep / totalSteps : 0;
   const progreso = useRef(new Animated.Value(destino)).current;
 
@@ -53,6 +57,11 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({ currentStep, t
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getStepProgressBarTheme = createThemeStyles((theme) => {
+const { TOKENS } = theme;
 const styles = StyleSheet.create({
   track: {
     height: 8,
@@ -70,4 +79,6 @@ const styles = StyleSheet.create({
     // que tocar dejaría de ser el que más resalta en la pantalla.
     backgroundColor: TOKENS.colors.active,
   },
+});
+  return { theme, TOKENS, styles };
 });

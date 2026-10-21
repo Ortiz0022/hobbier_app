@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -46,6 +48,8 @@ const latestAllowedBirthDate = () => {
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export const AuthScreen = () => {
+  const { theme, styles } = useThemeValues(getAuthScreenTheme);
+
   const { signIn, signUp, resetPassword, isUsernameTaken, loading } = useAuth();
   const { notify } = useNotify();
   const { t } = useLanguage();
@@ -325,7 +329,7 @@ export const AuthScreen = () => {
               <Ionicons
                 name="sparkles"
                 size={24}
-                color="#FF8F21"
+                color={theme.color("#FF8F21", 'accent')}
                 style={styles.registerSparkle}
               />
             </View>
@@ -336,7 +340,7 @@ export const AuthScreen = () => {
         {!configured && (
           <View style={styles.warningBox}>
             <View style={styles.warningRow}>
-              <Ionicons name="warning" size={16} color="#E67A15" style={{marginRight: 6}} />
+              <Ionicons name="warning" size={16} color={theme.color("#E67A15", 'accent')} style={{marginRight: 6}} />
               <Text style={styles.warningTitle}>Supabase no configurado</Text>
             </View>
             <Text style={styles.warningText}>
@@ -354,10 +358,10 @@ export const AuthScreen = () => {
             <View style={styles.header}>
               <View style={styles.iconContainer}>
                 <View style={styles.iconBox}>
-                  <MaterialCommunityIcons name="palette" size={30} color="#0C8AA6" />
+                  <MaterialCommunityIcons name="palette" size={30} color={theme.color("#0C8AA6", 'primary')} />
                 </View>
                 <View style={styles.iconBadge}>
-                  <Ionicons name="star" size={12} color="#ffffff" />
+                  <Ionicons name="star" size={12} color={theme.color("#ffffff", 'text')} />
                 </View>
               </View>
 
@@ -374,14 +378,14 @@ export const AuthScreen = () => {
 
           {errorMessage ? (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#A94403" style={{marginRight: 6}} />
+              <Ionicons name="alert-circle" size={16} color={theme.color("#A94403", 'danger')} style={{marginRight: 6}} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           ) : null}
 
           {infoMessage ? (
             <View style={styles.infoBox}>
-              <Ionicons name="mail-open-outline" size={16} color="#0C8AA6" style={{marginRight: 6}} />
+              <Ionicons name="mail-open-outline" size={16} color={theme.color("#0C8AA6", 'primary')} style={{marginRight: 6}} />
               <Text style={styles.infoText}>{infoMessage}</Text>
             </View>
           ) : null}
@@ -390,11 +394,11 @@ export const AuthScreen = () => {
             <>
               <Text style={[styles.label, { marginTop: 0 }]}>Name</Text>
               <View style={[styles.inputRow, fieldErrors.fullName && styles.inputRowInvalid]}>
-                <Ionicons name="person-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-                <TextInput
+                <Ionicons name="person-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+                <TextInput {...theme.textInputProps}
                   style={styles.input}
                   placeholder="Tu nombre completo"
-                  placeholderTextColor="#8A908B"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
                   value={fullName}
                   onChangeText={editField(setFullName, 'fullName')}
                 />
@@ -414,21 +418,21 @@ export const AuthScreen = () => {
                 <Ionicons
                   name="at"
                   size={18}
-                  color={!fieldErrors.username && usernameStatus === 'available' ? '#2A6347' : '#8A908B'}
+                  color={!fieldErrors.username && usernameStatus === 'available' ? theme.color('#2A6347', 'success') : theme.color('#8A908B', 'muted')}
                   style={styles.inputIcon}
                 />
-                <TextInput
+                <TextInput {...theme.textInputProps}
                   style={styles.input}
                   placeholder="usuario_hobbier"
-                  placeholderTextColor="#8A908B"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
                   value={username}
                   onChangeText={editField(setUsername, 'username')}
                   autoCapitalize="none"
                 />
                 {usernameStatus === 'checking' ? (
-                  <ActivityIndicator size="small" color="#8A908B" />
+                  <ActivityIndicator size="small" color={theme.color("#8A908B", 'muted')} />
                 ) : !fieldErrors.username && usernameStatus === 'available' ? (
-                  <Ionicons name="checkmark-circle" size={20} color="#2A6347" />
+                  <Ionicons name="checkmark-circle" size={20} color={theme.color("#2A6347", 'success')} />
                 ) : null}
               </View>
               {/* El color por sí solo no basta: siempre va con icono y con texto,
@@ -447,11 +451,11 @@ export const AuthScreen = () => {
 
           <Text style={[styles.label, isRegister && !isForgot ? null : { marginTop: 0 }]}>Email</Text>
           <View style={[styles.inputRow, fieldErrors.email && styles.inputRowInvalid]}>
-            <Ionicons name="mail-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-            <TextInput
+            <Ionicons name="mail-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+            <TextInput {...theme.textInputProps}
               style={styles.input}
               placeholder={isRegister ? 'correo@ejemplo.com' : 'tu@email.com'}
-              placeholderTextColor="#8A908B"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
               value={email}
               onChangeText={editField(setEmail, 'email')}
               keyboardType="email-address"
@@ -473,17 +477,17 @@ export const AuthScreen = () => {
                 )}
               </View>
               <View style={[styles.inputRow, fieldErrors.password && styles.inputRowInvalid]}>
-                <Ionicons name="lock-closed-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-                <TextInput
+                <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+                <TextInput {...theme.textInputProps}
                   style={styles.input}
                   placeholder="••••••••"
-                  placeholderTextColor="#8A908B"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
                   value={password}
                   onChangeText={editField(setPassword, 'password')}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#8A908B" />
+                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={theme.color("#8A908B", 'muted')} />
                 </TouchableOpacity>
               </View>
               {fieldErrors.password ? (
@@ -494,11 +498,11 @@ export const AuthScreen = () => {
                 <>
                   <Text style={styles.label}>Confirmar contraseña</Text>
                   <View style={[styles.inputRow, fieldErrors.passwordConfirm && styles.inputRowInvalid]}>
-                    <Ionicons name="lock-closed-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-                    <TextInput
+                    <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+                    <TextInput {...theme.textInputProps}
                       style={styles.input}
                       placeholder="••••••••"
-                      placeholderTextColor="#8A908B"
+                      placeholderTextColor={theme.color("#8A908B", 'muted')}
                       value={passwordConfirm}
                       onChangeText={editField(setPasswordConfirm, 'passwordConfirm')}
                       // Comparte el ojo con la contraseña: si una se ve, la otra
@@ -547,7 +551,7 @@ export const AuthScreen = () => {
                     fieldErrors.legal && styles.checkboxInvalid,
                   ]}
                 >
-                  {acceptedLegal && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                  {acceptedLegal && <Ionicons name="checkmark" size={14} color={theme.color("#FFFFFF", 'text')} />}
                 </TouchableOpacity>
                 <Text style={styles.legalText}>
                   {t('legal.accept_prefix')}
@@ -573,7 +577,7 @@ export const AuthScreen = () => {
             disabled={loading || sendingReset || submitting}
           >
             {loading || sendingReset || submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.color("#FFFFFF", 'text')} />
             ) : (
               <Text style={styles.primaryButtonText}>
                 {isForgot ? 'Enviar enlace  →' : isRegister ? 'Crear cuenta  →' : 'Iniciar sesión  →'}
@@ -629,10 +633,14 @@ export const AuthScreen = () => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAuthScreenTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'background'),
   },
   scrollContainer: {
     flexGrow: 1,
@@ -656,7 +664,7 @@ const styles = StyleSheet.create({
   registerTitle: {
     fontSize: 26,
     fontFamily: 'Poppins_700Bold',
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     letterSpacing: -0.3,
     textAlign: 'center',
   },
@@ -665,7 +673,7 @@ const styles = StyleSheet.create({
     marginTop: -10,
   },
   registerButton: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
   },
   iconContainer: {
     position: 'relative',
@@ -675,7 +683,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#F0F8FA',
+    backgroundColor: theme.color('#F0F8FA', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -686,26 +694,26 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#FF8F21',
+    backgroundColor: theme.color('#FF8F21', 'accent'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 26,
     fontFamily: 'Poppins_700Bold',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     letterSpacing: -0.3,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     marginTop: 6,
     textAlign: 'center',
   },
   warningBox: {
-    backgroundColor: '#F0F3F5',
-    borderColor: '#FFAA55',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
+    borderColor: theme.color('#FFAA55', 'border'),
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
@@ -717,25 +725,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   warningTitle: {
-    color: '#E67A15',
+    color: theme.color('#E67A15', 'accent'),
     fontWeight: 'bold',
     fontSize: 14,
   },
   warningText: {
-    color: '#E67A15',
+    color: theme.color('#E67A15', 'accent'),
     fontSize: 12,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     paddingHorizontal: 24,
     paddingVertical: 34,
   },
   errorBox: {
-    backgroundColor: '#F0F3F5',
-    borderColor: '#F1C2B8',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
+    borderColor: theme.color('#F1C2B8', "danger"),
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
@@ -744,13 +752,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   errorText: {
-    color: '#A94403',
+    color: theme.color('#A94403', 'danger'),
     fontSize: 13,
     flex: 1,
   },
   infoBox: {
-    backgroundColor: '#F0F8FA',
-    borderColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F8FA', 'card'),
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
@@ -759,14 +767,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoText: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontSize: 13,
     flex: 1,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     marginBottom: 6,
     marginTop: 12,
   },
@@ -780,45 +788,45 @@ const styles = StyleSheet.create({
   labelInRow: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   forgotText: {
     fontSize: 12,
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '600',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'secondary'),
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderRadius: 14,
     paddingHorizontal: 12,
   },
   // Marco rojo cuando el campo falla: el color por sí solo no es accesible, por eso
   // siempre va acompañado del texto explicando qué pasa.
   inputRowInvalid: {
-    borderColor: '#A94403',
+    borderColor: theme.color('#A94403', "danger"),
   },
   fieldError: {
-    color: '#A94403',
+    color: theme.color('#A94403', 'danger'),
     fontSize: 12,
     marginTop: 5,
   },
   // Marco verde cuando el nombre de usuario está libre. Igual que el rojo, nunca
   // va solo: lo acompañan el tilde dentro del campo y el texto de abajo.
   inputRowValid: {
-    borderColor: '#2A6347',
+    borderColor: theme.color('#2A6347', 'border'),
   },
   fieldOk: {
-    color: '#2A6347',
+    color: theme.color('#2A6347', 'success'),
     fontSize: 12,
     fontWeight: '600',
     marginTop: 5,
   },
   fieldHint: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     fontSize: 12,
     marginTop: 5,
   },
@@ -829,20 +837,20 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     fontSize: 15,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   eyeBtn: {
     padding: 4,
   },
   primaryButton: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 24,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', "onAccent"),
     fontSize: 16,
     fontWeight: '700',
   },
@@ -856,28 +864,28 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#8A908B',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.color('#8A908B', 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     marginTop: 1,
   },
   checkboxChecked: {
-    backgroundColor: '#0C8AA6',
-    borderColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
+    borderColor: theme.color('#0C8AA6', "primary"),
   },
   checkboxInvalid: {
-    borderColor: '#A94403',
+    borderColor: theme.color('#A94403', "danger"),
   },
   legalText: {
     flex: 1,
     fontSize: 13,
     lineHeight: 19,
-    color: '#4A5568',
+    color: theme.color('#4A5568', 'muted'),
   },
   legalLink: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
@@ -890,25 +898,27 @@ const styles = StyleSheet.create({
   },
   legalFooterLink: {
     fontSize: 12,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     textDecorationLine: 'underline',
   },
   legalFooterDot: {
     fontSize: 12,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
   },
   toggleButton: {
     marginTop: 18,
     alignItems: 'center',
   },
   toggleButtonText: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     fontSize: 14,
     fontWeight: '500',
   },
   toggleButtonBold: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
+});
+  return { theme, styles };
 });

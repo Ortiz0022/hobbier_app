@@ -1,3 +1,5 @@
+import { useThemeValues } from './ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import {
   Animated,
@@ -29,12 +31,7 @@ export const useNotify = () => {
   return ctx;
 };
 
-const TYPE_STYLES = {
-  success: { icon: 'check-circle', iconColor: '#0C8AA6', bg: '#FFFFFF', accent: '#00C9FD' },
-  error: { icon: 'alert-circle', iconColor: '#E53E3E', bg: '#FFFFFF', accent: '#E53E3E' },
-  warning: { icon: 'alert-triangle', iconColor: '#C2530A', bg: '#FFFFFF', accent: '#FF9D3D' },
-  info: { icon: 'info', iconColor: '#0C8AA6', bg: '#FFFFFF', accent: '#00C9FD' },
-};
+
 
 const DURATIONS = {
   success: 2800,
@@ -46,6 +43,8 @@ const DURATIONS = {
 let toastIdSeq = 0;
 
 const ToastItem = ({ toast, onDismiss }) => {
+  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+
   const translateY = useRef(new Animated.Value(-24)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const config = TYPE_STYLES[toast.type] || TYPE_STYLES.info;
@@ -111,6 +110,8 @@ const ToastItem = ({ toast, onDismiss }) => {
 };
 
 const ConfirmDialog = ({ state, onResolve }) => {
+  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+
   if (!state) return null;
   const destructive = !!state.destructive;
 
@@ -120,7 +121,7 @@ const ConfirmDialog = ({ state, onResolve }) => {
         <Pressable style={confirmStyles.card} onPress={() => {}}>
           {destructive && (
             <View style={confirmStyles.iconWrap}>
-              <Feather name="alert-triangle" size={22} color="#E53E3E" />
+              <Feather name="alert-triangle" size={22} color={theme.color("#E53E3E", 'danger')} />
             </View>
           )}
           <Text style={confirmStyles.title}>{state.title}</Text>
@@ -152,6 +153,8 @@ const ConfirmDialog = ({ state, onResolve }) => {
 };
 
 export const NotificationProvider = ({ children }) => {
+  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+
   const [toasts, setToasts] = useState([]);
   const [confirmState, setConfirmState] = useState(null);
   const resolverRef = useRef(null);
@@ -208,6 +211,18 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
+
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getNotificationContextTheme = createThemeStyles((theme) => {
+const TYPE_STYLES = {
+  success: { icon: 'check-circle', iconColor: theme.color('#0C8AA6', 'primary'), bg: theme.color('#FFFFFF', 'card'), accent: theme.color('#00C9FD', 'primary') },
+  error: { icon: 'alert-circle', iconColor: theme.color('#E53E3E', 'danger'), bg: theme.color('#FFFFFF', 'card'), accent: theme.color('#E53E3E', 'danger') },
+  warning: { icon: 'alert-triangle', iconColor: theme.color('#C2530A', 'accent'), bg: theme.color('#FFFFFF', 'card'), accent: theme.color('#FF9D3D', 'accent') },
+  info: { icon: 'info', iconColor: theme.color('#0C8AA6', 'primary'), bg: theme.color('#FFFFFF', 'card'), accent: theme.color('#00C9FD', 'primary') },
+};
 const toastStyles = StyleSheet.create({
   overlay: {
     position: 'absolute',
@@ -221,7 +236,7 @@ const toastStyles = StyleSheet.create({
     gap: 8,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 16,
     borderLeftWidth: 4,
     elevation: 6,
@@ -258,20 +273,19 @@ const toastStyles = StyleSheet.create({
     fontSize: 13.5,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
-    color: '#08333D',
+    color: theme.color('#08333D', 'text'),
     marginBottom: 1,
   },
   message: {
     fontSize: 13,
-    color: '#4A5568',
+    color: theme.color('#4A5568', 'muted'),
     lineHeight: 18,
   },
 });
-
 const confirmStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(8, 51, 61, 0.45)',
+    backgroundColor: theme.color('rgba(8, 51, 61, 0.45)', "scrim"),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -279,7 +293,7 @@ const confirmStyles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.color('#FFFFFF', 'card'),
     borderRadius: 22,
     padding: 22,
     alignItems: 'center',
@@ -300,7 +314,7 @@ const confirmStyles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: theme.color('#FFF5F5', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -309,13 +323,13 @@ const confirmStyles = StyleSheet.create({
     fontSize: 16.5,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
-    color: '#08333D',
+    color: theme.color('#08333D', 'text'),
     textAlign: 'center',
     marginBottom: 6,
   },
   message: {
     fontSize: 13.5,
-    color: '#64748B',
+    color: theme.color('#64748B', "muted"),
     textAlign: 'center',
     lineHeight: 19,
     marginBottom: 20,
@@ -329,12 +343,12 @@ const confirmStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: '#F1F3F5',
+    backgroundColor: theme.color('#F1F3F5', 'card'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelText: {
-    color: '#4A5568',
+    color: theme.color('#4A5568', 'muted'),
     fontSize: 14,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
@@ -343,17 +357,19 @@ const confirmStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmBtnDestructive: {
-    backgroundColor: '#E53E3E',
+    backgroundColor: theme.color('#E53E3E', 'dangerSurface'),
   },
   confirmText: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'onAccent'),
     fontSize: 14,
     fontFamily: 'Poppins_700Bold',
     fontWeight: '700',
   },
+});
+  return { theme, TYPE_STYLES, toastStyles, confirmStyles };
 });

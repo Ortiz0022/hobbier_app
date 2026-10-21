@@ -1,8 +1,10 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
 import { Text } from '../components/scaledText';
 import { useLanguage } from '../context/LanguageContext';
-import { colors } from '../theme';
+
 import { LegalDocumentModal } from './LegalDocumentModal';
 
 const STORAGE_KEY = 'hobbier_cookie_consent';
@@ -31,6 +33,8 @@ export const getCookieConsent = () => {
  * la opción de rechazar.
  */
 export const CookieBanner = () => {
+  const { theme, colors, styles } = useThemeValues(getCookieBannerTheme);
+
   const { t } = useLanguage();
   const [visible, setVisible] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
@@ -72,6 +76,11 @@ export const CookieBanner = () => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCookieBannerTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
@@ -88,7 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     padding: 16,
     gap: 12,
     boxShadow: '0px 6px 24px rgba(5, 62, 74, 0.15)',
@@ -117,8 +126,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   btnPrimaryText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, "onAccent"),
     fontWeight: '700',
     fontSize: 14,
   },
+});
+  return { theme, colors, styles };
 });

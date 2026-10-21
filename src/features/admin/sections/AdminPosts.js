@@ -1,20 +1,14 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Image, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { useNotify } from '../../../context/NotificationContext';
 import { getPostsAdmin, resolveReportedPostAdmin } from '../../../services/adminService';
 import { getCategoryLabel } from '../../../utils/category';
-import {
-  adminStyles,
-  ControlSegmentado,
-  Insignia,
-  TarjetaVacia,
-  BotonAccion,
-  Paginador,
-  fechaCorta,
-} from '../adminUI';
+import { ControlSegmentado, Insignia, TarjetaVacia, BotonAccion, Paginador, fechaCorta, getAdminUITheme } from "../adminUI";
 import { PostViewerModal } from '../components/PostViewerModal';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 
@@ -43,6 +37,8 @@ const POR_PAGINA = 10;
  * si una evidencia vale o no.
  */
 export const AdminPosts = ({ refreshKey }) => {
+  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminPostsTheme);
+
   const { notify, confirm } = useNotify();
   const [estado, setEstado] = useState('ACTIVE');
   const [posts, setPosts] = useState([]);
@@ -180,7 +176,7 @@ export const AdminPosts = ({ refreshKey }) => {
               >
                 <Image source={{ uri: post.image_url }} style={adminStyles.reviewImage} />
                 <View style={estilos.lupa}>
-                  <Ionicons name="expand" size={14} color={colors.onPrimary} />
+                  <Ionicons name="expand" size={14} color={theme.color(colors.onPrimary, 'text')} />
                 </View>
               </TouchableOpacity>
 
@@ -287,13 +283,19 @@ export const AdminPosts = ({ refreshKey }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminPostsTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const estilos = StyleSheet.create({
   miniatura: {
     width: 56,
     height: 56,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     backgroundColor: colors.surfaceMuted,
   },
   miniaturaVacia: {
@@ -316,7 +318,7 @@ const estilos = StyleSheet.create({
     borderRadius: 14,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     marginBottom: spacing.md,
   },
   previewTags: {
@@ -329,7 +331,7 @@ const estilos = StyleSheet.create({
   tagCategoria: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -350,7 +352,7 @@ const estilos = StyleSheet.create({
   },
   tagPuntosText: {
     fontSize: 11,
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, "onAccent"),
     fontWeight: '700',
   },
   previewTitulo: {
@@ -364,4 +366,6 @@ const estilos = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 16,
   },
+});
+  return { theme, colors, adminStyles, estilos };
 });

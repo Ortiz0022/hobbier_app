@@ -1,9 +1,13 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 
 export const ActivitiesHeader = ({ profile, onAddActivity }) => {
+  const { theme, colors, styles } = useThemeValues(getActivitiesHeaderTheme);
+
   const points = profile?.points || 0;
 
   return (
@@ -27,6 +31,11 @@ export const ActivitiesHeader = ({ profile, onAddActivity }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getActivitiesHeaderTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   header: { marginBottom: 12 },
   topRow: {
@@ -46,14 +55,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E5F6F8',
+    backgroundColor: theme.color('#E5F6F8', 'card'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   pointsPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#FFF5EA', borderRadius: 999,
+    backgroundColor: theme.color('#FFF5EA', 'card'), borderRadius: 999,
     paddingHorizontal: 11, paddingVertical: 7,
   },
-  pointsText: { color: colors.accentDark, fontSize: 12, fontWeight: '500' },
+  pointsText: { color: theme.color(colors.accentDark, 'onAccent'), fontSize: 12, fontWeight: '500' },
+});
+  return { theme, colors, styles };
 });

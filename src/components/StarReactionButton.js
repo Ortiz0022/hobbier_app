@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
@@ -13,14 +15,17 @@ import Svg, { Path } from 'react-native-svg';
 // Path de la estrella/chispita idéntica a la de Sorpréndeme (HeroBanner)
 const SPARKLE_PATH = 'M10,0 Q10,10 20,10 Q10,10 10,20 Q10,10 0,10 Q10,10 10,0 Z';
 
-const StarSvg = ({ size = 26, color = '#FF8F21' }) => (
-  <Svg width={size} height={size} viewBox="0 0 20 20">
-    <Path d={SPARKLE_PATH} fill={color} />
-  </Svg>
-);
+const StarSvg = ({ size = 26, color }) => {
+  const { theme, PARTICLE_COLORS, styles } = useThemeValues(getStarReactionButtonTheme);
+  return (<Svg width={size} height={size} viewBox="0 0 20 20">
+    <Path d={SPARKLE_PATH} fill={color ?? theme.color('#FF8F21', 'accent')} />
+  </Svg>);
+};
 
 // Componente individual para cada estrella animada flotante
 const FloatingStarParticle = ({ particle, onComplete }) => {
+  const { theme, PARTICLE_COLORS, styles } = useThemeValues(getStarReactionButtonTheme);
+
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -78,15 +83,11 @@ const FloatingStarParticle = ({ particle, onComplete }) => {
   );
 };
 
-const PARTICLE_COLORS = [
-  '#FF8F21', // Naranja Sorpréndeme
-  '#FFAA55', // Naranja Claro
-  '#FFD166', // Dorado brillante
-  '#00DBFF', // Azul Cyan Hobbier
-  '#FF6B6B', // Coral festivo
-];
+
 
 export const StarReactionButton = ({ initialCount = 0, initialReacted = false, onToggle }) => {
+  const { theme, PARTICLE_COLORS, styles } = useThemeValues(getStarReactionButtonTheme);
+
   const [reacted, setReacted] = useState(initialReacted);
   const [count, setCount] = useState(initialCount);
   const [particles, setParticles] = useState([]);
@@ -171,7 +172,7 @@ export const StarReactionButton = ({ initialCount = 0, initialReacted = false, o
             { transform: [{ scale: buttonScale }] },
           ]}
         >
-          <StarSvg size={26} color={reacted ? '#FF8F21' : '#94A3B8'} />
+          <StarSvg size={26} color={reacted ? theme.color('#FF8F21', 'accent') : theme.color('#94A3B8', "muted")} />
           <Text style={[styles.countText, reacted && styles.countTextReacted]}>
             {count}
           </Text>
@@ -181,6 +182,18 @@ export const StarReactionButton = ({ initialCount = 0, initialReacted = false, o
   );
 };
 
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getStarReactionButtonTheme = createThemeStyles((theme) => {
+const PARTICLE_COLORS = [
+  theme.color('#FF8F21', 'accent'), // Naranja Sorpréndeme
+  theme.color('#FFAA55', 'accent'), // Naranja Claro
+  theme.color('#FFD166', 'accent'), // Dorado brillante
+  theme.color('#00DBFF', 'primary'), // Azul Cyan Hobbier
+  theme.color('#FF6B6B', 'danger'), // Coral festivo
+];
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
@@ -200,11 +213,12 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: theme.color('#94A3B8', "muted"),
   },
   countTextReacted: {
-    color: '#FF8F21',
+    color: theme.color('#FF8F21', 'accent'),
     fontWeight: '700',
   },
 });
-
+  return { theme, PARTICLE_COLORS, styles };
+});

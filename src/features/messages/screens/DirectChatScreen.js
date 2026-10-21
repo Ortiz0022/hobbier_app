@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
@@ -7,7 +9,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { directMessagesService } from '../../../services/directMessagesService';
 import { useDirectChat } from '../hooks/useDirectChat';
 import { ChatThread } from '../../rooms/components/ChatThread';
-import { colors, spacing, fonts, radii } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 
 /**
  * Chat uno a uno con un amigo. Si todavía no habían hablado llega sin
@@ -15,6 +17,8 @@ import { colors, spacing, fonts, radii } from '../../../theme';
  * antes de navegar.
  */
 export const DirectChatScreen = ({ conversationId: initialConversationId, friend, onBack }) => {
+  const { theme, colors, styles } = useThemeValues(getDirectChatScreenTheme);
+
   const { user } = useAuth();
   const [conversationId, setConversationId] = useState(initialConversationId || null);
   const [openError, setOpenError] = useState(null);
@@ -101,10 +105,15 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getDirectChatScreenTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   header: {
     flexDirection: 'row',
@@ -114,7 +123,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
   },
   backBtn: {
     padding: spacing.xs,
@@ -174,4 +183,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
+});
+  return { theme, colors, styles };
 });

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import {
   View,
@@ -28,11 +30,13 @@ import { useNotify } from '../../../context/NotificationContext';
 import { ChatThread } from '../components/ChatThread';
 import { RoomRankingItem } from '../components/RoomRankingItem';
 import { InviteFriendsModal } from '../components/InviteFriendsModal';
-import { colors, spacing, fonts, radii } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { isRoomClosed as getIsRoomClosed } from '../utils/roomHelpers';
 
 export const RoomDetailScreen = ({ roomId, onBack }) => {
+  const { theme, colors, styles } = useThemeValues(getRoomDetailScreenTheme);
+
   const { user } = useAuth();
   const { language } = useLanguage();
   const { notify, confirm } = useNotify();
@@ -165,13 +169,13 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
             {coverUrl ? (
               <Image source={{ uri: coverUrl }} style={styles.lobbyHeroImage} resizeMode="cover" />
             ) : (
-              <View style={[styles.lobbyHeroImage, { backgroundColor: colors.primaryDark }]} />
+              <View style={[styles.lobbyHeroImage, { backgroundColor: theme.color(colors.primaryDark, 'card') }]} />
             )}
 
             <View style={styles.lobbyHeroOverlay}>
               {isOwner && (
                 <TouchableOpacity style={styles.coverEditBtn} onPress={handlePickCover} disabled={actionLoading}>
-                  <Feather name="camera" size={16} color="#FFF" />
+                  <Feather name="camera" size={16} color={theme.color("#FFF", 'text')} />
                 </TouchableOpacity>
               )}
             </View>
@@ -231,7 +235,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                   <Text style={styles.missionEyebrowText}>MISIÓN ACTUAL</Text>
                 </View>
                 <View style={styles.pointsPill}>
-                  <Feather name="star" size={12} color="#C2530A" style={{ marginRight: 4 }} />
+                  <Feather name="star" size={12} color={theme.color("#C2530A", 'accent')} style={{ marginRight: 4 }} />
                   <Text style={styles.pointsPillText}>+{room.challenge?.points_awarded || 0} pts</Text>
                 </View>
               </View>
@@ -386,10 +390,15 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRoomDetailScreenTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   centerContainer: {
     flex: 1,
@@ -441,7 +450,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', borderRadius: 13,
   },
   tabButtonActive: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.color(colors.surface, 'selected'),
   },
   tabText: {
     color: colors.textMuted, fontSize: 13, fontWeight: '500',
@@ -466,7 +475,7 @@ const styles = StyleSheet.create({
   lobbyHero: {
     width: '100%',
     height: 140,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: theme.color(colors.primaryDark, 'card'),
     position: 'relative',
   },
   lobbyHeroImage: {
@@ -497,7 +506,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E5F6F8',
+    backgroundColor: theme.color('#E5F6F8', 'card'),
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
@@ -553,7 +562,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: theme.color(colors.background, 'border'),
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -564,7 +573,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   avatarText: {
-    color: '#FFF',
+    color: theme.color('#FFF', 'text'),
     fontWeight: 'bold',
     fontSize: 15,
   },
@@ -589,9 +598,9 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   missionBox: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.color('#FAFAFA', 'card'),
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -616,13 +625,13 @@ const styles = StyleSheet.create({
   pointsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEEDD',
+    backgroundColor: theme.color('#FFEEDD', 'card'),
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
   pointsPillText: {
-    color: '#C2530A',
+    color: theme.color('#C2530A', 'accent'),
     fontWeight: 'bold',
     fontSize: 12,
   },
@@ -644,7 +653,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 16 : 14,
     backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#F0F3F5',
+    borderTopColor: theme.color('#F0F3F5', 'border'),
   },
   submitEvidenceBtn: {
     height: 50,
@@ -667,14 +676,14 @@ const styles = StyleSheet.create({
     }),
   },
   submitEvidenceBtnText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontWeight: 'bold',
     fontSize: 16,
   },
   adminActions: {
     marginTop: spacing.xl * 2,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
     paddingTop: spacing.lg,
   },
   closeBtn: {
@@ -724,7 +733,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: theme.color('#FFF', 'card'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -751,9 +760,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.color('#FFF', 'card'),
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: 999,
     marginBottom: 12,
   },
@@ -763,12 +772,14 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   modalDeleteBtn: {
-    backgroundColor: 'rgba(255, 59, 48, 0.05)',
-    borderColor: 'rgba(255, 59, 48, 0.3)',
+    backgroundColor: theme.color('rgba(255, 59, 48, 0.05)', 'card'),
+    borderColor: theme.color('rgba(255, 59, 48, 0.3)', 'border'),
   },
   modalDeleteText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.danger,
   }
+});
+  return { theme, colors, styles };
 });

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
@@ -13,7 +15,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { FlashList } from '@shopify/flash-list';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
-import { colors, spacing, fonts, radii } from '../../../theme';
+import { spacing, fonts, radii } from "../../../theme";
 import { useNotify } from '../../../context/NotificationContext';
 
 /**
@@ -42,6 +44,8 @@ export const ChatThread = ({
   showSenderName = true,
   keyboardVerticalOffset = 90,
 }) => {
+  const { theme, colors, styles } = useThemeValues(getChatThreadTheme);
+
   const [textMessage, setTextMessage] = useState('');
   // El texto también vive en una ref: Enter y el botón pueden disparar dos envíos
   // en el mismo instante, y ambos leerían el mismo estado antes de que se vacíe.
@@ -192,7 +196,7 @@ export const ChatThread = ({
           )}
 
           <View style={styles.chatInputContainer}>
-            <TextInput
+            <TextInput {...theme.textInputProps}
               style={styles.chatInput}
               placeholder="Escribe un mensaje..."
               value={textMessage}
@@ -218,6 +222,11 @@ export const ChatThread = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getChatThreadTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
@@ -262,7 +271,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   replyPreviewAccent: {
     width: 3,
@@ -287,15 +296,15 @@ const styles = StyleSheet.create({
   chatInputContainer: {
     flexDirection: 'row',
     padding: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.color(colors.surface, 'secondary'),
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
     alignItems: 'center',
   },
   chatInput: {
     flex: 1,
     height: 44,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderRadius: 22,
     paddingHorizontal: spacing.md,
     marginRight: spacing.sm,
@@ -313,10 +322,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.textFaint,
+    borderTopColor: theme.color(colors.textFaint, 'border'),
   },
   chatClosedText: {
     color: colors.textFaint,
     fontWeight: '600',
   },
+});
+  return { theme, colors, styles };
 });

@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -9,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
 const getActivityIcon = (title = '') => {
@@ -32,6 +34,8 @@ export const RecommendationModal = ({
   onReload,
   onClose,
 }) => {
+  const { theme, colors, styles } = useThemeValues(getRecommendationModalTheme);
+
   const { t } = useLanguage();
   return (
     <Modal
@@ -151,9 +155,14 @@ export const RecommendationModal = ({
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getRecommendationModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(5, 31, 37, 0.58)', justifyContent: 'flex-end',
+    flex: 1, backgroundColor: theme.color('rgba(5, 31, 37, 0.58)', "scrim"), justifyContent: 'flex-end',
   },
   sheet: {
     width: '100%', maxWidth: 560, maxHeight: '92%', alignSelf: 'center',
@@ -161,7 +170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22, paddingTop: 12, paddingBottom: 24,
   },
   grabber: {
-    width: 42, height: 4, borderRadius: 2, backgroundColor: '#D9DEDC',
+    width: 42, height: 4, borderRadius: 2, backgroundColor: theme.color('#D9DEDC', 'card'),
     alignSelf: 'center', marginBottom: 8,
   },
   closeButton: {
@@ -178,7 +187,7 @@ const styles = StyleSheet.create({
   },
   loadingOrbit: {
     position: 'absolute', width: 76, height: 76, borderRadius: 38,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.65)',
+    borderWidth: 1, borderColor: theme.color('rgba(255,255,255,0.65)', 'border'),
   },
   loadingIndicator: { marginBottom: 14 },
   loadingTitle: {
@@ -203,10 +212,10 @@ const styles = StyleSheet.create({
   },
   pointsBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#FFF5EA', borderRadius: 999,
+    backgroundColor: theme.color('#FFF5EA', 'card'), borderRadius: 999,
     paddingHorizontal: 9, paddingVertical: 6,
   },
-  pointsText: { color: colors.accentDark, fontSize: 11, fontWeight: '500' },
+  pointsText: { color: theme.color(colors.accentDark, 'onAccent'), fontSize: 11, fontWeight: '500' },
   visualArea: {
     height: 132, alignItems: 'center', justifyContent: 'center', position: 'relative',
   },
@@ -216,7 +225,7 @@ const styles = StyleSheet.create({
   },
   visualRing: {
     position: 'absolute', width: 116, height: 116, borderRadius: 58,
-    borderWidth: 1, borderColor: colors.salmonSoft,
+    borderWidth: 1, borderColor: theme.color(colors.salmonSoft, 'border'),
   },
   visualStar: { position: 'absolute', right: '27%', top: 25 },
   activityTitle: {
@@ -242,7 +251,7 @@ const styles = StyleSheet.create({
     minHeight: 52, backgroundColor: colors.accent, borderRadius: 18,
   },
   disabledButton: { opacity: 0.65 },
-  acceptButtonText: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
+  acceptButtonText: { color: theme.color(colors.onPrimary, 'onAccent'), fontSize: 15, fontWeight: '600' },
   reloadButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     minHeight: 44, marginTop: 7,
@@ -266,5 +275,7 @@ const styles = StyleSheet.create({
     marginTop: 22, backgroundColor: colors.primary, borderRadius: 16,
     paddingHorizontal: 25, paddingVertical: 12,
   },
-  emptyButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '600' },
+  emptyButtonText: { color: theme.color(colors.onPrimary, 'onAccent'), fontSize: 13, fontWeight: '600' },
+});
+  return { theme, colors, styles };
 });

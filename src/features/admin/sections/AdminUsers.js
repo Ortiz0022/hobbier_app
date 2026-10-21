@@ -1,8 +1,10 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Image, TextInput, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import {
@@ -12,15 +14,7 @@ import {
   setProfileRoleAdmin,
   suspendProfileAdmin,
 } from '../../../services/adminService';
-import {
-  adminStyles,
-  ControlSegmentado,
-  Insignia,
-  TarjetaVacia,
-  BotonAccion,
-  Paginador,
-  recortarPagina,
-} from '../adminUI';
+import { ControlSegmentado, Insignia, TarjetaVacia, BotonAccion, Paginador, recortarPagina, getAdminUITheme } from "../adminUI";
 import { AdminsModal } from '../components/AdminsModal';
 import { SancionModal } from '../components/SancionModal';
 import { capitalizarTitulo } from '../../../utils/titleCase';
@@ -61,6 +55,8 @@ const mesYAnio = (iso) => {
  * es algo que se hace una vez cada mucho.
  */
 export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
+  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminUsersTheme);
+
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
   const [usuarios, setUsuarios] = useState([]);
@@ -206,7 +202,7 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
 
       <View style={adminStyles.searchBar}>
         <Ionicons name="search" size={16} color={colors.textMuted} />
-        <TextInput
+        <TextInput {...theme.textInputProps}
           style={adminStyles.searchInput}
           placeholder="Buscar por nombre o usuario"
           placeholderTextColor={colors.textMuted}
@@ -382,13 +378,19 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminUsersTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const estilos = StyleSheet.create({
   filaAdmins: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: radii.input,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
@@ -403,7 +405,7 @@ const estilos = StyleSheet.create({
   tarjeta: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: radii.input,
     padding: spacing.md,
     marginBottom: spacing.sm,
@@ -445,7 +447,7 @@ const estilos = StyleSheet.create({
     height: 42,
     borderRadius: radii.round,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   avatarVacio: {
     backgroundColor: colors.surfaceMuted,
@@ -457,4 +459,6 @@ const estilos = StyleSheet.create({
     fontFamily: fonts.heading,
     color: colors.textFaint,
   },
+});
+  return { theme, colors, adminStyles, estilos };
 });

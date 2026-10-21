@@ -1,3 +1,5 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -12,7 +14,7 @@ import { Text, TextInput } from './scaledText';
 import { createActivityAdmin } from '../services/adminService';
 import { fetchActivityCategories, fetchAllCatalogs } from '../services/catalogService';
 import { acceptActivity, moderateActivityContent } from '../services/activityService';
-import { colors } from '../theme';
+
 import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -39,6 +41,8 @@ const normalizarNombre = (texto) =>
  * el administrador que lo creó.
  */
 export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = false }) => {
+  const { theme, colors, styles } = useThemeValues(getCreateActivityModalTheme);
+
   const { user } = useAuth();
   const { notify } = useNotify();
   const { t, language } = useLanguage();
@@ -191,7 +195,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           ) : null}
 
           <Text style={styles.label}>{t('create_activity.title') || 'Título de la actividad'}</Text>
-          <TextInput
+          <TextInput {...theme.textInputProps}
             style={styles.input}
             placeholder={forCatalog ? (t('create_activity.placeholder_title_catalog') || "Ej. Pinta un cuadro abstracto") : (t('create_activity.placeholder_title_personal') || "Ej. Leer un capítulo del libro")}
             placeholderTextColor={colors.textMuted}
@@ -200,7 +204,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           />
 
           <Text style={styles.label}>{t('create_activity.description') || 'Descripción'}</Text>
-          <TextInput
+          <TextInput {...theme.textInputProps}
             style={[styles.input, styles.inputMultiline]}
             placeholder={forCatalog ? (t('create_activity.placeholder_desc_catalog') || "Explica detalladamente qué debe hacer el usuario...") : (t('create_activity.placeholder_desc_personal') || "Describe de qué trata tu reto personal...")}
             placeholderTextColor={colors.textMuted}
@@ -264,7 +268,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
           <View style={styles.formRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t('create_activity.points') || 'Puntos'}</Text>
-              <TextInput
+              <TextInput {...theme.textInputProps}
                 style={styles.input}
                 keyboardType="number-pad"
                 value={points}
@@ -275,7 +279,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
               <>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.label}>{t('create_activity.min_age') || 'Edad Mínima'}</Text>
-                  <TextInput
+                  <TextInput {...theme.textInputProps}
                     style={styles.input}
                     placeholder={t('create_activity.placeholder_min_age') || "Ej. 12"}
                     placeholderTextColor={colors.textMuted}
@@ -286,7 +290,7 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.label}>{t('create_activity.max_age') || 'Edad Máxima'}</Text>
-                  <TextInput
+                  <TextInput {...theme.textInputProps}
                     style={styles.input}
                     placeholder={t('create_activity.placeholder_max_age') || "Sin límite"}
                     placeholderTextColor={colors.textMuted}
@@ -318,6 +322,11 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getCreateActivityModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -326,7 +335,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.color(colors.surface, 'background'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     width: '100%',
@@ -338,12 +347,12 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   errorBanner: {
-    backgroundColor: '#FFF0F0',
+    backgroundColor: theme.color('#FFF0F0', 'card'),
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: colors.danger,
+    borderLeftColor: theme.color(colors.danger, "danger"),
   },
   errorBannerTitle: {
     color: colors.danger,
@@ -364,9 +373,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -383,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -405,7 +414,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -413,7 +422,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
   },
   dropdownOptionText: {
     fontSize: 14,
@@ -458,8 +467,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: {
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
     fontSize: 15,
     fontWeight: '700',
   },
+});
+  return { theme, colors, styles };
 });

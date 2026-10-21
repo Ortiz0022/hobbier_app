@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
@@ -17,18 +19,11 @@ import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { supportService, explicarFalloSoporte } from '../../services/supportService';
 import { supabase } from '../../config/supabase';
-import {
-  colors,
-  radii,
-  spacing,
-  fonts,
-  primaryButton,
-  primaryButtonText,
-  secondaryButton,
-  secondaryButtonText,
-} from '../../theme';
+import { radii, spacing, fonts, secondaryButton, secondaryButtonText } from "../../theme";
 
 export const SuspendedScreen = () => {
+  const { theme, colors, primaryButton, primaryButtonText, styles } = useThemeValues(getSuspendedScreenTheme);
+
   const { user, profile, suspension, signOut, descartarSuspension, recheckSuspension, refreshProfile } =
     useAuth();
   // El porqué de la sanción. Viene de get_my_suspension; si la base todavía no
@@ -233,7 +228,7 @@ export const SuspendedScreen = () => {
 
           {isReactivated ? (
             <TouchableOpacity style={styles.primaryBtn} onPress={handleEntrarApp}>
-              <Feather name="arrow-right-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />
+              <Feather name="arrow-right-circle" size={18} color={theme.color("#FFF", 'onAccent')} style={{ marginRight: 8 }} />
               <Text style={styles.primaryBtnText}>Ingresar a Hobbier</Text>
             </TouchableOpacity>
           ) : (
@@ -242,7 +237,7 @@ export const SuspendedScreen = () => {
               onPress={() => setViewMode('chat')}
               activeOpacity={0.85}
             >
-              <Feather name="message-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />
+              <Feather name="message-circle" size={18} color={theme.color("#FFF", 'onAccent')} style={{ marginRight: 8 }} />
               <Text style={styles.primaryBtnText}>Hablar con soporte / Apelar</Text>
             </TouchableOpacity>
           )}
@@ -389,7 +384,7 @@ export const SuspendedScreen = () => {
 
         {/* Barra de entrada de texto */}
         <View style={styles.inputBar}>
-          <TextInput
+          <TextInput {...theme.textInputProps}
             style={styles.textInput}
             value={textInput}
             onChangeText={setTextInput}
@@ -413,9 +408,9 @@ export const SuspendedScreen = () => {
             activeOpacity={0.8}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={theme.color("#FFF", 'onAccent')} />
             ) : (
-              <Feather name="send" size={18} color="#FFF" />
+              <Feather name="send" size={18} color={theme.color("#FFF", 'onAccent')} />
             )}
           </TouchableOpacity>
         </View>
@@ -424,10 +419,15 @@ export const SuspendedScreen = () => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getSuspendedScreenTheme = createThemeStyles((theme) => {
+const { colors, primaryButton, primaryButtonText } = theme;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.color(colors.background, 'background'),
   },
   container: {
     flex: 1,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   badgePermanent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FDE8E8',
+    backgroundColor: theme.color('#FDE8E8', 'card'),
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: radii.round,
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   reactivatedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.color('#E8F5E9', 'card'),
     padding: spacing.md,
     borderRadius: radii.card,
     marginBottom: spacing.lg,
@@ -536,8 +536,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surfaceMuted,
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: theme.color(colors.surfaceMuted, 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'card'),
   },
   backButton: {
     padding: spacing.xs,
@@ -562,11 +562,11 @@ const styles = StyleSheet.create({
   successBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.color('#E8F5E9', 'card'),
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#C8E6C9',
+    borderBottomColor: theme.color('#C8E6C9', 'border'),
   },
   successBannerText: {
     flex: 1,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   btnBannerActionText: {
-    color: '#FFF',
+    color: theme.color('#FFF', 'text'),
     fontSize: 12,
     fontWeight: '700',
   },
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
   },
   bubbleMe: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.color(colors.primary, 'selected'),
     borderBottomRightRadius: 4,
   },
   bubbleAdmin: {
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   textMe: {
-    color: '#FFFFFF',
+    color: theme.color('#FFFFFF', 'text'),
   },
   textAdmin: {
     color: colors.text,
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   timeMe: {
-    color: 'rgba(255,255,255,0.75)',
+    color: theme.color('rgba(255,255,255,0.75)', 'text'),
   },
   timeAdmin: {
     color: colors.textMuted,
@@ -677,9 +677,9 @@ const styles = StyleSheet.create({
   motivoCaja: {
     alignSelf: 'stretch',
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderLeftWidth: 3,
-    borderLeftColor: colors.salmon,
+    borderLeftColor: theme.color(colors.salmon, 'border'),
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.input,
     paddingHorizontal: spacing.md,
@@ -737,13 +737,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
-    backgroundColor: '#FFFFFF',
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
+    backgroundColor: theme.color('#FFFFFF', 'secondary'),
     gap: spacing.sm,
   },
   textInput: {
     flex: 1,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderRadius: radii.input,
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
@@ -760,6 +760,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: theme.color('#CBD5E1', 'secondary'),
   },
+});
+  return { theme, colors, primaryButton, primaryButtonText, styles };
 });

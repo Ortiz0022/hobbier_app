@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../context/ThemeContext';
+import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -27,6 +29,8 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 // En ese momento ya tiene sesión iniciada, así que basta con guardar la contraseña
 // nueva; no se le vuelve a pedir la anterior.
 export const ResetPasswordScreen = () => {
+  const { theme, styles } = useThemeValues(getResetPasswordScreenTheme);
+
   const { updatePassword, signOut, loading } = useAuth();
   const { notify } = useNotify();
 
@@ -100,10 +104,10 @@ export const ResetPasswordScreen = () => {
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <View style={styles.iconBox}>
-                <Ionicons name="key-outline" size={30} color="#0C8AA6" />
+                <Ionicons name="key-outline" size={30} color={theme.color("#0C8AA6", 'primary')} />
               </View>
               <View style={styles.iconBadge}>
-                <Ionicons name="star" size={12} color="#ffffff" />
+                <Ionicons name="star" size={12} color={theme.color("#ffffff", 'text')} />
               </View>
             </View>
 
@@ -115,25 +119,25 @@ export const ResetPasswordScreen = () => {
 
           {errorMessage ? (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#A94403" style={{ marginRight: 6 }} />
+              <Ionicons name="alert-circle" size={16} color={theme.color("#A94403", 'danger')} style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           ) : null}
 
           <Text style={[styles.label, { marginTop: 0 }]}>Nueva contraseña</Text>
           <View style={[styles.inputRow, fieldErrors.password && styles.inputRowInvalid]}>
-            <Ionicons name="lock-closed-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-            <TextInput
+            <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+            <TextInput {...theme.textInputProps}
               style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor="#8A908B"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
               value={password}
               onChangeText={editField(setPassword, 'password')}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#8A908B" />
+              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={theme.color("#8A908B", 'muted')} />
             </TouchableOpacity>
           </View>
           {fieldErrors.password ? (
@@ -142,11 +146,11 @@ export const ResetPasswordScreen = () => {
 
           <Text style={styles.label}>Repite la contraseña</Text>
           <View style={[styles.inputRow, fieldErrors.confirmPassword && styles.inputRowInvalid]}>
-            <Ionicons name="lock-closed-outline" size={18} color="#8A908B" style={styles.inputIcon} />
-            <TextInput
+            <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+            <TextInput {...theme.textInputProps}
               style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor="#8A908B"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
               value={confirmPassword}
               onChangeText={editField(setConfirmPassword, 'confirmPassword')}
               secureTextEntry={!showPassword}
@@ -159,7 +163,7 @@ export const ResetPasswordScreen = () => {
 
           <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={loading}>
             {loading ? (
-              <ActivityIndicator color="#121B22" />
+              <ActivityIndicator color={theme.color("#121B22", 'text')} />
             ) : (
               <Text style={styles.primaryButtonText}>Guardar contraseña  →</Text>
             )}
@@ -176,10 +180,14 @@ export const ResetPasswordScreen = () => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getResetPasswordScreenTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'background'),
   },
   scrollContainer: {
     flexGrow: 1,
@@ -198,7 +206,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#F0F8FA',
+    backgroundColor: theme.color('#F0F8FA', 'card'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -209,33 +217,33 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#FF8F21',
+    backgroundColor: theme.color('#FF8F21', 'accent'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     letterSpacing: 0.3,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     marginTop: 6,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'card'),
     borderRadius: 24,
     paddingHorizontal: 24,
     paddingVertical: 34,
     borderWidth: 0,
   },
   errorBox: {
-    backgroundColor: '#F0F3F5',
-    borderColor: '#F1C2B8',
+    backgroundColor: theme.color('#F0F3F5', 'card'),
+    borderColor: theme.color('#F1C2B8', "danger"),
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
@@ -244,31 +252,31 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   errorText: {
-    color: '#A94403',
+    color: theme.color('#A94403', 'danger'),
     fontSize: 13,
     flex: 1,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     marginBottom: 6,
     marginTop: 12,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F3F5',
+    backgroundColor: theme.color('#F0F3F5', 'secondary'),
     borderWidth: 1,
-    borderColor: '#F0F3F5',
+    borderColor: theme.color('#F0F3F5', 'border'),
     borderRadius: 14,
     paddingHorizontal: 12,
   },
   inputRowInvalid: {
-    borderColor: '#A94403',
+    borderColor: theme.color('#A94403', "danger"),
   },
   fieldError: {
-    color: '#A94403',
+    color: theme.color('#A94403', 'danger'),
     fontSize: 12,
     marginTop: 5,
   },
@@ -279,20 +287,20 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     fontSize: 15,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
   },
   eyeBtn: {
     padding: 4,
   },
   primaryButton: {
-    backgroundColor: '#0C8AA6',
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 24,
   },
   primaryButtonText: {
-    color: '#121B22',
+    color: theme.color('#121B22', "onAccent"),
     fontSize: 16,
     fontWeight: '700',
   },
@@ -301,13 +309,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleButtonText: {
-    color: '#8A908B',
+    color: theme.color('#8A908B', 'muted'),
     fontSize: 14,
     fontWeight: '500',
   },
   toggleButtonBold: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
+});
+  return { theme, styles };
 });

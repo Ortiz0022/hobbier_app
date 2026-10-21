@@ -1,9 +1,11 @@
+import { useThemeValues } from '../context/ThemeContext';
+import { createThemeStyles } from '../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, View, TouchableOpacity, Image } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { Text } from './scaledText';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, radii, spacing, fonts } from '../theme';
+import { radii, spacing, fonts } from "../theme";
 
 /**
  * Tarjeta de anuncio patrocinado.
@@ -17,6 +19,8 @@ import { colors, radii, spacing, fonts } from '../theme';
  * línea ("Por tus gustos") para que el usuario sepa por qué lo ve.
  */
 export const SponsoredCard = ({ ad, onPress, onInfo }) => {
+  const { theme, colors, styles } = useThemeValues(getSponsoredCardTheme);
+
   const { t } = useLanguage();
   if (!ad) return null;
 
@@ -76,6 +80,11 @@ export const SponsoredCard = ({ ad, onPress, onInfo }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getSponsoredCardTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: 16,
@@ -84,7 +93,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderRadius: radii.input,
     padding: spacing.md,
   },
@@ -146,4 +155,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
+});
+  return { theme, colors, styles };
 });

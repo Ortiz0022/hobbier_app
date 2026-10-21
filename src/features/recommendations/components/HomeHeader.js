@@ -1,7 +1,9 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { StyleSheet, View, Text, Image } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 import { useLanguage } from '../../../context/LanguageContext';
 
 const getDisplayName = (profile) => {
@@ -12,6 +14,8 @@ const getDisplayName = (profile) => {
 };
 
 export const HomeHeader = ({ profile }) => {
+  const { theme, colors, styles } = useThemeValues(getHomeHeaderTheme);
+
   const { t } = useLanguage();
   const displayName = getDisplayName(profile);
   const points = profile?.points || 0;
@@ -45,6 +49,11 @@ export const HomeHeader = ({ profile }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getHomeHeaderTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   header: { marginBottom: 12 },
   topRow: {
@@ -55,16 +64,18 @@ const styles = StyleSheet.create({
   },
   profileSummary: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   pointsBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF5EA',
+    flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.color('#FFF5EA', 'card'),
     borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7,
   },
   pointsValue: { color: colors.accentDark, fontSize: 12, fontWeight: '500' },
   avatar: {
-    width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: colors.salmonSoft,
+    width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: theme.color(colors.salmonSoft, 'border'),
   },
   avatarPlaceholder: {
     width: 38, height: 38, borderRadius: 19, backgroundColor: colors.salmon,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarInitial: { color: colors.onPrimary, fontSize: 15, fontWeight: '600' },
+  avatarInitial: { color: theme.color(colors.onPrimary, 'onAccent'), fontSize: 15, fontWeight: '600' },
+});
+  return { theme, colors, styles };
 });

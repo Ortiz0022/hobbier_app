@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import {
   View,
@@ -11,7 +13,7 @@ import {
 } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
+import { radii, spacing, fonts } from "../../../theme";
 import { MOTIVO_MINIMO } from '../../../services/adminService';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 
@@ -26,6 +28,8 @@ import { capitalizarTitulo } from '../../../utils/titleCase';
  * el motivo se redacte para ella y no como una nota interna.
  */
 export const SancionModal = ({ perfil, onCancelar, onConfirmar }) => {
+  const { theme, colors, estilos } = useThemeValues(getSancionModalTheme);
+
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -70,7 +74,7 @@ export const SancionModal = ({ perfil, onCancelar, onConfirmar }) => {
 
             <Text style={estilos.etiqueta}>Motivo de la sanción</Text>
 
-            <TextInput
+            <TextInput {...theme.textInputProps}
               style={estilos.campo}
               value={motivo}
               onChangeText={setMotivo}
@@ -112,6 +116,11 @@ export const SancionModal = ({ perfil, onCancelar, onConfirmar }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getSancionModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -178,7 +187,7 @@ const estilos = StyleSheet.create({
   campo: {
     minHeight: 96,
     borderWidth: 1.5,
-    borderColor: colors.danger,
+    borderColor: theme.color(colors.danger, 'border'),
     backgroundColor: 'transparent',
     borderRadius: radii.input,
     padding: spacing.md,
@@ -200,7 +209,7 @@ const estilos = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? 36 : spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.surfaceMuted,
+    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
   },
   btnCancelar: {
     flex: 1,
@@ -229,6 +238,8 @@ const estilos = StyleSheet.create({
   btnSancionarTexto: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.onPrimary,
+    color: theme.color(colors.onPrimary, 'onAccent'),
   },
+});
+  return { theme, colors, estilos };
 });

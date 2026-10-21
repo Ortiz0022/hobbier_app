@@ -1,4 +1,8 @@
 {
+  "theme": {
+    "switch_light": "Cambiar a modo claro",
+    "switch_dark": "Cambiar a modo oscuro"
+  },
   "common": {
     "loading": "Cargando Hobbier...",
     "save": "Guardar",

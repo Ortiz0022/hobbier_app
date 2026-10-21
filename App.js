@@ -1,3 +1,5 @@
+import { ThemeProvider, useThemeValues } from './src/context/ThemeContext';
+import { createThemeStyles } from './src/theme/themeRuntime';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -36,6 +38,8 @@ import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
 
 const MainApp = () => {
+  const { theme, styles } = useThemeValues(getAppTheme);
+
   const { user, loading, isAdmin, passwordRecovery, suspension } = useAuth();
   const { t } = useLanguage();
   const { width } = useWindowDimensions();
@@ -72,7 +76,7 @@ const MainApp = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#386756" />
+        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
@@ -103,7 +107,7 @@ const MainApp = () => {
   if (estadoOnboarding === 'comprobando') {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#386756" />
+        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
@@ -114,7 +118,7 @@ const MainApp = () => {
   if (estadoOnboarding === 'falta') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.color("#ffffff", 'background')} />
         <OnboardingScreen
           obligatorio
           onComplete={() => {
@@ -242,7 +246,7 @@ const MainApp = () => {
 
   return (
     <SafeAreaView style={[styles.safeArea, isDesktop && styles.safeAreaDesktop]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.color("#ffffff", 'background')} />
 
       <View style={[styles.rootContainer, isDesktop && styles.rootContainerDesktop]}>
         {/* BARRA LATERAL (SIDEBAR) TIPO INSTAGRAM PARA ESCRITORIO / WEB */}
@@ -255,7 +259,7 @@ const MainApp = () => {
             <View style={styles.sidebarNav}>
               {navItems.map((item) => {
                 const isActive = claveActiva === item.key;
-                const iconColor = isActive ? '#0C8AA6' : '#64748b';
+                const iconColor = isActive ? theme.color('#0C8AA6', 'primary') : theme.color('#64748b', "muted");
 
                 return (
                   <TouchableOpacity
@@ -289,7 +293,7 @@ const MainApp = () => {
           <View style={styles.bottomNav}>
             {navItems.map((item) => {
               const isActive = claveActiva === item.key;
-              const iconColor = isActive ? '#0C8AA6' : '#121B22';
+              const iconColor = isActive ? theme.color('#0C8AA6', 'primary') : theme.color('#121B22', 'text');
 
               return (
                 <TouchableOpacity
@@ -312,7 +316,9 @@ const MainApp = () => {
   );
 };
 
-export default function App() {
+function AppContent() {
+  const { theme, styles } = useThemeValues(getAppTheme);
+
   const [fontsLoaded] = useFonts({
     'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
     Poppins_700Bold,
@@ -321,8 +327,8 @@ export default function App() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#386756" />
+      <View style={{ flex: 1, backgroundColor: theme.color('#ffffff', 'background'), justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
       </View>
     );
   }
@@ -343,14 +349,23 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return <ThemeProvider><AppContent /></ThemeProvider>;
+}
+
+
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAppTheme = createThemeStyles((theme) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   safeAreaDesktop: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.color('#f8fafc', 'background'),
   },
   rootContainer: {
     flex: 1,
@@ -363,9 +378,9 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 240,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'secondary'),
     borderRightWidth: 1,
-    borderRightColor: '#f1f5f9',
+    borderRightColor: theme.color('#f1f5f9', 'border'),
     paddingVertical: 28,
     paddingHorizontal: 16,
     justifyContent: 'flex-start',
@@ -377,7 +392,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontFamily: 'DynaPuff',
     fontSize: 26,
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     letterSpacing: 0.5,
   },
   sidebarNav: {
@@ -392,15 +407,15 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sidebarItemActive: {
-    backgroundColor: '#f0fdfa',
+    backgroundColor: theme.color('#f0fdfa', 'selected'),
   },
   sidebarLabel: {
     fontSize: 15,
-    color: '#475569',
+    color: theme.color('#475569', 'muted'),
     fontWeight: '500',
   },
   sidebarLabelActive: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '700',
   },
   mainContent: {
@@ -408,7 +423,7 @@ const styles = StyleSheet.create({
   },
   mainContentDesktop: {
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.color('#f8fafc', 'background'),
   },
   contentInner: {
     flex: 1,
@@ -416,28 +431,28 @@ const styles = StyleSheet.create({
   },
   contentInnerDesktop: {
     maxWidth: 640,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
     borderRightWidth: 1,
     borderLeftWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.color('#f1f5f9', 'border'),
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'background'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#64748b',
+    color: theme.color('#64748b', "muted"),
     marginTop: 12,
     fontSize: 14,
   },
   bottomNavContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'secondary'),
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.color('#ffffff', 'secondary'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingVertical: 10,
@@ -465,13 +480,14 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     fontSize: 11,
-    color: '#121B22',
+    color: theme.color('#121B22', 'text'),
     fontWeight: '500',
     marginTop: 3,
   },
   navLabelActive: {
-    color: '#0C8AA6',
+    color: theme.color('#0C8AA6', 'primary'),
     fontWeight: '600',
   },
 });
-
+  return { theme, styles };
+});

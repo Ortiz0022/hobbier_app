@@ -1,3 +1,5 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -12,8 +14,8 @@ import {
 } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fonts } from '../../../theme';
-import { adminStyles, BotonAccion, Insignia } from '../adminUI';
+import { radii, spacing, fonts } from "../../../theme";
+import { BotonAccion, Insignia, getAdminUITheme } from "../adminUI";
 import { capitalizarTitulo } from '../../../utils/titleCase';
 
 /** Con más resultados que esto, la lista deja de ayudar: que afine la búsqueda. */
@@ -29,6 +31,8 @@ const TOPE_BUSQUEDA = 8;
  * pregunta que de verdad se hace uno.
  */
 export const AdminsModal = ({ usuarios, yoId, onCambiarRol, onClose }) => {
+  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminsModalTheme);
+
   const [busqueda, setBusqueda] = useState('');
 
   const admins = useMemo(() => usuarios.filter((u) => u.role === 'ADMIN'), [usuarios]);
@@ -114,7 +118,7 @@ export const AdminsModal = ({ usuarios, yoId, onCambiarRol, onClose }) => {
             </Text>
             <View style={adminStyles.searchBar}>
               <Ionicons name="search" size={16} color={colors.textMuted} />
-              <TextInput
+              <TextInput {...theme.textInputProps}
                 style={adminStyles.searchInput}
                 placeholder="Buscar por nombre o usuario"
                 placeholderTextColor={colors.textMuted}
@@ -160,6 +164,12 @@ export const AdminsModal = ({ usuarios, yoId, onCambiarRol, onClose }) => {
   );
 };
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getAdminsModalTheme = createThemeStyles((theme) => {
+const { colors } = theme;
+const { adminStyles } = getAdminUITheme(theme);
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -212,7 +222,7 @@ const estilos = StyleSheet.create({
     height: 38,
     borderRadius: radii.round,
     borderWidth: 1,
-    borderColor: colors.surfaceMuted,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
   },
   avatarVacio: {
     backgroundColor: colors.surfaceMuted,
@@ -224,4 +234,6 @@ const estilos = StyleSheet.create({
     fontFamily: fonts.heading,
     color: colors.textFaint,
   },
+});
+  return { theme, colors, adminStyles, estilos };
 });

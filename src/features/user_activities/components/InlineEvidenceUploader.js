@@ -1,7 +1,9 @@
+import { useThemeValues } from '../../../context/ThemeContext';
+import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { colors } from '../../../theme';
+
 
 export const InlineEvidenceUploader = ({
   imageUri,
@@ -10,8 +12,9 @@ export const InlineEvidenceUploader = ({
   onTakePhoto,
   onComplete,
   buttonText = 'Superar misión',
-}) => (
-  <View style={styles.container}>
+}) => {
+  const { theme, colors, styles } = useThemeValues(getInlineEvidenceUploaderTheme);
+  return (<View style={styles.container}>
     {imageUri ? (
       <View style={styles.readyCard}>
         <View style={styles.readyIcon}>
@@ -79,9 +82,14 @@ export const InlineEvidenceUploader = ({
         </>
       )}
     </TouchableOpacity>
-  </View>
-);
+  </View>);
+};
 
+
+
+// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+export const getInlineEvidenceUploaderTheme = createThemeStyles((theme) => {
+const { colors } = theme;
 const styles = StyleSheet.create({
   container: { marginTop: 18 },
   introCard: {
@@ -90,7 +98,7 @@ const styles = StyleSheet.create({
   },
   introIcon: {
     width: 54, height: 54, borderRadius: 18,
-    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.color(colors.onPrimary, 'card'), alignItems: 'center', justifyContent: 'center',
     marginBottom: 12,
   },
   introTitle: { color: colors.text, fontSize: 16, fontWeight: '500' },
@@ -100,11 +108,11 @@ const styles = StyleSheet.create({
   },
   readyCard: {
     flexDirection: 'row', alignItems: 'center', gap: 13,
-    backgroundColor: '#EDF7F1', borderRadius: 22, padding: 17,
+    backgroundColor: theme.color('#EDF7F1', 'card'), borderRadius: 22, padding: 17,
   },
   readyIcon: {
     width: 48, height: 48, borderRadius: 16,
-    backgroundColor: colors.onPrimary, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.color(colors.onPrimary, 'card'), alignItems: 'center', justifyContent: 'center',
   },
   readyCopy: { flex: 1 },
   readyTitle: { color: colors.text, fontSize: 15, fontWeight: '500' },
@@ -122,6 +130,8 @@ const styles = StyleSheet.create({
     borderRadius: 18, marginTop: 12,
   },
   completeButtonDisabled: { backgroundColor: colors.surfaceMuted },
-  completeText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  completeText: { color: theme.color(colors.onPrimary, "onAccent"), fontSize: 14, fontWeight: '600' },
   completeTextDisabled: { color: colors.textMuted },
+});
+  return { theme, colors, styles };
 });
