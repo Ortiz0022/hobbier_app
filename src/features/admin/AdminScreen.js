@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +54,9 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
   const [etiquetas, setEtiquetas] = useState({});
   // Actividad cuyas etiquetas se están editando. null = modal cerrado.
   const [etiquetando, setEtiquetando] = useState(null);
+  // Clave que se incrementa en cada pull-to-refresh para forzar recarga en secciones hijas.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (section === 'activities') loadActivities(paginaCatalogo);
@@ -83,6 +87,17 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
       return;
     }
     loadActivities(paginaCatalogo);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (section === 'activities') {
+      await loadActivities(paginaCatalogo);
+    } else {
+      // Overview, Users y Posts reciben el nuevo refreshKey y recargan solos.
+      setRefreshKey((k) => k + 1);
+    }
+    setRefreshing(false);
   };
 
   // Un rótulo por sección: el título grande de la cabecera y la línea que
@@ -129,12 +144,22 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
         <Text style={styles.subtitle}>{seccion.subtitulo}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {section === 'overview' && <AdminOverview onIrASeccion={onNavigateSection} />}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0C8AA6']}
+            tintColor="#0C8AA6"
+          />
+        }
+      >
+        {section === 'overview' && <AdminOverview onIrASeccion={onNavigateSection} refreshKey={refreshKey} />}
 
-        {section === 'users' && <AdminUsers />}
+        {section === 'users' && <AdminUsers refreshKey={refreshKey} />}
 
-        {section === 'posts' && <AdminPosts />}
+        {section === 'posts' && <AdminPosts refreshKey={refreshKey} />}
 
         {section === 'ads' && <AdminAds />}
 
