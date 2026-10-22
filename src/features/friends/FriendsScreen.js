@@ -12,8 +12,9 @@ import {
   Platform,
   Modal,
   Pressable,
-  RefreshControl,
 } from 'react-native';
+// En web el RefreshControl de react-native-web no hace nada: este sí.
+import { RefreshControl } from '../../components/refrescoArrastrando';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
@@ -768,6 +769,10 @@ const styles = StyleSheet.create({
     right: 10,
   },
   content: {
+    // Al menos tan alto como la pantalla: si el contenido no desborda, en
+    // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
+    // no llega a dispararse nunca.
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 32,

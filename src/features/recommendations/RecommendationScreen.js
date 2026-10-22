@@ -1,7 +1,9 @@
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, SafeAreaView, RefreshControl } from 'react-native';
+import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+// En web el RefreshControl de react-native-web no hace nada: este sí.
+import { RefreshControl } from '../../components/refrescoArrastrando';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -172,6 +174,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color('#FBFCFA', 'background'),
   },
   scrollContent: {
+    // Al menos tan alto como la pantalla: si el contenido no desborda, en
+    // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
+    // no llega a dispararse nunca.
+    flexGrow: 1,
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
