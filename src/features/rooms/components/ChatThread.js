@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { Camera } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
@@ -182,9 +183,18 @@ export const ChatThread = ({
                 <Text style={styles.replyPreviewAuthor}>
                   {replyingTo.sender?.username || 'Usuario'}
                 </Text>
-                <Text style={styles.replyPreviewText} numberOfLines={1}>
-                  {replyingTo.message_type === 'EVIDENCE' ? '📷 Registró un avance' : replyingTo.content}
-                </Text>
+                {replyingTo.message_type === 'EVIDENCE' ? (
+                  <View style={styles.replyPreviewEvidenceRow}>
+                    <Camera size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={styles.replyPreviewText} numberOfLines={1}>
+                      Registró un avance
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.replyPreviewText} numberOfLines={1}>
+                    {replyingTo.content}
+                  </Text>
+                )}
               </View>
               <TouchableOpacity
                 onPress={() => setReplyingTo(null)}
@@ -291,6 +301,11 @@ const styles = StyleSheet.create({
   replyPreviewText: {
     fontSize: 12.5,
     color: colors.textMuted,
+    marginTop: 1,
+  },
+  replyPreviewEvidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 1,
   },
   chatInputContainer: {

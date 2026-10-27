@@ -17,6 +17,7 @@ import {
 import { RefreshControl } from '../../components/refrescoArrastrando';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
+import { Languages } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
@@ -293,7 +294,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
               >
                 <Feather name="globe" size={16} color={COLORS.cyanIcon} />
                 <Text style={styles.menuItemText}>
-                  {t('language.title')} ({language === 'es' ? '🇪🇸 ES' : '🇺🇸 EN'})
+                  {t('language.title')} ({language === 'es' ? 'ES' : 'EN'})
                 </Text>
               </TouchableOpacity>
 
@@ -378,14 +379,14 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                         setLanguage(item.code);
                         setLanguageModalOpen(false);
                         notify(
-                          item.code === 'es' ? 'Idioma cambiado a Español 🇪🇸' : 'Language changed to English 🇺🇸',
+                          item.code === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English',
                           { type: 'success' }
                         );
                       }}
                       activeOpacity={0.7}
                     >
                       <View style={styles.langOptionLeft}>
-                        <Text style={styles.langFlag}>{item.flag}</Text>
+                        <Languages size={18} color={isSelected ? COLORS.cyanIcon : COLORS.slateMuted} style={{ marginRight: 10 }} />
                         <Text style={[styles.langOptionLabel, isSelected && styles.langOptionLabelActive]}>
                           {item.label}
                         </Text>

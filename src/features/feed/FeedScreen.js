@@ -16,6 +16,19 @@ import {
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
 import Feather from '@expo/vector-icons/Feather';
+import {
+  Camera,
+  RefreshCw,
+  Palette,
+  Sprout,
+  UtensilsCrossed,
+  Activity,
+  BookOpen,
+  Music,
+  Gamepad2,
+  Languages,
+  Award,
+} from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
@@ -426,9 +439,12 @@ export const FeedScreen = ({ onActivityAccepted }) => {
               )}
               <View style={styles.authorInfo}>
                 <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
-                <Text style={styles.authorAction} numberOfLines={1}>
-                  {pillStyle.emoji} {activityTitle}
-                </Text>
+                <View style={styles.authorActionRow}>
+                  {pillStyle.Icon && <pillStyle.Icon size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 4 }} />}
+                  <Text style={styles.authorAction} numberOfLines={1}>
+                    {activityTitle}
+                  </Text>
+                </View>
               </View>
             </TouchableOpacity>
 
@@ -477,8 +493,9 @@ export const FeedScreen = ({ onActivityAccepted }) => {
             </TouchableOpacity>
 
             <View style={styles.pointsPill}>
+              <Award size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 3 }} />
               <Text style={styles.pointsPillText}>
-                ✪ +{pointsAwarded}
+                +{pointsAwarded}
               </Text>
             </View>
           </View>
@@ -536,10 +553,13 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>📸</Text>
+            <View style={styles.emptyIconContainer}>
+              <Camera size={44} color={theme.color('#0C8AA6', 'primary')} strokeWidth={1.75} />
+            </View>
             <Text style={styles.emptyTitle}>{t('feed.empty_title')}</Text>
             <Text style={styles.emptySubtitle}>{t('feed.empty_subtitle')}</Text>
-            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed}>
+            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed} activeOpacity={0.8}>
+              <RefreshCw size={14} color={theme.color('#334155', 'text')} style={{ marginRight: 6 }} />
               <Text style={styles.refreshEmptyBtnText}>{t('feed.refresh')}</Text>
             </TouchableOpacity>
           </View>
@@ -608,31 +628,31 @@ const getPillStyle = (title, index) => {
   const bgList = [theme.color('#dbeafe', 'card'), theme.color('#ffe4e6', 'card'), theme.color('#dcfce7', 'card'), theme.color('#fef3c7', 'card'), theme.color('#f3e8ff', 'card')];
   const backgroundColor = bgList[index % bgList.length];
 
-  let emoji = '🎨';
+  let Icon = Palette;
 
   if (t.includes('pint') || t.includes('dibuj') || t.includes('arte') || t.includes('creativ')) {
-    emoji = '🎨';
+    Icon = Palette;
   } else if (t.includes('jardin') || t.includes('plant') || t.includes('flor') || t.includes('urbana')) {
-    emoji = '🪴';
+    Icon = Sprout;
   } else if (t.includes('cocin') || t.includes('recet') || t.includes('pan') || t.includes('comida') || t.includes('bebida') || t.includes('té')) {
-    emoji = '🍳';
+    Icon = UtensilsCrossed;
   } else if (t.includes('corr') || t.includes('ejercic') || t.includes('deport') || t.includes('bicicleta') || t.includes('fit')) {
-    emoji = '🏃';
+    Icon = Activity;
   } else if (t.includes('libr') || t.includes('lectur') || t.includes('le') || t.includes('capítulo')) {
-    emoji = '📚';
+    Icon = BookOpen;
   } else if (t.includes('music') || t.includes('cant') || t.includes('guitarr')) {
-    emoji = '🎵';
+    Icon = Music;
   } else if (t.includes('foto') || t.includes('camar')) {
-    emoji = '📸';
+    Icon = Camera;
   } else if (t.includes('ajedrez') || t.includes('juego') || t.includes('carta')) {
-    emoji = '♟️';
+    Icon = Gamepad2;
   } else if (t.includes('idioma') || t.includes('hablar')) {
-    emoji = '🗣️';
+    Icon = Languages;
   }
 
   return {
     backgroundColor,
-    emoji,
+    Icon,
   };
 };
 const styles = StyleSheet.create({
@@ -722,9 +742,14 @@ const styles = StyleSheet.create({
     }),
     marginTop: 20,
   },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+  emptyIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.color('#F0F8FA', 'card'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
@@ -739,6 +764,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   refreshEmptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: theme.color('#f1f5f9', 'card'),
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -807,6 +834,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: theme.color('#475569', 'muted'),
+  },
+  authorActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 1,
   },
   optionsBtn: {

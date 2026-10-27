@@ -62,7 +62,7 @@
     "loading": "Loading friends feed...",
     "empty_title": "No posts yet",
     "empty_subtitle": "Add friends or wait for them to complete activities to see their photos here.",
-    "refresh": "🔄 Refresh feed",
+    "refresh": "Refresh feed",
     "do_also": "Do this too",
     "repeat": "Repeat",
     "load_more_error": "Couldn't load more · Retry",
