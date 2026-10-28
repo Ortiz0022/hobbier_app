@@ -42,6 +42,8 @@ export const ChatThread = ({
   emptySubtitle,
   emptyText = 'No hay mensajes aún.',
   showSenderName = true,
+  // Sin respuestas citadas (el chat de solicitudes de anuncio no las guarda).
+  allowReply = true,
   keyboardVerticalOffset = 90,
 }) => {
   const { theme, colors, styles } = useThemeValues(getChatThreadTheme);
@@ -163,7 +165,7 @@ export const ChatThread = ({
             <RoomMessageBubble
               message={item}
               isMe={item.sender?.id === currentUserId}
-              onReply={setReplyingTo}
+              onReply={allowReply ? setReplyingTo : undefined}
               onJumpToReply={handleJumpToMessage}
               isHighlighted={item.id === highlightedMessageId}
               showSenderName={showSenderName}

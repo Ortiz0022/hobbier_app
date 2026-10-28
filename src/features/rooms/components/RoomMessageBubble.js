@@ -182,7 +182,7 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                 )
               )}
 
-              {!isSending && (
+              {!isSending && onReply && (
                 <TouchableOpacity
                   style={styles.replyBtn}
                   onPress={() => onReply?.(message)}

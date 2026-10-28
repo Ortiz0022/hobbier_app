@@ -26,6 +26,9 @@ import { uploadAvatarImage, getUserActivities } from '../../services/activitySer
 import { getUserPosts, getFriendsList, deleteOwnPost } from '../../services/socialService';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
+import { MyAdRequestsModal } from '../recommendations/components/MyAdRequestsModal';
+import { AdRequestModal } from '../recommendations/components/AdRequestModal';
+import { getMyAdRequests } from '../../services/adsService';
 import { formatDateTime } from '../../utils/dateFormat';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
 
@@ -47,6 +50,17 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   const [saving, setSaving] = useState(false);
 
   const [createActivityOpen, setCreateActivityOpen] = useState(false);
+
+  // "Mis solicitudes de anuncio": se piden al abrirlas, para ver siempre el
+  // estado actual (el admin puede haberlas revisado hace un momento).
+  const [myAdRequestsOpen, setMyAdRequestsOpen] = useState(false);
+  const [myAdRequests, setMyAdRequests] = useState([]);
+  const [adRequestOpen, setAdRequestOpen] = useState(false);
+
+  const loadMyAdRequests = async () => {
+    const { requests } = await getMyAdRequests(profile?.id);
+    setMyAdRequests(requests);
+  };
 
   const [completedActivities, setCompletedActivities] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -310,6 +324,20 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                 <Text style={styles.menuItemText}>{t('profile.create_own_activity')}</Text>
               </TouchableOpacity>
 
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  loadMyAdRequests();
+                  setMyAdRequestsOpen(true);
+                }}
+              >
+                <Feather name="volume-2" size={16} color={COLORS.cyanIcon} />
+                <Text style={styles.menuItemText}>{t('profile.my_ad_requests')}</Text>
+              </TouchableOpacity>
+
 
               <View style={styles.menuDivider} />
 
@@ -413,6 +441,23 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
         />
 
         <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
+
+        <MyAdRequestsModal
+          visible={myAdRequestsOpen}
+          requests={myAdRequests}
+          onClose={() => setMyAdRequestsOpen(false)}
+          onChanged={loadMyAdRequests}
+          onNewRequest={() => {
+            setMyAdRequestsOpen(false);
+            setAdRequestOpen(true);
+          }}
+        />
+
+        <AdRequestModal
+          visible={adRequestOpen}
+          onClose={() => setAdRequestOpen(false)}
+          onSent={loadMyAdRequests}
+        />
 
         <Modal
           visible={!!viewerImage}
