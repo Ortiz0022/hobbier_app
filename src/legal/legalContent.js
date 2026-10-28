@@ -1,5 +1,6 @@
 // ==================================================
-// HOBBIER - Textos legales (Política de Privacidad y Términos de Uso)
+// HOBBIER - Textos legales (Política de Privacidad, Términos de Uso y
+// Condiciones de Publicidad)
 //
 // Viven aquí y no en es.json / en.json porque son documentos largos con
 // secciones: en el JSON de la interfaz serían decenas de claves sueltas. Igual
@@ -15,7 +16,7 @@
 import { MIN_AGE } from '../features/auth/validation';
 
 // Versión de los documentos. Se guarda junto con la aceptación en el registro.
-export const LEGAL_VERSION = '2026-10-18';
+export const LEGAL_VERSION = '2026-10-28';
 
 // TODO: sustituir por el correo real de contacto del proyecto antes de publicar.
 export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
@@ -23,7 +24,7 @@ export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
 const es = {
   privacy: {
     title: 'Política de Privacidad',
-    updated: `Última actualización: 18 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Quiénes somos',
@@ -41,7 +42,10 @@ const es = {
           '• Actividad social: tus amistades, solicitudes e invitaciones.\n' +
           '• Reportes: si reportas una publicación, el motivo y el texto que escribas.\n' +
           '• Estado de conexión: mientras usas la app, otros usuarios con sesión iniciada pueden saber que estás en línea.\n' +
-          '• Anuncios: tu cantón o ciudad, solo si das permiso de ubicación en el teléfono, y qué anuncios ves o tocas.\n\n' +
+          '• Anuncios: tu cantón o ciudad, solo si das permiso de ubicación en el teléfono, y qué anuncios ves o tocas.\n' +
+          '• Solicitudes de anuncio: si pides anunciarte desde Descubre, el nombre del negocio o persona, la ' +
+          'descripción, la foto que adjuntes, las fechas que pides, los datos del evento (fecha y lugar), qué cuenta ' +
+          'envió la solicitud y los mensajes que intercambies con el equipo sobre ella.\n\n' +
           'De la ubicación solo guardamos el nombre de tu cantón o ciudad: nunca tus coordenadas ni tu recorrido. ' +
           'Si usas Hobbier desde el navegador, para saber el nombre del lugar enviamos tus coordenadas aproximadas ' +
           '(redondeadas a cerca de 1 km) a OpenStreetMap (Nominatim), que no las asocia a tu cuenta. ' +
@@ -58,7 +62,11 @@ const es = {
           'El cruce se hace en nuestros servidores: el anunciante nunca recibe tus datos, solo cifras totales ' +
           '(cuántas personas vieron o tocaron su anuncio). Los anuncios para todo el país se muestran siempre; ' +
           'si das permiso de ubicación, además verás primero los de tu zona. Puedes quitar ese permiso cuando ' +
-          'quieras en los ajustes del teléfono o del navegador y borraremos tu ciudad guardada.\n\n' +
+          'quieras en los ajustes del teléfono o del navegador y borraremos tu ciudad guardada.\n' +
+          '• Si pides un anuncio: revisar tu solicitud, escribirte por los mensajes de la app para acordar el ' +
+          'precio y el pago y, si se aprueba, crear el anuncio. Esos mensajes solo los ven tú y el equipo de ' +
+          'administración; en el anuncio publicado solo aparecen el nombre del negocio, el texto, la foto y el ' +
+          'enlace que aprobemos.\n\n' +
           'No vendemos tus datos.',
       },
       {
@@ -77,7 +85,10 @@ const es = {
         body:
           'Mientras tu cuenta exista. Las publicaciones que eliminas dejan de mostrarse de inmediato a todo el mundo, ' +
           'pero se conserva un registro interno marcado como eliminado (por ejemplo, para poder atender reportes). ' +
-          'Si eliminamos tu cuenta, se borran tus datos.',
+          'Si eliminamos tu cuenta, se borran tus datos.\n\n' +
+          'Las solicitudes de anuncio y sus mensajes se guardan mientras exista tu cuenta, como registro de lo que ' +
+          'se pidió y se acordó. Si una solicitud se rechaza, borramos la foto que adjuntaste en ese momento. Puedes pedirnos ' +
+          'que borremos tus solicitudes escribiéndonos.',
       },
       {
         heading: '6. Tus derechos',
@@ -117,7 +128,7 @@ const es = {
   },
   terms: {
     title: 'Términos de Uso',
-    updated: `Última actualización: 18 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Aceptación',
@@ -169,12 +180,81 @@ const es = {
       },
     ],
   },
+  ads: {
+    title: 'Condiciones de Publicidad',
+    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    sections: [
+      {
+        heading: '1. Cómo funciona',
+        body:
+          'Cualquier persona con cuenta puede pedir un anuncio desde Descubre. Enviar la solicitud no publica nada: ' +
+          'el equipo de Hobbier la revisa, le escribe al anunciante por los mensajes de la app para acordar el ' +
+          'precio y el pago, y solo entonces decide si la aprueba. Toda la comunicación sobre el anuncio se hace ' +
+          'por esos mensajes, en Perfil → Mis solicitudes de anuncio. Los anuncios aprobados aparecen en el feed marcados como "Patrocinado".',
+      },
+      {
+        heading: '2. Precio y pago',
+        body:
+          'La tarifa de referencia es de ₡500 por cada día que el anuncio aparece en el feed. El total que muestra ' +
+          'el formulario es una estimación: el precio final, las fechas y la forma de pago se acuerdan con el equipo ' +
+          'antes de publicar, y el anuncio no se publica hasta que el pago esté confirmado. Hobbier no cobra nada ' +
+          'dentro de la app ni guarda datos de tarjetas.',
+      },
+      {
+        heading: '3. Qué no se puede anunciar',
+        body:
+          '• Alcohol, tabaco, vapeadores ni productos relacionados.\n' +
+          '• Apuestas, casinos, loterías no oficiales ni juegos de azar.\n' +
+          '• Contenido sexual o servicios para adultos.\n' +
+          '• Armas, municiones ni explosivos.\n' +
+          '• Productos de salud, dietas o tratamientos con promesas milagrosas o sin respaldo.\n' +
+          '• Estafas, pirámides, esquemas de dinero fácil o inversiones con ganancias garantizadas.\n' +
+          '• Cualquier producto, servicio o evento ilegal en Costa Rica, o que discrimine, engañe o ponga en riesgo a las personas.\n\n' +
+          `Hobbier tiene usuarios desde los ${MIN_AGE} años, así que los anuncios deben ser adecuados para ese público.`,
+      },
+      {
+        heading: '4. Revisión y retiro',
+        body:
+          'Hobbier puede rechazar cualquier solicitud, o retirar un anuncio ya publicado, sin tener que dar ' +
+          'explicaciones, sobre todo si incumple estas condiciones, recibe reportes o la información resulta falsa.',
+      },
+      {
+        heading: '5. Devoluciones',
+        body:
+          '• Si Hobbier retira el anuncio porque incumple estas condiciones o la información era falsa, no se devuelve el dinero.\n' +
+          '• Si Hobbier lo retira por cualquier otro motivo, se devuelve la parte proporcional de los días que no llegó a mostrarse.\n' +
+          '• Si el evento se cancela o el anunciante quiere detener el anuncio, debe avisar al equipo por los ' +
+          'mensajes de la solicitud: se retira y se devuelve la parte proporcional de los días que faltaban desde el aviso.\n' +
+          '• Una solicitud rechazada no genera ningún cobro.',
+      },
+      {
+        heading: '6. Responsabilidad del anunciante',
+        body:
+          'El anunciante es el único responsable de lo que anuncia: de que la información sea real y no engañosa, ' +
+          'de cumplir la ley (incluida la Ley 7472 de Defensa del Consumidor) y de tener derecho a usar el nombre, ' +
+          'las marcas y la imagen que envía. Hobbier solo muestra el anuncio: no organiza, vende ni garantiza el ' +
+          'evento o servicio anunciado, y cualquier reclamo sobre él debe dirigirse al anunciante.',
+      },
+      {
+        heading: '7. Datos personales',
+        body:
+          'Los datos de la solicitud se tratan como explica la Política de Privacidad. El anunciante nunca recibe ' +
+          'datos de los usuarios que ven su anuncio, solo cifras totales de impresiones y clics.',
+      },
+      {
+        heading: '8. Contacto',
+        body:
+          'Cualquier consulta sobre un anuncio se hace por los mensajes de la solicitud, en Perfil → ' +
+          'Mis solicitudes de anuncio.',
+      },
+    ],
+  },
 };
 
 const en = {
   privacy: {
     title: 'Privacy Policy',
-    updated: `Last updated: October 18, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Who we are',
@@ -192,7 +272,10 @@ const en = {
           '• Social activity: your friendships, requests and invitations.\n' +
           '• Reports: if you report a post, the reason and any text you write.\n' +
           '• Online status: while you use the app, other signed-in users can tell that you are online.\n' +
-          '• Ads: your canton or city, only if you grant location permission on your phone, and which ads you see or tap.\n\n' +
+          '• Ads: your canton or city, only if you grant location permission on your phone, and which ads you see or tap.\n' +
+          '• Ad requests: if you ask to advertise from Discover, the business or person name, the description, ' +
+          'the photo you attach, the dates you request, the event details (date and place), which account sent the ' +
+          'request and the messages you exchange with the team about it.\n\n' +
           'From your location we only store the name of your canton or city: never your coordinates or movements. ' +
           'If you use Hobbier in a web browser, to find the place name we send your approximate coordinates ' +
           '(rounded to about 1 km) to OpenStreetMap (Nominatim), which does not link them to your account. ' +
@@ -209,7 +292,10 @@ const en = {
           'The matching happens on our servers: advertisers never receive your data, only totals ' +
           '(how many people saw or tapped their ad). Nationwide ads are always shown; if you grant ' +
           'location permission, ads from your area are shown first. You can remove that permission at any ' +
-          'time in your phone or browser settings and we will delete your stored city.\n\n' +
+          'time in your phone or browser settings and we will delete your stored city.\n' +
+          '• If you request an ad: to review your request, message you in the app to agree on the price and ' +
+          'payment and, if approved, create the ad. Only you and the admin team can see those messages; the ' +
+          'published ad only shows the business name, text, photo and link that we approve.\n\n' +
           'We do not sell your data.',
       },
       {
@@ -228,7 +314,11 @@ const en = {
         body:
           'For as long as your account exists. Posts you delete stop being shown to everyone immediately, ' +
           'but an internal record marked as deleted is kept (for example, to handle reports). ' +
-          'If we delete your account, your data is erased.',
+          'If we delete your account, your data is erased.\n\n' +
+          'Ad requests and their messages are kept for as long as your account exists, as a record of what was ' +
+          'requested and agreed. ' +
+          'If a request is rejected, we delete the photo you attached at that moment. You can ask us to delete ' +
+          'your requests by writing to us.',
       },
       {
         heading: '6. Your rights',
@@ -268,7 +358,7 @@ const en = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: `Last updated: October 18, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Acceptance',
@@ -320,10 +410,78 @@ const en = {
       },
     ],
   },
+  ads: {
+    title: 'Advertising Terms',
+    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
+    sections: [
+      {
+        heading: '1. How it works',
+        body:
+          'Anyone with an account can request an ad from Discover. Sending the request does not publish anything: ' +
+          'the Hobbier team reviews it, messages the advertiser in the app to agree on the price and payment, and ' +
+          'only then decides whether to approve it. All communication about the ad happens through those messages, ' +
+          'in Profile → My ad requests. Approved ads appear in the feed marked as "Sponsored".',
+      },
+      {
+        heading: '2. Price and payment',
+        body:
+          'The reference rate is ₡500 for each day the ad appears in the feed. The total shown in the form is an ' +
+          'estimate: the final price, dates and payment method are agreed with the team before publishing, and the ' +
+          'ad is not published until payment is confirmed. Hobbier does not charge anything inside the app or store ' +
+          'card details.',
+      },
+      {
+        heading: '3. What cannot be advertised',
+        body:
+          '• Alcohol, tobacco, vapes or related products.\n' +
+          '• Betting, casinos, unofficial lotteries or gambling.\n' +
+          '• Sexual content or adult services.\n' +
+          '• Weapons, ammunition or explosives.\n' +
+          '• Health products, diets or treatments with miracle or unsupported claims.\n' +
+          '• Scams, pyramid schemes, easy-money schemes or investments with guaranteed returns.\n' +
+          '• Any product, service or event that is illegal in Costa Rica, or that discriminates, misleads or puts people at risk.\n\n' +
+          `Hobbier has users from age ${MIN_AGE}, so ads must be suitable for that audience.`,
+      },
+      {
+        heading: '4. Review and removal',
+        body:
+          'Hobbier may reject any request, or remove an ad that is already published, without having to give a ' +
+          'reason, especially if it breaks these terms, receives reports or the information turns out to be false.',
+      },
+      {
+        heading: '5. Refunds',
+        body:
+          '• If Hobbier removes the ad because it breaks these terms or the information was false, no money is refunded.\n' +
+          '• If Hobbier removes it for any other reason, the proportional part of the days it was not shown is refunded.\n' +
+          '• If the event is cancelled or the advertiser wants to stop the ad, they must tell the team through the ' +
+          'request messages: it is removed and the proportional part of the remaining days from that notice is refunded.\n' +
+          '• A rejected request is never charged.',
+      },
+      {
+        heading: '6. Advertiser responsibility',
+        body:
+          'The advertiser is solely responsible for what they advertise: that the information is true and not ' +
+          'misleading, that it complies with the law (including Costa Rica’s Consumer Protection Law 7472) and that ' +
+          'they have the right to use the name, brands and image they send. Hobbier only displays the ad: it does ' +
+          'not organise, sell or guarantee the advertised event or service, and any claim about it must be made to ' +
+          'the advertiser.',
+      },
+      {
+        heading: '7. Personal data',
+        body:
+          'Request data is handled as explained in the Privacy Policy. The advertiser never receives data about ' +
+          'the users who see their ad, only total impressions and clicks.',
+      },
+      {
+        heading: '8. Contact',
+        body: 'Any question about an ad is handled through the request messages, in Profile → My ad requests.',
+      },
+    ],
+  },
 };
 
 const LEGAL_CONTENT = { es, en };
 
-/** Devuelve el documento ('privacy' | 'terms') en el idioma pedido, con español de respaldo. */
+/** Devuelve el documento ('privacy' | 'terms' | 'ads') en el idioma pedido, con español de respaldo. */
 export const getLegalDocument = (doc, language) =>
   (LEGAL_CONTENT[language] || LEGAL_CONTENT.es)[doc] || LEGAL_CONTENT.es[doc];

@@ -9,6 +9,7 @@ import { capitalizarTitulo } from '../../../utils/titleCase';
 import { spacing, fonts } from "../../../theme";
 import { Insignia, BotonAccion, TarjetaVacia, ControlSegmentado, TarjetaDato, getAdminUITheme } from "../adminUI";
 import { AdFormModal } from '../components/AdFormModal';
+import { AdminAdRequests } from './AdminAdRequests';
 import {
   getAdsAdmin,
   toggleAdActiveAdmin,
@@ -28,6 +29,13 @@ const FILTROS = [
   { key: 'todos', label: 'Todos', icono: 'albums-outline' },
 ];
 
+// Las solicitudes que llegan desde Descubre se revisan aquí mismo, junto a los
+// anuncios en los que acaban convirtiéndose.
+const VISTAS = [
+  { key: 'anuncios', label: 'Anuncios', icono: 'megaphone-outline' },
+  { key: 'solicitudes', label: 'Solicitudes', icono: 'mail-unread-outline' },
+];
+
 const fechaLegible = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -44,6 +52,7 @@ export const AdminAds = () => {
   const { notify, confirm } = useNotify();
   const [ads, setAds] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [vista, setVista] = useState('anuncios');
   const [filtro, setFiltro] = useState('vigentes');
   // undefined = formulario cerrado, null = anuncio nuevo, objeto = edición.
   const [editando, setEditando] = useState(undefined);
@@ -93,8 +102,19 @@ export const AdminAds = () => {
   const activos = conEstado.filter((ad) => ad.estado === 'ACTIVO').length;
   const ingresos = conEstado.reduce((suma, ad) => suma + Number(ad.price_paid || 0), 0);
 
+  if (vista === 'solicitudes') {
+    return (
+      <View>
+        <ControlSegmentado opciones={VISTAS} valor={vista} onChange={setVista} />
+        <AdminAdRequests onAdCreated={cargar} />
+      </View>
+    );
+  }
+
   return (
     <View>
+      <ControlSegmentado opciones={VISTAS} valor={vista} onChange={setVista} />
+
       <TouchableOpacity style={estilos.crearBtn} onPress={() => setEditando(null)} activeOpacity={0.85}>
         <Text style={estilos.crearBtnTexto}>+ Nuevo anuncio</Text>
       </TouchableOpacity>
