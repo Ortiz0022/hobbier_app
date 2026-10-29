@@ -1,10 +1,11 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, View, ActivityIndicator, Platform, Image } from 'react-native';
 import { Text, TextInput } from '../../../components/scaledText';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { spacing, fonts } from '../../../theme';
 import { Insignia, BotonAccion, TarjetaVacia, ControlSegmentado, fechaCorta, getAdminUITheme } from '../adminUI';
 import { AdFormModal } from '../components/AdFormModal';
@@ -26,13 +27,8 @@ const TONO_ESTADO = {
   RECHAZADA: 'alerta',
 };
 
-const FILTROS = [
-  { key: 'PENDIENTE', label: 'Pendientes', icono: 'time-outline' },
-  { key: 'historial', label: 'Revisadas', icono: 'checkmark-done-outline' },
-];
-
-const fechaLegible = (iso) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+const fechaLegible = (iso, lang = 'es') =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Solicitudes que llegan desde el formulario de Descubre.
@@ -46,7 +42,7 @@ const fechaLegible = (iso) =>
  */
 export const AdminAdRequests = ({ onAdCreated }) => {
   const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdRequestsTheme);
-
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const { notify } = useNotify();
   const [solicitudes, setSolicitudes] = useState([]);
@@ -59,6 +55,23 @@ export const AdminAdRequests = ({ onAdCreated }) => {
   const [motivo, setMotivo] = useState('');
   // Solicitud con el chat abierto. null = cerrado.
   const [chat, setChat] = useState(null);
+
+  const filtros = useMemo(
+    () => [
+      { key: 'PENDIENTE', label: t('admin.filter_pending') || 'Pendientes', icono: 'time-outline' },
+      { key: 'historial', label: t('admin.filter_reviewed') || 'Revisadas', icono: 'checkmark-done-outline' },
+    ],
+    [t]
+  );
+
+  const estadosMap = useMemo(
+    () => ({
+      PENDIENTE: { label: t('admin.status_pending') || 'PENDIENTE', tono: 'acento' },
+      APROBADA: { label: t('admin.status_approved') || 'APROBADA', tono: 'marca' },
+      RECHAZADA: { label: t('admin.status_rejected') || 'RECHAZADA', tono: 'alerta' },
+    }),
+    [t]
+  );
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -99,7 +112,7 @@ export const AdminAdRequests = ({ onAdCreated }) => {
 
   const pendientes = solicitudes.filter((s) => s.status === 'PENDIENTE');
   const visibles = filtro === 'PENDIENTE' ? pendientes : solicitudes.filter((s) => s.status !== 'PENDIENTE');
-  const opciones = FILTROS.map((f) =>
+  const opciones = filtros.map((f) =>
     f.key === 'PENDIENTE' && pendientes.length ? { ...f, label: `${f.label} (${pendientes.length})` } : f
   );
 
@@ -114,94 +127,111 @@ export const AdminAdRequests = ({ onAdCreated }) => {
           icono="mail-unread-outline"
           texto={
             filtro === 'PENDIENTE'
-              ? 'No hay solicitudes pendientes. Llegan cuando alguien usa "Anúnciate en Hobbier" en Descubre.'
-              : 'Todavía no has revisado ninguna solicitud.'
+              ? (t('admin.requests_empty_pending') || 'No hay solicitudes pendientes. Llegan cuando alguien usa "Anúnciate en Hobbier" en Descubre.')
+              : (t('admin.requests_empty_reviewed') || 'Todavía no has revisado ninguna solicitud.')
           }
         />
       )}
 
       {!cargando &&
-        visibles.map((sol) => (
-          <View key={sol.id} style={adminStyles.card}>
-            <View style={adminStyles.rowBetween}>
-              <Text style={estilos.anunciante} numberOfLines={1}>
-                {sol.advertiser_name}
-              </Text>
-              <Insignia texto={sol.status} tono={TONO_ESTADO[sol.status]} />
-            </View>
-            <View style={estilos.fila}>
-              {!!sol.image_url && <Image source={{ uri: sol.image_url }} style={estilos.miniatura} />}
-              <View style={{ flex: 1 }}>
-                <Text style={estilos.titulo}>{sol.title}</Text>
-                {!!sol.body && <Text style={estilos.cuerpo}>{sol.body}</Text>}
+        visibles.map((sol) => {
+          const infoEstado = estadosMap[sol.status] || { label: sol.status, tono: 'neutro' };
+          const dias = diasDeVigencia(sol.starts_on, sol.ends_on);
+          return (
+            <View key={sol.id} style={adminStyles.card}>
+              <View style={adminStyles.rowBetween}>
+                <Text style={estilos.anunciante} numberOfLines={1}>
+                  {sol.advertiser_name}
+                </Text>
+                <Insignia texto={infoEstado.label} tono={infoEstado.tono} />
               </View>
-            </View>
-
-            <View style={adminStyles.badgeRow}>
-              <Insignia texto={sol.kind === 'EVENTO' ? 'Evento' : 'Servicio'} tono="neutro" />
-              {!!sol.event_date && <Insignia texto={fechaLegible(sol.event_date)} tono="neutro" />}
-              {!!sol.event_place && <Insignia texto={sol.event_place} tono="neutro" />}
-            </View>
-
-            {!!sol.starts_on && !!sol.ends_on && (
-              <Text style={estilos.pedido}>
-                Pide {fechaLegible(sol.starts_on)} → {fechaLegible(sol.ends_on)} ·{' '}
-                {diasDeVigencia(sol.starts_on, sol.ends_on)} días · {colones(precioSugerido(sol.starts_on, sol.ends_on))}
-              </Text>
-            )}
-
-            {!!sol.link_url && <Text style={adminStyles.listMeta}>{sol.link_url}</Text>}
-            <Text style={adminStyles.listMeta}>
-              Enviada por @{sol.requester?.username || 'usuario'} · {fechaCorta(sol.created_at)}
-            </Text>
-            {sol.status === 'RECHAZADA' && !!sol.reject_reason && (
-              <Text style={estilos.motivo}>Motivo: {sol.reject_reason}</Text>
-            )}
-
-            {/* Revisadas: el chat sigue abierto (dudas sobre el pago, un rechazo...). */}
-            {sol.status !== 'PENDIENTE' && (
-              <View style={estilos.acciones}>
-                <BotonAccion texto="Mensajes" icono="chatbubbles-outline" onPress={() => setChat(sol)} />
+              <View style={estilos.fila}>
+                {!!sol.image_url && <Image source={{ uri: sol.image_url }} style={estilos.miniatura} />}
+                <View style={{ flex: 1 }}>
+                  <Text style={estilos.titulo}>{sol.title}</Text>
+                  {!!sol.body && <Text style={estilos.cuerpo}>{sol.body}</Text>}
+                </View>
               </View>
-            )}
 
-            {sol.status === 'PENDIENTE' && rechazando !== sol.id && (
-              <View style={estilos.acciones}>
-                <BotonAccion texto="Aprobar" icono="checkmark" tono="marca" onPress={() => setAprobando(sol)} />
-                <BotonAccion texto="Mensajes" icono="chatbubbles-outline" onPress={() => setChat(sol)} />
-                <BotonAccion
-                  texto="Rechazar"
-                  icono="close"
-                  tono="rojo"
-                  onPress={() => {
-                    setRechazando(sol.id);
-                    setMotivo('');
-                  }}
+              <View style={adminStyles.badgeRow}>
+                <Insignia
+                  texto={sol.kind === 'EVENTO' ? (t('admin.kind_event') || 'Evento') : (t('admin.kind_service') || 'Servicio')}
+                  tono="neutro"
                 />
+                {!!sol.event_date && <Insignia texto={fechaLegible(sol.event_date, language)} tono="neutro" />}
+                {!!sol.event_place && <Insignia texto={sol.event_place} tono="neutro" />}
               </View>
-            )}
 
-            {rechazando === sol.id && (
-              <View style={estilos.rechazo}>
-                <View style={estilos.input}>
-                  <TextInput {...theme.textInputProps}
-                    style={estilos.inputTexto}
-                    value={motivo}
-                    onChangeText={setMotivo}
-                    placeholder="Motivo del rechazo (opcional)"
-                    placeholderTextColor={colors.textMuted}
-                    maxLength={300}
-                    multiline
+              {!!sol.starts_on && !!sol.ends_on && (
+                <Text style={estilos.pedido}>
+                  {t('admin.asks_dates', {
+                    from: fechaLegible(sol.starts_on, language),
+                    to: fechaLegible(sol.ends_on, language),
+                    days: dias,
+                    cost: colones(precioSugerido(sol.starts_on, sol.ends_on)),
+                  }) ||
+                    `Pide ${fechaLegible(sol.starts_on, language)} → ${fechaLegible(sol.ends_on, language)} · ${dias} días · ${colones(precioSugerido(sol.starts_on, sol.ends_on))}`}
+                </Text>
+              )}
+
+              {!!sol.link_url && <Text style={adminStyles.listMeta}>{sol.link_url}</Text>}
+              <Text style={adminStyles.listMeta}>
+                {t('admin.sent_by', {
+                  user: sol.requester?.username || 'usuario',
+                  date: fechaCorta(sol.created_at, language),
+                }) || `Enviada por @${sol.requester?.username || 'usuario'} · ${fechaCorta(sol.created_at, language)}`}
+              </Text>
+              {sol.status === 'RECHAZADA' && !!sol.reject_reason && (
+                <Text style={estilos.motivo}>
+                  {t('admin.reject_reason', { reason: sol.reject_reason }) || `Motivo: ${sol.reject_reason}`}
+                </Text>
+              )}
+
+              {/* Revisadas: el chat sigue abierto (dudas sobre el pago, un rechazo...). */}
+              {sol.status !== 'PENDIENTE' && (
+                <View style={estilos.acciones}>
+                  <BotonAccion texto={t('admin.messages') || 'Mensajes'} icono="chatbubbles-outline" onPress={() => setChat(sol)} />
+                </View>
+              )}
+
+              {sol.status === 'PENDIENTE' && rechazando !== sol.id && (
+                <View style={estilos.acciones}>
+                  <BotonAccion texto={t('admin.approve') || 'Aprobar'} icono="checkmark" tono="marca" onPress={() => setAprobando(sol)} />
+                  <BotonAccion texto={t('admin.messages') || 'Mensajes'} icono="chatbubbles-outline" onPress={() => setChat(sol)} />
+                  <BotonAccion
+                    texto={t('admin.reject') || 'Rechazar'}
+                    icono="close"
+                    tono="rojo"
+                    onPress={() => {
+                      setRechazando(sol.id);
+                      setMotivo('');
+                    }}
                   />
                 </View>
-                <View style={estilos.acciones}>
-                  <BotonAccion texto="Confirmar rechazo" icono="close" tono="rojo" onPress={() => confirmarRechazo(sol)} />
-                  <BotonAccion texto="Cancelar" icono="arrow-undo-outline" onPress={() => setRechazando(null)} />
+              )}
+
+              {rechazando === sol.id && (
+                <View style={estilos.rechazo}>
+                  <View style={estilos.input}>
+                    <TextInput {...theme.textInputProps}
+                      style={estilos.inputTexto}
+                      value={motivo}
+                      onChangeText={setMotivo}
+                      placeholder={t('admin.reject_placeholder') || 'Motivo del rechazo (opcional)'}
+                      placeholderTextColor={colors.textMuted}
+                      maxLength={300}
+                      multiline
+                    />
+                  </View>
+                  <View style={estilos.acciones}>
+                    <BotonAccion texto={t('admin.confirm_rejection') || 'Confirmar rechazo'} icono="close" tono="rojo" onPress={() => confirmarRechazo(sol)} />
+                    <BotonAccion texto={t('common.cancel') || 'Cancelar'} icono="arrow-undo-outline" onPress={() => setRechazando(null)} />
+                  </View>
                 </View>
-              </View>
-            )}
-          </View>
-        ))}
+              )}
+            </View>
+          );
+        })}
 
       <AdRequestChatModal
         visible={!!chat}
@@ -235,6 +265,7 @@ export const AdminAdRequests = ({ onAdCreated }) => {
     </View>
   );
 };
+
 
 
 

@@ -81,10 +81,20 @@ export const AdminAds = () => {
     cargar();
   }, [cargar]);
 
+  const estadosMap = useMemo(
+    () => ({
+      ACTIVO: { label: t('admin.ad_status_active') || 'ACTIVO', tono: 'marca' },
+      PROGRAMADO: { label: t('admin.ad_status_scheduled') || 'PROGRAMADO', tono: 'acento' },
+      PAUSADO: { label: t('admin.ad_status_paused') || 'PAUSADO', tono: 'neutro' },
+      VENCIDO: { label: t('admin.ad_status_expired') || 'VENCIDO', tono: 'alerta' },
+    }),
+    [t]
+  );
+
   const pausarOActivar = async (ad) => {
     const { error } = await toggleAdActiveAdmin(ad.id, ad.is_active);
     if (error) {
-      notify('No se pudo cambiar el estado del anuncio.', { type: 'error' });
+      notify(t('admin.error_change_ad_status') || 'No se pudo cambiar el estado del anuncio.', { type: 'error' });
       return;
     }
     cargar();
@@ -92,18 +102,20 @@ export const AdminAds = () => {
 
   const eliminar = async (ad) => {
     const ok = await confirm({
-      title: 'Eliminar anuncio',
-      message: `Se borrará "${ad.title}" junto con sus cifras de impresiones y clics. Si solo quieres que deje de salir, mejor páusalo.`,
-      confirmLabel: 'Eliminar',
+      title: t('admin.delete_ad_title') || 'Eliminar anuncio',
+      message:
+        t('admin.delete_ad_msg', { title: ad.title }) ||
+        `Se borrará "${ad.title}" junto con sus cifras de impresiones y clics. Si solo quieres que deje de salir, mejor páusalo.`,
+      confirmLabel: t('admin.delete') || 'Eliminar',
       destructive: true,
     });
     if (!ok) return;
     const { error } = await deleteAdAdmin(ad.id);
     if (error) {
-      notify('No se pudo eliminar el anuncio.', { type: 'error' });
+      notify(t('admin.error_delete_ad') || 'No se pudo eliminar el anuncio.', { type: 'error' });
       return;
     }
-    notify('Anuncio eliminado.', { type: 'success' });
+    notify(t('admin.ad_deleted') || 'Anuncio eliminado.', { type: 'success' });
     cargar();
   };
 
@@ -117,7 +129,7 @@ export const AdminAds = () => {
   if (vista === 'solicitudes') {
     return (
       <View>
-        <ControlSegmentado opciones={VISTAS} valor={vista} onChange={setVista} />
+        <ControlSegmentado opciones={vistas} valor={vista} onChange={setVista} />
         <AdminAdRequests onAdCreated={cargar} />
       </View>
     );
@@ -145,8 +157,8 @@ export const AdminAds = () => {
           icono="megaphone-outline"
           texto={
             filtro === 'vigentes'
-              ? 'No hay anuncios vigentes. Cuando un negocio te pida anunciarse, créalo con "+ Nuevo anuncio".'
-              : 'Todavía no se ha creado ningún anuncio.'
+              ? (t('admin.empty_active_ads') || 'No hay anuncios vigentes. Cuando un negocio te pida anunciarse, créalo con "+ Nuevo anuncio".')
+              : (t('admin.empty_all_ads') || 'Todavía no se ha creado ningún anuncio.')
           }
         />
       )}
@@ -154,6 +166,7 @@ export const AdminAds = () => {
       {!cargando &&
         visibles.map((ad) => {
           const ctr = ad.impressions ? ((ad.clicks / ad.impressions) * 100).toFixed(1) : '0.0';
+          const infoEstado = estadosMap[ad.estado] || { label: ad.estado, tono: 'neutro' };
           return (
             <View key={ad.id} style={adminStyles.card}>
               <View style={estilos.fila}>
@@ -169,7 +182,7 @@ export const AdminAds = () => {
                     <Text style={estilos.anunciante} numberOfLines={1}>
                       {ad.advertiser_name}
                     </Text>
-                    <Insignia texto={ad.estado} tono={TONO_ESTADO[ad.estado]} />
+                    <Insignia texto={infoEstado.label} tono={infoEstado.tono} />
                   </View>
                   <Text style={estilos.titulo} numberOfLines={2}>
                     {ad.title}
@@ -191,21 +204,21 @@ export const AdminAds = () => {
               </View>
 
               <View style={estilos.cifras}>
-                <Cifra valor={ad.impressions} etiqueta="Impresiones" />
-                <Cifra valor={ad.people} etiqueta="Personas" />
-                <Cifra valor={ad.clicks} etiqueta="Clics" />
-                <Cifra valor={`${ctr}%`} etiqueta="CTR" />
+                <Cifra valor={ad.impressions} etiqueta={t('admin.impressions') || 'Impresiones'} />
+                <Cifra valor={ad.people} etiqueta={t('admin.people') || 'Personas'} />
+                <Cifra valor={ad.clicks} etiqueta={t('admin.clicks') || 'Clics'} />
+                <Cifra valor={`${ctr}%`} etiqueta={t('admin.ctr') || 'CTR'} />
               </View>
 
               <View style={estilos.acciones}>
-                <BotonAccion texto="Editar" icono="create-outline" onPress={() => setEditando(ad)} />
+                <BotonAccion texto={t('admin.edit') || 'Editar'} icono="create-outline" onPress={() => setEditando(ad)} />
                 <BotonAccion
-                  texto={ad.is_active ? 'Pausar' : 'Reanudar'}
+                  texto={ad.is_active ? (t('admin.pause') || 'Pausar') : (t('admin.resume') || 'Reanudar')}
                   icono={ad.is_active ? 'pause' : 'play'}
                   tono={ad.is_active ? 'neutro' : 'marca'}
                   onPress={() => pausarOActivar(ad)}
                 />
-                <BotonAccion texto="Eliminar" icono="trash-outline" tono="rojo" onPress={() => eliminar(ad)} />
+                <BotonAccion texto={t('admin.delete') || 'Eliminar'} icono="trash-outline" tono="rojo" onPress={() => eliminar(ad)} />
               </View>
             </View>
           );
