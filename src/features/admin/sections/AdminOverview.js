@@ -6,6 +6,7 @@ import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing } from "../../../theme";
 import { usePresence } from '../../../context/PresenceContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { getSystemStatsAdmin } from '../../../services/adminService';
 import { TarjetaDato, BotonAccion, getAdminUITheme } from "../adminUI";
 
@@ -19,6 +20,7 @@ import { TarjetaDato, BotonAccion, getAdminUITheme } from "../adminUI";
  */
 export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
   const { theme, colors, adminStyles, BADGE_TONOS } = useThemeValues(getAdminOverviewTheme);
+  const { t } = useLanguage();
 
   const { onlineUsers } = usePresence();
   const [stats, setStats] = useState(null);
@@ -61,35 +63,35 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
       key: 'apelaciones-soporte',
       cantidad: stats.apelacionesPendientes,
       icono: 'chatbubbles',
-      texto: 'apelaciones de cuentas sancionadas en soporte',
+      texto: t('admin.attention_appeals') || 'apelaciones de cuentas sancionadas en soporte',
       seccion: 'support',
     },
     {
       key: 'reportes-posts',
       cantidad: stats.reportesPendientes,
       icono: 'flag',
-      texto: 'reportes de publicaciones sin resolver',
+      texto: t('admin.attention_post_reports') || 'reportes de publicaciones sin resolver',
       seccion: 'posts',
     },
     {
       key: 'reportes-perfiles',
       cantidad: stats.reportesPerfilPendientes,
       icono: 'person-circle',
-      texto: 'perfiles reportados sin revisar',
+      texto: t('admin.attention_profile_reports') || 'perfiles reportados sin revisar',
       seccion: 'users',
     },
     {
       key: 'suspendidos',
       cantidad: stats.usuariosSuspendidos,
       icono: 'lock-closed',
-      texto: 'usuarios con sanción permanente',
+      texto: t('admin.attention_suspended') || 'usuarios con sanción permanente',
       seccion: 'users',
     },
     {
       key: 'sin-gusto',
       cantidad: stats.actividadesSinGusto,
       icono: 'pricetag',
-      texto: 'actividades activas sin ningún gusto: solo salen como comodín',
+      texto: t('admin.attention_activities_no_tag') || 'actividades activas sin ningún gusto: solo salen como comodín',
       seccion: 'activities',
     },
   ].filter((fila) => !!fila.cantidad);
@@ -97,7 +99,7 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
   return (
     <View>
       <View style={[adminStyles.rowBetween, { marginBottom: spacing.xs }]}>
-        <Text style={adminStyles.sectionTitle}>El sistema ahora</Text>
+        <Text style={adminStyles.sectionTitle}>{t('admin.system_now') || 'El sistema ahora'}</Text>
         <TouchableOpacity onPress={cargar} activeOpacity={0.7} accessibilityLabel="Actualizar cifras">
           <Ionicons name="refresh" size={16} color={cargando ? colors.primary : colors.textMuted} />
         </TouchableOpacity>
@@ -107,9 +109,11 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
         <TarjetaDato
           icono="people"
           valor={stats.usuarios}
-          etiqueta="Usuarios registrados"
+          etiqueta={t('admin.registered_users') || 'Usuarios registrados'}
           pista={
-            stats.usuariosNuevos > 0 ? `+${stats.usuariosNuevos} esta semana` : 'sin altas esta semana'
+            stats.usuariosNuevos > 0
+              ? (t('admin.this_week', { count: stats.usuariosNuevos }) || `+${stats.usuariosNuevos} esta semana`)
+              : (t('admin.no_new_this_week') || 'sin altas esta semana')
           }
           onPress={() => onIrASeccion('users')}
         />
@@ -119,49 +123,49 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
         <TarjetaDato
           icono="radio"
           valor={enLinea}
-          etiqueta="Conectados ahora"
-          pista="en tiempo real"
+          etiqueta={t('admin.online_now') || 'Conectados ahora'}
+          pista={t('admin.realtime') || 'en tiempo real'}
           tono="acento"
         />
         <TarjetaDato
           icono="images"
           valor={stats.postsActivos}
-          etiqueta="Publicaciones visibles"
-          pista={`${stats.postsSemana} nuevas esta semana`}
+          etiqueta={t('admin.visible_posts') || 'Publicaciones visibles'}
+          pista={t('admin.new_posts_week', { count: stats.postsSemana }) || `${stats.postsSemana} nuevas esta semana`}
           onPress={() => onIrASeccion('posts')}
         />
         <TarjetaDato
           icono="flag"
           valor={stats.reportesPendientes}
-          etiqueta="Reportes pendientes"
-          pista={`${stats.postsReportados} publicaciones por revisar`}
+          etiqueta={t('admin.pending_reports') || 'Reportes pendientes'}
+          pista={t('admin.posts_to_review', { count: stats.postsReportados }) || `${stats.postsReportados} publicaciones por revisar`}
           tono={stats.reportesPendientes > 0 ? 'alerta' : 'marca'}
           onPress={() => onIrASeccion('posts')}
         />
         <TarjetaDato
           icono="flash"
           valor={stats.actividadesActivas}
-          etiqueta="Actividades activas"
-          pista={`de ${stats.actividades} en el catálogo`}
+          etiqueta={t('admin.active_activities') || 'Actividades activas'}
+          pista={t('admin.of_total_catalog', { count: stats.actividades }) || `de ${stats.actividades} en el catálogo`}
           onPress={() => onIrASeccion('activities')}
         />
         <TarjetaDato
           icono="eye-off"
           valor={stats.postsOcultos}
-          etiqueta="Publicaciones ocultas"
-          pista="retiradas por moderación"
+          etiqueta={t('admin.hidden_posts') || 'Publicaciones ocultas'}
+          pista={t('admin.removed_by_moderation') || 'retiradas por moderación'}
           tono="neutro"
           onPress={() => onIrASeccion('posts')}
         />
       </View>
 
-      <Text style={adminStyles.sectionTitle}>Requiere atención</Text>
+      <Text style={adminStyles.sectionTitle}>{t('admin.requires_attention') || 'Requiere atención'}</Text>
       {atencion.length === 0 ? (
         <View style={adminStyles.card}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Ionicons name="checkmark-circle" size={22} color={colors.success} />
             <Text style={[adminStyles.listSubtitle, { flex: 1, marginTop: 0 }]}>
-              Nada pendiente: sin reportes, sin suspensiones y el catálogo bien etiquetado.
+              {t('admin.all_clear_title') || 'Nada pendiente: sin reportes, sin suspensiones y el catálogo bien etiquetado.'}
             </Text>
           </View>
         </View>
@@ -191,8 +195,7 @@ export const AdminOverview = ({ onIrASeccion, refreshKey }) => {
       )}
 
       <Text style={adminStyles.countLine}>
-        Los conectados se leen del canal de presencia en tiempo real; el resto de cifras se
-        cuentan al abrir esta pantalla.
+        {t('admin.presence_note') || 'Los conectados se leen del canal de presencia en tiempo real; el resto de cifras se cuentan al abrir esta pantalla.'}
       </Text>
     </View>
   );

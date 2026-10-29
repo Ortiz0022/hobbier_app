@@ -1,11 +1,12 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Image, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing, fonts } from "../../../theme";
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { getPostsAdmin, resolveReportedPostAdmin } from '../../../services/adminService';
 import { getCategoryLabel } from '../../../utils/category';
 import { ControlSegmentado, Insignia, TarjetaVacia, BotonAccion, Paginador, fechaCorta, getAdminUITheme } from "../adminUI";
@@ -38,8 +39,16 @@ const POR_PAGINA = 10;
  */
 export const AdminPosts = ({ refreshKey }) => {
   const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminPostsTheme);
+  const { t, language } = useLanguage();
 
-  const { notify, confirm } = useNotify();
+  const estados = useMemo(
+    () => [
+      { key: 'ACTIVE', label: t('admin.filter_visible') || 'Visibles', icono: 'eye' },
+      { key: 'REPORTED', label: t('admin.pending_reports') || 'Reportadas', icono: 'flag' },
+      { key: 'DELETED', label: t('admin.filter_deleted') || 'Ocultas', icono: 'eye-off' },
+    ],
+    [t]
+  );
   const [estado, setEstado] = useState('ACTIVE');
   const [posts, setPosts] = useState([]);
   const [total, setTotal] = useState(0);
@@ -90,9 +99,9 @@ export const AdminPosts = ({ refreshKey }) => {
 
   const ocultar = async (post) => {
     const ok = await confirm({
-      title: '¿Ocultar la publicación?',
-      message: 'Dejará de verse en el feed. Podrás restaurarla desde "Ocultas".',
-      confirmLabel: 'Sí, ocultar',
+      title: t('admin.hide_post_title') || '¿Ocultar la publicación?',
+      message: t('admin.hide_post_msg') || 'Dejará de verse en el feed. Podrás restaurarla desde "Ocultas".',
+      confirmLabel: t('admin.hide_post_btn') || 'Sí, ocultar',
       destructive: true,
     });
     if (ok) cambiarEstado(post, 'DELETED');
@@ -100,27 +109,42 @@ export const AdminPosts = ({ refreshKey }) => {
 
   const eliminar = async (post) => {
     const ok = await confirm({
-      title: '¿Eliminar la publicación?',
+      title: t('admin.delete_post_title') || '¿Eliminar la publicación?',
       message:
-        'Dejará de verse en el feed y el autor perderá su evidencia. Podrás restaurarla desde "Ocultas".',
-      confirmLabel: 'Sí, eliminar',
+        t('admin.delete_post_msg') || 'Dejará de verse en el feed y el autor perderá su evidencia. Podrás restaurarla desde "Ocultas".',
+      confirmLabel: t('admin.delete_post_btn') || 'Sí, eliminar',
       destructive: true,
     });
     if (ok) cambiarEstado(post, 'DELETED');
   };
 
   const vacios = {
-    ACTIVE: 'No hay publicaciones visibles todavía.',
-    REPORTED: 'No hay publicaciones reportadas pendientes de revisión.',
-    DELETED: 'No hay publicaciones ocultas.',
+    ACTIVE: t('admin.empty_active_posts') || 'No hay publicaciones visibles todavía.',
+    REPORTED: t('admin.empty_reported_posts') || 'No hay publicaciones reportadas pendientes de revisión.',
+    DELETED: t('admin.empty_deleted_posts') || 'No hay publicaciones ocultas.',
+  };
+
+  const formatReason = (reason) => {
+    if (language === 'en') {
+      const map = {
+        'Violencia': 'Violence',
+        'Spam': 'Spam',
+        'Contenido inapropiado': 'Inappropriate content',
+        'Acoso': 'Harassment',
+        'Desinformación': 'Misinformation',
+        'Otro': 'Other',
+      };
+      return map[reason] || reason;
+    }
+    return reason;
   };
 
   return (
     <View>
-      <ControlSegmentado opciones={ESTADOS} valor={estado} onChange={cambiarFiltro} />
+      <ControlSegmentado opciones={estados} valor={estado} onChange={cambiarFiltro} />
 
       <Text style={adminStyles.countLine}>
-        {total} {total === 1 ? 'publicación' : 'publicaciones'}
+        {total} {total === 1 ? (t('admin.posts_count_single') || 'publicación') : (t('admin.posts_count_plural') || 'publicaciones')}
       </Text>
 
       {cargando && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />}
@@ -143,17 +167,17 @@ export const AdminPosts = ({ refreshKey }) => {
             <View key={post.id} style={adminStyles.reviewCard}>
               <View style={adminStyles.reviewHeader}>
                 <Text style={adminStyles.reviewAuthor}>
-                  Post de:{' '}
-                  <Text style={adminStyles.reviewAuthorName}>@{post.author?.username || 'desconocido'}</Text>
+                  {t('admin.post_from') || 'Post de:'}{' '}
+                  <Text style={adminStyles.reviewAuthorName}>@{post.author?.username || t('admin.unknown_user') || 'desconocido'}</Text>
                 </Text>
-                <Insignia texto="REVISAR" tono="alerta" />
+                <Insignia texto={t('admin.review_badge') || 'REVISAR'} tono="alerta" />
               </View>
 
               {!!actividad && (
                 <View style={estilos.preview}>
                   <View style={estilos.previewTags}>
                     <View style={estilos.tagCategoria}>
-                      <Text style={estilos.tagCategoriaText}>{getCategoryLabel(actividad.category)}</Text>
+                      <Text style={estilos.tagCategoriaText}>{getCategoryLabel(actividad.category, language)}</Text>
                     </View>
                     <View style={estilos.tagPuntos}>
                       <Ionicons name="star" size={10} color={colors.onPrimary} />
@@ -172,7 +196,7 @@ export const AdminPosts = ({ refreshKey }) => {
               <TouchableOpacity
                 onPress={() => setMirando(post)}
                 activeOpacity={0.9}
-                accessibilityLabel="Ver la foto en grande"
+                accessibilityLabel={t('admin.view_photo') || 'Ver la foto en grande'}
               >
                 <Image source={{ uri: post.image_url }} style={adminStyles.reviewImage} />
                 <View style={estilos.lupa}>
@@ -183,17 +207,21 @@ export const AdminPosts = ({ refreshKey }) => {
               {motivos.length > 0 && (
                 <View style={adminStyles.reasonsBox}>
                   <Text style={adminStyles.reasonsLabel}>
-                    {motivos.length === 1 ? 'Motivo del reporte' : 'Motivos del reporte'}
+                    {motivos.length === 1 ? (t('admin.report_reason_single') || 'Motivo del reporte') : (t('admin.report_reason_plural') || 'Motivos del reporte')}
                   </Text>
                   {motivos.map((r) => (
                     <View key={r.id} style={adminStyles.reasonRow}>
                       <Ionicons name="warning" size={13} color={colors.danger} />
                       <View style={adminStyles.reasonContent}>
                         <Text style={adminStyles.reasonText}>
-                          <Text style={adminStyles.reasonBold}>{r.reason}</Text>
-                          {!!r.reporter?.username && ` · por @${r.reporter.username}`}
+                          <Text style={adminStyles.reasonBold}>{formatReason(r.reason)}</Text>
+                          {!!r.reporter?.username && ` · ${t('admin.by_reporter', { username: r.reporter.username }) || `por @${r.reporter.username}`}`}
                         </Text>
-                        {!!r.details && <Text style={adminStyles.reasonDetails}>"{r.details}"</Text>}
+                        {!!r.details && (
+                          <Text style={adminStyles.reasonDetails}>
+                            "{r.details === 'Reportado desde el feed' ? (t('admin.reported_from_feed') || r.details) : r.details}"
+                          </Text>
+                        )}
                       </View>
                     </View>
                   ))}
@@ -206,14 +234,14 @@ export const AdminPosts = ({ refreshKey }) => {
                   onPress={() => eliminar(post)}
                   activeOpacity={0.8}
                 >
-                  <Text style={adminStyles.bigBtnTextDelete}>Eliminar</Text>
+                  <Text style={adminStyles.bigBtnTextDelete}>{t('common.delete') || 'Eliminar'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[adminStyles.bigBtn, adminStyles.bigBtnKeep]}
                   onPress={() => cambiarEstado(post, 'ACTIVE')}
                   activeOpacity={0.8}
                 >
-                  <Text style={adminStyles.bigBtnTextKeep}>Mantener post</Text>
+                  <Text style={adminStyles.bigBtnTextKeep}>{t('admin.keep_post') || 'Mantener post'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -249,26 +277,26 @@ export const AdminPosts = ({ refreshKey }) => {
                 activeOpacity={0.85}
               >
                 <Text style={adminStyles.listTitle} numberOfLines={2}>
-                  {actividad?.title ? capitalizarTitulo(actividad.title) : 'Actividad sin título'}
+                  {actividad?.title ? capitalizarTitulo(actividad.title) : (t('admin.untitled_activity') || 'Actividad sin título')}
                 </Text>
                 <Text style={adminStyles.listSubtitle} numberOfLines={1}>
-                  @{post.author?.username || 'desconocido'}
+                  @{post.author?.username || t('admin.unknown_user') || 'desconocido'}
                 </Text>
                 <Text style={adminStyles.listMeta}>
-                  Publicada {fechaCorta(post.created_at)}
+                  {t('admin.published_on', { time: fechaCorta(post.created_at, language) }) || `Publicada ${fechaCorta(post.created_at, language)}`}
                   {actividad?.points_awarded ? ` · +${actividad.points_awarded} pts` : ''}
                 </Text>
                 {post.status === 'DELETED' && (
                   <View style={adminStyles.badgeRow}>
-                    <Insignia texto="OCULTA" tono="neutro" />
+                    <Insignia texto={t('admin.hidden_badge') || 'OCULTA'} tono="neutro" />
                   </View>
                 )}
               </TouchableOpacity>
 
               {post.status === 'DELETED' ? (
-                <BotonAccion texto="Restaurar" icono="eye" onPress={() => cambiarEstado(post, 'ACTIVE')} />
+                <BotonAccion texto={t('admin.restore') || 'Restaurar'} icono="eye" onPress={() => cambiarEstado(post, 'ACTIVE')} />
               ) : (
-                <BotonAccion texto="Ocultar" icono="eye-off" tono="rojo" onPress={() => ocultar(post)} />
+                <BotonAccion texto={t('admin.hide') || 'Ocultar'} icono="eye-off" tono="rojo" onPress={() => ocultar(post)} />
               )}
             </View>
           );

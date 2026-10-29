@@ -51,12 +51,12 @@ export const SettingsScreen = ({
 
   const handleSignOut = async () => {
     const accepted = await confirm({
-      title: '¿Cerrar sesión?',
-      message: '¿Estás seguro de que deseas salir de tu cuenta?',
-      confirmLabel: 'Sí, cerrar',
-      confirmText: 'Sí, cerrar',
-      cancelText: 'Cancelar',
-      cancelLabel: 'Cancelar',
+      title: t('settings.logout_confirm_title') || '¿Cerrar sesión?',
+      message: t('settings.logout_confirm_msg') || '¿Estás seguro de que deseas salir de tu cuenta?',
+      confirmLabel: t('settings.logout_confirm_btn') || 'Sí, cerrar',
+      confirmText: t('settings.logout_confirm_btn') || 'Sí, cerrar',
+      cancelText: t('common.cancel') || 'Cancelar',
+      cancelLabel: t('common.cancel') || 'Cancelar',
       destructive: true,
     });
 
@@ -69,20 +69,20 @@ export const SettingsScreen = ({
     const list = [
       {
         id: 'account',
-        title: 'Tu cuenta',
+        title: t('settings.section_account') || 'Tu cuenta',
         items: [
           {
             id: 'edit_profile',
             title: t('profile.edit_profile') || 'Editar perfil',
-            subtitle: 'Nombre, foto de perfil y detalles',
+            subtitle: t('settings.sub_edit_profile') || 'Nombre, foto de perfil y detalles',
             icon: User,
             iconColor: COLORS.cyanIcon,
             onPress: onEditProfile,
           },
           {
             id: 'change_password',
-            title: 'Cambiar contraseña',
-            subtitle: 'Contraseña y seguridad de tu cuenta',
+            title: t('settings.change_password') || 'Cambiar contraseña',
+            subtitle: t('settings.sub_change_password') || 'Contraseña y seguridad de tu cuenta',
             icon: KeyRound,
             iconColor: COLORS.cyanIcon,
             onPress: onNavigateToChangePassword,
@@ -91,12 +91,12 @@ export const SettingsScreen = ({
       },
       {
         id: 'usage',
-        title: 'Cómo usas Hobbier',
+        title: t('settings.section_usage') || 'Cómo usas Hobbier',
         items: [
           {
             id: 'preferences',
             title: t('profile.config_preferences') || 'Tus gustos e intereses',
-            subtitle: 'Categorías y preferencias recomendadas',
+            subtitle: t('settings.sub_preferences') || 'Categorías y preferencias recomendadas',
             icon: Sliders,
             iconColor: COLORS.cyanIcon,
             onPress: onGoToPreferences,
@@ -113,12 +113,12 @@ export const SettingsScreen = ({
       },
       {
         id: 'community',
-        title: 'Comunidad y creadores',
+        title: t('settings.section_community') || 'Comunidad y creadores',
         items: [
           {
             id: 'create_activity',
             title: t('profile.create_own_activity') || 'Crear actividad propia',
-            subtitle: 'Propón una actividad para la comunidad',
+            subtitle: t('settings.sub_create_activity') || 'Propón una actividad para la comunidad',
             icon: PlusCircle,
             iconColor: COLORS.orange,
             onPress: onOpenCreateActivity,
@@ -126,7 +126,7 @@ export const SettingsScreen = ({
           {
             id: 'my_ads',
             title: t('profile.my_ad_requests') || 'Mis solicitudes de anuncios',
-            subtitle: 'Revisa el estado de tus promociones',
+            subtitle: t('settings.sub_my_ads') || 'Revisa el estado de tus promociones',
             icon: Megaphone,
             iconColor: COLORS.cyanIcon,
             onPress: onOpenMyAds,
@@ -135,8 +135,8 @@ export const SettingsScreen = ({
             ? [
                 {
                   id: 'admin_panel',
-                  title: 'Administrar aplicación',
-                  subtitle: 'Panel de administración y estadísticas',
+                  title: t('settings.admin_panel') || 'Administrar aplicación',
+                  subtitle: t('settings.sub_admin_panel') || 'Panel de administración y estadísticas',
                   icon: ShieldCheck,
                   iconColor: COLORS.orange,
                   onPress: onNavigateToAdmin,
@@ -147,12 +147,12 @@ export const SettingsScreen = ({
       },
       {
         id: 'legal',
-        title: 'Más información y asistencia',
+        title: t('settings.section_legal') || 'Más información y asistencia',
         items: [
           {
             id: 'privacy',
             title: t('legal.privacy_policy') || 'Política de privacidad',
-            subtitle: 'Conoce cómo protegemos tus datos personales',
+            subtitle: t('settings.sub_privacy') || 'Conoce cómo protegemos tus datos personales',
             icon: Shield,
             iconColor: COLORS.textSecondary,
             onPress: onOpenPrivacy,
@@ -160,7 +160,7 @@ export const SettingsScreen = ({
           {
             id: 'terms',
             title: t('legal.terms_of_use') || 'Condiciones de uso',
-            subtitle: 'Normas del servicio y uso de la comunidad',
+            subtitle: t('settings.sub_terms') || 'Normas del servicio y uso de la comunidad',
             icon: FileText,
             iconColor: COLORS.textSecondary,
             onPress: onOpenTerms,
@@ -169,12 +169,12 @@ export const SettingsScreen = ({
       },
       {
         id: 'session',
-        title: 'Sesión',
+        title: t('settings.section_session') || 'Sesión',
         items: [
           {
             id: 'logout',
             title: t('profile.logout') || 'Cerrar sesión',
-            subtitle: 'Cierra tu sesión en este dispositivo',
+            subtitle: t('settings.sub_logout') || 'Cierra tu sesión en este dispositivo',
             icon: LogOut,
             iconColor: COLORS.danger,
             isDestructive: true,
@@ -214,7 +214,7 @@ export const SettingsScreen = ({
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Configuración y actividad</Text>
+        <Text style={styles.headerTitle}>{t('settings.title') || 'Configuración y actividad'}</Text>
         <View style={styles.headerRightSpacer} />
       </View>
 
@@ -229,7 +229,7 @@ export const SettingsScreen = ({
             <Search size={18} color={COLORS.textMuted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar"
+              placeholder={t('settings.search_placeholder') || 'Buscar'}
               placeholderTextColor={COLORS.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -250,7 +250,9 @@ export const SettingsScreen = ({
           {/* SECTIONS */}
           {sections.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No se encontraron resultados para "{searchQuery}"</Text>
+              <Text style={styles.emptyText}>
+                {t('settings.no_results', { query: searchQuery }) || `No se encontraron resultados para "${searchQuery}"`}
+              </Text>
             </View>
           ) : (
             sections.map((sec) => (

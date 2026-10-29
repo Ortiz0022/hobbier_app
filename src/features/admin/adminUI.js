@@ -127,14 +127,15 @@ export const BarraBusqueda = ({ valor, alCambiar, alLimpiar, placeholder }) => {
 };
 
 /** "hace 3 días" / "12 oct 2026" — fechas cortas, que las filas van apretadas. */
-export const fechaCorta = (iso) => {
+export const fechaCorta = (iso, language = 'es') => {
   if (!iso) return '—';
   const fecha = new Date(iso);
   const dias = Math.floor((Date.now() - fecha.getTime()) / 86400000);
-  if (dias <= 0) return 'hoy';
-  if (dias === 1) return 'ayer';
-  if (dias < 7) return `hace ${dias} días`;
-  return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  const isEn = language === 'en';
+  if (dias <= 0) return isEn ? 'today' : 'hoy';
+  if (dias === 1) return isEn ? 'yesterday' : 'ayer';
+  if (dias < 7) return isEn ? `${dias} days ago` : `hace ${dias} días`;
+  return fecha.toLocaleDateString(isEn ? 'en-US' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 /** Cuántos números caben sin apretar en una pantalla de móvil. */

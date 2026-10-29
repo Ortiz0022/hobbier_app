@@ -344,7 +344,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
         <View style={styles.headerContainer}>
           <View style={styles.headerRow}>
             <View style={styles.titleCol}>
-              <Text style={styles.mainTitle}>Mi perfil</Text>
+              <Text style={styles.mainTitle}>{t('profile.my_profile') || 'Mi perfil'}</Text>
               <Text style={styles.userHandleText}>@{profile?.username}</Text>
             </View>
 
@@ -679,7 +679,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
               ) : completedActivities.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>
-                    Todavía no completaste ninguna actividad.
+                    {t('profile.no_completed_activities') || 'Todavía no completaste ninguna actividad.'}
                   </Text>
                 </View>
               ) : (
@@ -734,8 +734,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                           <View style={styles.streakRow}>
                             <Feather name="zap" size={12} color={COLORS.orange} style={{ marginRight: 4 }} />
                             <Text style={styles.streakText}>
-                              Has completado este reto {totalRepetitions}{' '}
-                              {totalRepetitions === 1 ? 'vez' : 'veces'}
+                              {t('profile.completed_count', { count: totalRepetitions }) || `Has completado este reto ${totalRepetitions} ${totalRepetitions === 1 ? 'vez' : 'veces'}`}
                             </Text>
                           </View>
 
@@ -753,7 +752,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                           <View style={styles.photosSection}>
                             {activityPosts.length === 0 ? (
                               <Text style={styles.emptyText}>
-                                Todavía no hay fotos para esta actividad.
+                                {t('profile.no_photos_activity') || 'Todavía no hay fotos para esta actividad.'}
                               </Text>
                             ) : (
                               <View style={styles.igGrid}>
@@ -797,7 +796,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
               ) : posts.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>
-                    Todavía no subiste fotos de tus actividades.
+                    {t('profile.no_photos_uploaded') || 'Todavía no subiste fotos de tus actividades.'}
                   </Text>
                 </View>
               ) : (

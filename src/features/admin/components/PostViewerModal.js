@@ -5,6 +5,7 @@ import { View, StyleSheet, Image, Modal, Pressable, TouchableOpacity } from 'rea
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing, fonts } from "../../../theme";
+import { useLanguage } from '../../../context/LanguageContext';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 import { fechaCorta } from '../adminUI';
 
@@ -18,6 +19,7 @@ import { fechaCorta } from '../adminUI';
  */
 export const PostViewerModal = ({ post, onClose }) => {
   const { theme, colors, styles } = useThemeValues(getPostViewerModalTheme);
+  const { t, language } = useLanguage();
 
   if (!post) return null;
 
@@ -40,10 +42,10 @@ export const PostViewerModal = ({ post, onClose }) => {
         {/* El pie no se cierra al tocarlo: aquí se lee, no se navega. */}
         <Pressable style={styles.pie} onPress={() => {}}>
           <Text style={styles.pieTitulo} numberOfLines={2}>
-            {actividad?.title ? capitalizarTitulo(actividad.title) : 'Actividad sin título'}
+            {actividad?.title ? capitalizarTitulo(actividad.title) : (t('admin.untitled_activity') || 'Actividad sin título')}
           </Text>
           <Text style={styles.pieTexto}>
-            @{post.author?.username || 'desconocido'} · publicada {fechaCorta(post.created_at)}
+            @{post.author?.username || t('admin.unknown_user') || 'desconocido'} · {t('admin.published_on', { time: fechaCorta(post.created_at, language) }) || `publicada ${fechaCorta(post.created_at, language)}`}
             {actividad?.points_awarded ? ` · +${actividad.points_awarded} pts` : ''}
           </Text>
         </Pressable>
