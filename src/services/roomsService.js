@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 export const roomsService = {
   // ----------------------------------------------------
@@ -49,6 +50,7 @@ export const roomsService = {
       p_receiver_id: receiverId,
     });
     if (error) throw error;
+    avisar(AVISO.SALA_INVITACION, { para: receiverId, salaId: roomId });
     return data; // Retorna invitation_id
   },
 
@@ -269,6 +271,8 @@ export const roomsService = {
 
     if (error) throw error;
 
+    // A los demás miembros de la sala; el nombre lo pone el servidor.
+    avisar(AVISO.MENSAJE_SALA, { salaId: roomId, texto: trimmedContent });
     return data;
   },
 

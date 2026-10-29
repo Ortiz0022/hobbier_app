@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 export const getReportedPostsAdmin = async () => {
   try {
@@ -362,7 +363,10 @@ export const suspendProfileAdmin = async (profileId, motivo) => {
       p_user_id: profileId,
       p_reason: texto,
     });
-    if (!error) return { error: null, motivoGuardado: true };
+    if (!error) {
+      avisar(AVISO.CUENTA_SANCIONADA, { para: profileId, motivo: texto });
+      return { error: null, motivoGuardado: true };
+    }
 
     const noExisteLaRpc =
       error.code === 'PGRST202' || /admin_suspend_account/.test(error.message || '');

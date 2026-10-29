@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 import { readImageForUpload } from './activityService';
 
 // ============================================================
@@ -56,6 +57,7 @@ export const submitAdRequest = async (userId, solicitud) => {
       ends_on: solicitud.ends_on,
     });
     if (error) throw error;
+    avisar(AVISO.ADMIN_SOLICITUD_ANUNCIO, {});
     return { error: null };
   } catch (error) {
     console.error('Error al enviar la solicitud de anuncio:', error.message);
@@ -148,6 +150,8 @@ export const sendAdRequestMessage = async (requestId, senderId, body) => {
     .select('id, from_team, body, created_at')
     .single();
   if (error) console.error('Error al enviar el mensaje:', error.message);
+  // Mismo tipo para las dos direcciones: el servidor mira quién escribe.
+  if (!error) avisar(AVISO.ANUNCIO_MENSAJE, { solicitudId: requestId, texto: body });
   return { message: data || null, error };
 };
 
@@ -226,6 +230,13 @@ export const approveAdRequestAdmin = async (requestId, adId, adminId) => {
     .update({ status: 'APROBADA', ad_id: adId, reviewed_by: adminId, reviewed_at: new Date().toISOString() })
     .eq('id', requestId);
   if (error) console.error('Error al aprobar la solicitud:', error.message);
+  else {
+    avisar(AVISO.ANUNCIO_ESTADO, {
+      solicitudId: requestId,
+      estado: 'APPROVED',
+      detalle: 'Ya se está mostrando en el feed de la gente a la que le encaja.',
+    });
+  }
   return { error };
 };
 
@@ -264,6 +275,13 @@ export const rejectAdRequestAdmin = async (solicitud, motivo, adminId) => {
     })
     .eq('id', solicitud.id);
   if (error) console.error('Error al rechazar la solicitud:', error.message);
+  else {
+    avisar(AVISO.ANUNCIO_ESTADO, {
+      solicitudId: solicitud.id,
+      estado: 'REJECTED',
+      detalle: motivo?.trim() || 'Entra a Perfil para ver los detalles.',
+    });
+  }
   return { error, fotoBorrada };
 };
 

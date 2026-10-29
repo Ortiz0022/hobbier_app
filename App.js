@@ -1,6 +1,6 @@
 import { ThemeProvider, useThemeValues } from './src/context/ThemeContext';
 import { createThemeStyles } from './src/theme/themeRuntime';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -36,6 +36,11 @@ import { FriendsScreen } from './src/features/friends/FriendsScreen';
 import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
+import { pushService } from './src/services/pushService';
+
+// Con la app abierta, un aviso que llega se enseña igual; sin esto no se ve
+// nada y parece que no llegó.
+pushService.configurarAvisosEnPrimerPlano();
 
 const MainApp = () => {
   const { theme, styles } = useThemeValues(getAppTheme);
@@ -58,6 +63,14 @@ const MainApp = () => {
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
   const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
+
+  // Avisos push: se pide permiso y se guarda el token de este aparato una vez
+  // por sesión. Si la persona dice que no, no se vuelve a insistir, y si la
+  // dependencia no está instalada el servicio se queda callado.
+  useEffect(() => {
+    if (!user?.id) return;
+    pushService.registrarDispositivo();
+  }, [user?.id]);
   const { notify } = useNotify();
 
   // Escuchar notificaciones de soporte para administradores en tiempo real

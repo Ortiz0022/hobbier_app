@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -185,7 +186,10 @@ export const SuspendedScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-        <View style={styles.card}>
+        <ScrollView
+          contentContainerStyle={styles.card}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.iconWrap}>
             <Feather name="shield-off" size={44} color={colors.danger} />
           </View>
@@ -246,7 +250,7 @@ export const SuspendedScreen = () => {
             <Feather name="log-out" size={16} color={colors.textMuted} style={{ marginRight: 6 }} />
             <Text style={styles.secondaryBtnText}>Cerrar sesión</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -431,9 +435,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    // En una ventana ancha el chat no se estira de borde a borde: se
+    // centra con el mismo ancho que usa el resto de la app en escritorio.
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
   },
   card: {
-    flex: 1,
+    // flexGrow en vez de flex: centra mientras quepa y se desplaza cuando no.
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xxl,
@@ -676,6 +686,8 @@ const styles = StyleSheet.create({
   },
   motivoCaja: {
     alignSelf: 'stretch',
+    width: '100%',
+    maxWidth: 360,
     borderWidth: 1,
     borderColor: theme.color(colors.surfaceMuted, 'border'),
     borderLeftWidth: 3,
