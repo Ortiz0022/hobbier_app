@@ -1,6 +1,7 @@
+import { peekQuery, queryKeys } from '../../services/queryCache';
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
@@ -42,22 +43,30 @@ export const RecommendationScreen = ({
   const [adRequestVisible, setAdRequestVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [pendingActivity, setPendingActivity] = useState(null);
-  const [recentFriendPosts, setRecentFriendPosts] = useState([]);
+  const [pendingActivity, setPendingActivity] = useState(() =>
+    peekQuery(queryKeys.activities(user?.id))?.activities.find((a) => a.status === 'PENDING') || null);
+  const homeRequest = useRef(0);
+  const [recentFriendPosts, setRecentFriendPosts] = useState(() => peekQuery(queryKeys.feed(user?.id, 3, 0))?.posts || []);
 
   useEffect(() => {
     loadHomeData();
+    return () => { homeRequest.current += 1; };
   }, [user?.id]);
 
-  const loadHomeData = async () => {
+  const loadHomeData = async (force = false) => {
     if (!user?.id) return;
+    const request = ++homeRequest.current;
     try {
-      const { activities } = await getUserActivities(user.id);
-      const pending = (activities || []).find((a) => a.status === 'PENDING');
-      setPendingActivity(pending || null);
-
-      const { posts } = await getFriendsFeed(user.id, 3, 0);
-      setRecentFriendPosts(posts || []);
+      await Promise.all([
+        getUserActivities(user.id, { force }).then(({ activities, error }) => {
+          if (request === homeRequest.current && !error) {
+            setPendingActivity((activities || []).find((a) => a.status === 'PENDING') || null);
+          }
+        }),
+        getFriendsFeed(user.id, 3, 0, { force }).then(({ posts, error }) => {
+          if (request === homeRequest.current && !error) setRecentFriendPosts(posts || []);
+        }),
+      ]);
     } catch (err) {
       console.error('Error cargando datos del Home:', err);
     }
@@ -65,7 +74,7 @@ export const RecommendationScreen = ({
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadHomeData();
+    await loadHomeData(true);
     setRefreshing(false);
   };
 
@@ -177,23 +186,23 @@ export const RecommendationScreen = ({
 
 // Los valores claros originales se conservan; solo se resuelven colores según el tema.
 export const getRecommendationScreenTheme = createThemeStyles((theme) => {
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.color('#FBFCFA', 'background'),
-  },
-  scrollContent: {
-    // Al menos tan alto como la pantalla: si el contenido no desborda, en
-    // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
-    // no llega a dispararse nunca.
-    flexGrow: 1,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 36,
-  },
-});
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.color('#FBFCFA', 'background'),
+    },
+    scrollContent: {
+      // Al menos tan alto como la pantalla: si el contenido no desborda, en
+      // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
+      // no llega a dispararse nunca.
+      flexGrow: 1,
+      width: '100%',
+      maxWidth: 560,
+      alignSelf: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      paddingBottom: 36,
+    },
+  });
   return { theme, styles };
 });

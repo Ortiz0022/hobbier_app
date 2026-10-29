@@ -1,3 +1,4 @@
+import { fetchQuery, queryKeys, invalidateQueries } from './queryCache';
 import { Platform } from 'react-native';
 import { supabase } from '../config/supabase';
 import { File } from 'expo-file-system';
@@ -103,6 +104,7 @@ export const acceptActivity = async (userId, activityId) => {
         .single();
 
       if (updateErr) throw updateErr;
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       return { userActivity: updated, error: null, alreadyPending: false };
     }
 
@@ -119,6 +121,7 @@ export const acceptActivity = async (userId, activityId) => {
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { userActivity: data, error: null, alreadyPending: false };
   } catch (error) {
     console.error('Error al aceptar actividad:', error.message);
@@ -127,7 +130,7 @@ export const acceptActivity = async (userId, activityId) => {
 };
 
 // 3. Obtener actividades del usuario (PENDING y COMPLETED)
-export const getUserActivities = async (userId) => {
+const fetchUserActivities = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('user_activities')
@@ -171,6 +174,11 @@ export const getUserActivities = async (userId) => {
   }
 };
 
+export const getUserActivities = (userId, options = {}) => fetchQuery(
+  queryKeys.activities(userId), () => fetchUserActivities(userId),
+  { ...options, tags: ["activities"] },
+);
+
 // 4. Subir fotografía de evidencia a Supabase Storage
 export const uploadEvidenceImage = async (userId, activityId, imageUri) => {
   try {
@@ -213,9 +221,11 @@ export const completeActivityRPC = async (userActivityId, imageUrl) => {
         p_image_url: imageUrl,
       });
       if (fallbackError) throw fallbackError;
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       return { result: fallbackData, error: null };
     }
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { result: data, error: null };
   } catch (error) {
     console.error('Error en RPC de registro de actividad:', error.message);
@@ -261,7 +271,7 @@ export const moderateActivityContent = async (title, description, language = 'es
     });
 
     if (error) throw error;
-    
+
     // data.is_safe y data.reason
     return { isSafe: data?.is_safe ?? true, reason: data?.reason || '', error: null };
   } catch (error) {

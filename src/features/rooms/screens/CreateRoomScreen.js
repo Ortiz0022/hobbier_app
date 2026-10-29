@@ -31,7 +31,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
   const { user } = useAuth();
   const { notify } = useNotify();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { createRoom, uploadCover, inviteFriend } = useRoomActions();
   
   const [name, setName] = useState('');
@@ -92,8 +92,8 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) return alert('Debes ingresar un nombre para la sala.');
-    if (!selectedActivityId) return alert('Debes seleccionar un reto.');
+    if (!name.trim()) return alert(t('rooms.name_required') || 'Debes ingresar un nombre para la sala.');
+    if (!selectedActivityId) return alert(t('rooms.activity_required') || 'Debes seleccionar un reto.');
     
     if (isSubmitting) return;
 
@@ -110,7 +110,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
           const iso = toISODate(customDateStr);
           const parsed = iso ? new Date(`${iso}T23:59:59`) : null;
           if (!parsed || parsed <= new Date()) {
-            return alert('Elige en el calendario una fecha futura.');
+            return alert(t('rooms.future_date_required') || 'Elige en el calendario una fecha futura.');
           }
           endAt = parsed.toISOString();
         } else {
@@ -149,7 +149,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
       // 4. Finalizar
       if (coverUploadError) {
-        notify('La sala fue creada, pero no pudimos subir la portada. Podrás reintentarlo después.', {
+        notify(t('rooms.cover_error') || 'La sala fue creada, pero no pudimos subir la portada. Podrás reintentarlo después.', {
           type: 'warning',
           title: 'Aviso',
         });
@@ -158,7 +158,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
     } catch (err) {
       console.error(err);
-      alert(err.message || 'Ocurrió un error al crear la sala.');
+      alert(err.message || t('rooms.create_error') || 'Ocurrió un error al crear la sala.');
     } finally {
       setIsSubmitting(false);
     }
@@ -192,37 +192,37 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nueva Sala</Text>
+        <Text style={styles.headerTitle}>{t('rooms.new_room') || 'Nueva Sala'}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* Nombre */}
-        <Text style={styles.sectionTitle}>Nombre de la Sala</Text>
+        <Text style={styles.sectionTitle}>{t('rooms.room_name') || 'Nombre de la Sala'}</Text>
         <TextInput {...theme.textInputProps}
           style={styles.textInput}
-          placeholder="Ej: Reto Verano 2026"
+          placeholder={t('rooms.room_name_placeholder') || "Ej: Reto Verano 2026"}
           value={name}
           onChangeText={setName}
           placeholderTextColor={colors.textMuted}
         />
 
         {/* Portada */}
-        <Text style={styles.sectionTitle}>Portada (Opcional)</Text>
+        <Text style={styles.sectionTitle}>{t('rooms.cover_optional') || 'Portada (Opcional)'}</Text>
         <TouchableOpacity style={styles.coverButton} onPress={pickImage}>
           {coverUri ? (
             <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
           ) : (
             <View style={styles.coverPlaceholder}>
               <Feather name="camera" size={24} color={colors.primary} />
-              <Text style={styles.coverPlaceholderText}>Añadir foto de portada</Text>
+              <Text style={styles.coverPlaceholderText}>{t('rooms.add_cover_photo') || 'Añadir foto de portada'}</Text>
             </View>
           )}
         </TouchableOpacity>
 
         {/* Reto */}
-        <Text style={styles.sectionTitle}>Selecciona un Reto</Text>
+        <Text style={styles.sectionTitle}>{t('rooms.choose_challenge') || 'Selecciona un Reto'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
           {activities.map(act => (
             <TouchableOpacity 
@@ -240,8 +240,8 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
         {/* Duración */}
         <View style={styles.switchRow}>
           <View>
-            <Text style={styles.sectionTitleSwitch}>Establecer fecha límite</Text>
-            <Text style={styles.subtitleSwitch}>El reto finalizará automáticamente</Text>
+            <Text style={styles.sectionTitleSwitch}>{t('rooms.set_deadline') || 'Establecer fecha límite'}</Text>
+            <Text style={styles.subtitleSwitch}>{t('rooms.deadline_subtitle') || 'El reto finalizará automáticamente'}</Text>
           </View>
           <Switch 
             value={hasDeadline} 
@@ -261,7 +261,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
                   onPress={() => setDaysToAdd(days)}
                 >
                   <Text style={[styles.dayOptionText, daysToAdd === days && styles.dayOptionTextSelected]}>
-                    {days} días
+                    {days} {t('rooms.days') || 'días'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -270,7 +270,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
                   onPress={() => setDaysToAdd('custom')}
                 >
                   <Text style={[styles.dayOptionText, daysToAdd === 'custom' && styles.dayOptionTextSelected]}>
-                    Otra
+                    {t('rooms.other') || 'Otra'}
                   </Text>
               </TouchableOpacity>
             </View>
@@ -287,15 +287,15 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
             {/* Fecha de cierre en palabras: confirma qué día termina el reto */}
             {deadlinePreview ? (
-              <Text style={styles.deadlinePreview}>Finaliza el {deadlinePreview}</Text>
+              <Text style={styles.deadlinePreview}>{t('rooms.ends_on', { date: deadlinePreview }) || `Finaliza el ${deadlinePreview}`}</Text>
             ) : null}
           </View>
         )}
 
         {/* Amigos */}
-        <Text style={styles.sectionTitle}>Invitar Amigos</Text>
+        <Text style={styles.sectionTitle}>{t('rooms.invite_friends') || 'Invitar Amigos'}</Text>
         {friends.length === 0 ? (
-          <Text style={styles.emptyText}>No tienes amigos agregados aún.</Text>
+          <Text style={styles.emptyText}>{t('rooms.no_friends_yet') || 'No tienes amigos agregados aún.'}</Text>
         ) : (
           friends.map((item, index) => {
             const friend = item.profile;
@@ -333,7 +333,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
           {isSubmitting ? (
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
-            <Text style={styles.submitButtonText}>Crear Sala</Text>
+            <Text style={styles.submitButtonText}>{t('rooms.create_room_btn') || 'Crear Sala'}</Text>
           )}
         </TouchableOpacity>
       </View>

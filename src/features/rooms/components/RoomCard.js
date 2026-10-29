@@ -12,15 +12,15 @@ import { formatDate } from '../../../utils/dateFormat';
 export const RoomCard = ({ room, onPress }) => {
   const { theme, colors, card, styles } = useThemeValues(getRoomCardTheme);
 
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isClosed = isRoomClosed(room);
   const { url: coverUrl, loading } = useSignedUrl('room-images', room.image_path);
   
   const getStatusText = () => {
-    if (isClosed) return 'Reto finalizado';
-    if (!room.end_at) return 'Activa · Sin fecha límite';
+    if (isClosed) return t('rooms.status_closed') || 'Reto finalizado';
+    if (!room.end_at) return t('rooms.status_no_deadline') || 'Activa · Sin fecha límite';
     
-    return `Activa · Finaliza el ${formatDate(room.end_at, language)}`;
+    return t('rooms.status_ends_at', { date: formatDate(room.end_at, language) }) || `Activa · Finaliza el ${formatDate(room.end_at, language)}`;
   };
 
   return (
@@ -46,7 +46,7 @@ export const RoomCard = ({ room, onPress }) => {
       <View style={styles.infoContainer}>
         <Text style={styles.name} numberOfLines={1}>{room.name}</Text>
         <Text style={styles.challengeTitle} numberOfLines={1}>
-          {room.challenge?.title || 'Reto grupal'}
+          {room.challenge?.title || t('rooms.group_challenge') || 'Reto grupal'}
         </Text>
         
         <View style={[styles.statusBadge, isClosed && styles.statusBadgeClosed]}>

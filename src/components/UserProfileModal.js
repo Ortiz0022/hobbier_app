@@ -27,17 +27,17 @@ import { formatDateTime } from '../utils/dateFormat';
 // Mismos tokens exactos que usa ProfileScreen para que ambos perfiles luzcan idénticos.
 
 
-const TABS = [
-  { key: 'fotos', label: 'Fotos' },
-  { key: 'actividades', label: 'Actividades' },
-];
-
 export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage }) => {
   const { theme, COLORS, styles } = useThemeValues(getUserProfileModalTheme);
 
   const { user } = useAuth();
   const { notify } = useNotify();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+
+  const TABS = [
+    { key: 'fotos', label: t('profile.photos_tab') || 'Fotos' },
+    { key: 'actividades', label: t('profile.activities_tab') || 'Actividades' },
+  ];
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [completedActivities, setCompletedActivities] = useState([]);
@@ -195,7 +195,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 <Text style={[styles.statNumber, styles.statNumberCyan]}>
                   {userProfile.points || 0}
                 </Text>
-                <Text style={styles.statLabel}>Puntos</Text>
+                <Text style={styles.statLabel}>{t('profile.points') || 'Puntos'}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -204,7 +204,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 <Text style={styles.statNumber}>
                   {loadingStats ? '…' : completedActivities.length}
                 </Text>
-                <Text style={styles.statLabel}>Retos</Text>
+                <Text style={styles.statLabel}>{t('profile.challenges') || 'Retos'}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -217,7 +217,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 <Text style={styles.statNumber}>
                   {loadingStats ? '…' : friends.length}
                 </Text>
-                <Text style={styles.statLabel}>Amigos</Text>
+                <Text style={styles.statLabel}>{t('profile.friends') || 'Amigos'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -233,7 +233,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 activeOpacity={0.8}
               >
                 <Feather name="message-circle" size={16} color={theme.color("#FFFFFF", 'text')} />
-                <Text style={styles.messageButtonText}>Enviar mensaje</Text>
+                <Text style={styles.messageButtonText}>{t('friends.send_message') || 'Enviar mensaje'}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -262,7 +262,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
             ) : completedActivities.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>
-                  Este usuario todavía no completó ninguna actividad.
+                  {t('profile.user_no_activities') || 'Este usuario todavía no completó ninguna actividad.'}
                 </Text>
               </View>
             ) : (
@@ -270,7 +270,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                 {completedActivities.map((item) => {
                   const isExpanded = expandedActivityId === item.id;
                   const activityPosts = item.posts || [];
-                  const catStyle = getCategoryStyle(item.activity?.category, item.activity?.title);
+                  const catStyle = getCategoryStyle(item.activity?.category, item.activity?.title, language);
                   const totalRepetitions = activityPosts.length > 0 ? activityPosts.length : 1;
                   return (
                     <View
@@ -317,8 +317,9 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                         <View style={styles.streakRow}>
                           <Feather name="zap" size={12} color={COLORS.orange} style={{ marginRight: 4 }} />
                           <Text style={styles.streakText}>
-                            Ha completado este reto {totalRepetitions}{' '}
-                            {totalRepetitions === 1 ? 'vez' : 'veces'}
+                            {totalRepetitions === 1
+                              ? (t('profile.completed_times_one') || 'Ha completado este reto 1 vez')
+                              : (t('profile.completed_times_other', { count: totalRepetitions }) || `Ha completado este reto ${totalRepetitions} veces`)}
                           </Text>
                         </View>
 
@@ -336,7 +337,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                         <View style={styles.photosSection}>
                           {activityPosts.length === 0 ? (
                             <Text style={styles.emptyText}>
-                              Todavía no hay fotos para esta actividad.
+                              {t('profile.no_photos_activity') || 'Todavía no hay fotos para esta actividad.'}
                             </Text>
                           ) : (
                             <View style={styles.igGrid}>
@@ -349,7 +350,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                                     setViewerImage({
                                       uri: post.image_url,
                                       title: item.activity?.title,
-                                      category: getCategoryLabel(item.activity?.category),
+                                      category: getCategoryLabel(item.activity?.category, language),
                                       points: item.activity?.points_awarded || 0,
                                       completedAt: post.created_at,
                                       reactionsCount: (post.post_reactions || []).length,
@@ -379,14 +380,14 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
             ) : posts.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>
-                  Este usuario todavía no subió fotos de sus actividades.
+                  {t('profile.user_no_photos') || 'Este usuario todavía no subió fotos de sus actividades.'}
                 </Text>
               </View>
             ) : (
               <View style={styles.photoGrid}>
                 {posts.map((post) => {
                   const title = post.user_activity?.activity?.title || 'Actividad completada';
-                  const category = getCategoryLabel(post.user_activity?.activity?.category);
+                  const category = getCategoryLabel(post.user_activity?.activity?.category, language);
                   const points = post.user_activity?.activity?.points_awarded || 0;
                   const reactionsCount = (post.post_reactions || []).length;
                   return (
@@ -494,7 +495,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeaderTitle} numberOfLines={1}>
-                Amigos de {userProfile.full_name || `@${userProfile.username}`}
+                {t('friends.friends_of', { name: userProfile.full_name || `@${userProfile.username}` }) || `Amigos de ${userProfile.full_name || `@${userProfile.username}`}`}
               </Text>
               <TouchableOpacity
                 style={styles.modalCloseBtn}
@@ -511,9 +512,9 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
               ) : suggestedFriends.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Feather name="users" size={32} color={COLORS.textMuted} style={styles.emptyIcon} />
-                  <Text style={styles.emptyTitle}>Sin amigos para mostrar</Text>
+                  <Text style={styles.emptyTitle}>{t('friends.no_friends_to_show') || 'Sin amigos para mostrar'}</Text>
                   <Text style={styles.emptyText}>
-                    Este Hobbier todavía no tiene otros amigos en común contigo.
+                    {t('friends.no_common_friends') || 'Este Hobbier todavía no tiene otros amigos en común contigo.'}
                   </Text>
                 </View>
               ) : (
@@ -541,12 +542,12 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                       {alreadyFriends ? (
                         <View style={styles.friendBadge}>
                           <Feather name="check" size={14} color={COLORS.cyanIcon} />
-                          <Text style={styles.friendBadgeText}>Amigos</Text>
+                          <Text style={styles.friendBadgeText}>{t('friends.already_friends') || 'Amigos'}</Text>
                         </View>
                       ) : requestSent ? (
                         <View style={styles.friendBadge}>
                           <Feather name="clock" size={14} color={COLORS.textMuted} />
-                          <Text style={[styles.friendBadgeText, { color: COLORS.textMuted }]}>Enviada</Text>
+                          <Text style={[styles.friendBadgeText, { color: COLORS.textMuted }]}>{t('friends.sent') || 'Enviada'}</Text>
                         </View>
                       ) : (
                         <TouchableOpacity
@@ -560,7 +561,7 @@ export const UserProfileModal = ({ visible, userProfile, onClose, onSendMessage 
                           ) : (
                             <>
                               <Feather name="user-plus" size={16} color={COLORS.cyanIcon} />
-                              <Text style={styles.addBtnText}>Agregar</Text>
+                              <Text style={styles.addBtnText}>{t('friends.add_friend') || 'Agregar'}</Text>
                             </>
                           )}
                         </TouchableOpacity>

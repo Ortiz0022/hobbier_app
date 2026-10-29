@@ -11,14 +11,17 @@ import {
   Easing,
   SafeAreaView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Palette, Heart, Flame } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { isSupabaseConfigured } from '../../config/supabase';
 import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
+import { AuthFeatureCarousel } from './components/AuthFeatureCarousel';
 import {
   validateEmail,
   validateNewPassword,
@@ -49,6 +52,9 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export const AuthScreen = () => {
   const { theme, styles } = useThemeValues(getAuthScreenTheme);
+
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   const { signIn, signUp, resetPassword, isUsernameTaken, loading } = useAuth();
   const { notify } = useNotify();
@@ -106,22 +112,10 @@ export const AuthScreen = () => {
   // estado con el formulario ya invisible (que es cuando la tarjeta cambia de alto
   // sin que se note) y se vuelve a mostrar.
   const switchMode = (apply) => {
-    Animated.timing(enter, {
-      toValue: 0,
-      duration: 130,
-      easing: Easing.in(Easing.quad),
-      useNativeDriver: USE_NATIVE_DRIVER,
-    }).start(() => {
-      apply();
-      setErrorMessage('');
-      setInfoMessage('');
-      Animated.timing(enter, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }).start();
-    });
+    apply();
+    setErrorMessage('');
+    setInfoMessage('');
+    enter.setValue(1);
   };
 
   // Comprobación del usuario mientras se escribe.
@@ -317,6 +311,393 @@ export const AuthScreen = () => {
 
   const configured = isSupabaseConfigured();
 
+  const renderMessages = () => (
+    <>
+      {errorMessage ? (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle" size={16} color={theme.color("#A94403", 'danger')} style={{marginRight: 6}} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+
+      {infoMessage ? (
+        <View style={styles.infoBox}>
+          <Ionicons name="mail-open-outline" size={16} color={theme.color("#0C8AA6", 'primary')} style={{marginRight: 6}} />
+          <Text style={styles.infoText}>{infoMessage}</Text>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const renderFormFields = () => (
+    <>
+      {isRegister && !isForgot && (
+        <>
+          <Text style={[styles.label, { marginTop: 0 }]}>Nombre</Text>
+          <View style={[styles.inputRow, fieldErrors.fullName && styles.inputRowInvalid]}>
+            <Ionicons name="person-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+            <TextInput {...theme.textInputProps}
+              style={styles.input}
+              placeholder="Tu nombre completo"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
+              value={fullName}
+              onChangeText={editField(setFullName, 'fullName')}
+            />
+          </View>
+          {fieldErrors.fullName ? (
+            <Text style={styles.fieldError}>{fieldErrors.fullName}</Text>
+          ) : null}
+
+          <Text style={styles.label}>Usuario</Text>
+          <View
+            style={[
+              styles.inputRow,
+              (fieldErrors.username || usernameStatus === 'taken') && styles.inputRowInvalid,
+              !fieldErrors.username && usernameStatus === 'available' && styles.inputRowValid,
+            ]}
+          >
+            <Ionicons
+              name="at"
+              size={18}
+              color={!fieldErrors.username && usernameStatus === 'available' ? theme.color('#2A6347', 'success') : theme.color('#8A908B', 'muted')}
+              style={styles.inputIcon}
+            />
+            <TextInput {...theme.textInputProps}
+              style={styles.input}
+              placeholder="usuario_hobbier"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
+              value={username}
+              onChangeText={editField(setUsername, 'username')}
+              autoCapitalize="none"
+            />
+            {usernameStatus === 'checking' ? (
+              <ActivityIndicator size="small" color={theme.color("#8A908B", 'muted')} />
+            ) : !fieldErrors.username && usernameStatus === 'available' ? (
+              <Ionicons name="checkmark-circle" size={20} color={theme.color("#2A6347", 'success')} />
+            ) : null}
+          </View>
+          {fieldErrors.username ? (
+            <Text style={styles.fieldError}>{fieldErrors.username}</Text>
+          ) : usernameStatus === 'taken' ? (
+            <Text style={styles.fieldError}>Ese nombre de usuario ya está en uso.</Text>
+          ) : usernameStatus === 'available' ? (
+            <Text style={styles.fieldOk}>¡Disponible! Este nombre es tuyo.</Text>
+          ) : usernameStatus === 'checking' ? (
+            <Text style={styles.fieldHint}>Comprobando disponibilidad...</Text>
+          ) : null}
+        </>
+      )}
+
+      <Text style={[styles.label, isRegister && !isForgot ? null : { marginTop: 0 }]}>Correo electrónico</Text>
+      <View style={[styles.inputRow, fieldErrors.email && styles.inputRowInvalid]}>
+        <Ionicons name="mail-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+        <TextInput {...theme.textInputProps}
+          style={styles.input}
+          placeholder={isRegister ? 'correo@ejemplo.com' : 'tu@email.com'}
+          placeholderTextColor={theme.color("#8A908B", 'muted')}
+          value={email}
+          onChangeText={editField(setEmail, 'email')}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+      {fieldErrors.email ? (
+        <Text style={styles.fieldError}>{fieldErrors.email}</Text>
+      ) : null}
+
+      {!isForgot && (
+        <>
+          <View style={styles.labelRow}>
+            <Text style={styles.labelInRow}>Contraseña</Text>
+            {!isRegister && (
+              <TouchableOpacity onPress={() => switchMode(() => setIsForgot(true))}>
+                <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={[styles.inputRow, fieldErrors.password && styles.inputRowInvalid]}>
+            <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+            <TextInput {...theme.textInputProps}
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={theme.color("#8A908B", 'muted')}
+              value={password}
+              onChangeText={editField(setPassword, 'password')}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={theme.color("#8A908B", 'muted')} />
+            </TouchableOpacity>
+          </View>
+          {fieldErrors.password ? (
+            <Text style={styles.fieldError}>{fieldErrors.password}</Text>
+          ) : null}
+
+          {isRegister && (
+            <>
+              <Text style={styles.label}>Confirmar contraseña</Text>
+              <View style={[styles.inputRow, fieldErrors.passwordConfirm && styles.inputRowInvalid]}>
+                <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
+                <TextInput {...theme.textInputProps}
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor={theme.color("#8A908B", 'muted')}
+                  value={passwordConfirm}
+                  onChangeText={editField(setPasswordConfirm, 'passwordConfirm')}
+                  secureTextEntry={!showPassword}
+                />
+              </View>
+              {fieldErrors.passwordConfirm ? (
+                <Text style={styles.fieldError}>{fieldErrors.passwordConfirm}</Text>
+              ) : null}
+            </>
+          )}
+        </>
+      )}
+
+      {isRegister && !isForgot && (
+        <>
+          <Text style={styles.label}>Fecha de nacimiento</Text>
+          <CalendarDateField
+            value={birthDate}
+            onChange={editField(setBirthDate, 'birthDate')}
+            invalid={!!fieldErrors.birthDate}
+            maxDate={latestAllowedBirthDate()}
+            initialDate={BIRTH_CALENDAR_START}
+          />
+          {fieldErrors.birthDate ? (
+            <Text style={styles.fieldError}>{fieldErrors.birthDate}</Text>
+          ) : (
+            <Text style={styles.fieldHint}>Debes tener al menos {MIN_AGE} años para registrarte.</Text>
+          )}
+
+          <View style={styles.legalRow}>
+            <TouchableOpacity
+              onPress={() => {
+                setAcceptedLegal((v) => !v);
+                setFieldErrors((prev) => (prev.legal ? { ...prev, legal: null } : prev));
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedLegal }}
+              style={[
+                styles.checkbox,
+                acceptedLegal && styles.checkboxChecked,
+                fieldErrors.legal && styles.checkboxInvalid,
+              ]}
+            >
+              {acceptedLegal && <Ionicons name="checkmark" size={14} color={theme.color("#FFFFFF", 'text')} />}
+            </TouchableOpacity>
+            <Text style={styles.legalText}>
+              {t('legal.accept_prefix')}
+              <Text style={styles.legalLink} onPress={() => setLegalDoc('terms')}>
+                {t('legal.terms_of_use')}
+              </Text>
+              {t('legal.accept_and')}
+              <Text style={styles.legalLink} onPress={() => setLegalDoc('privacy')}>
+                {t('legal.privacy_policy')}
+              </Text>
+              .
+            </Text>
+          </View>
+          {fieldErrors.legal ? (
+            <Text style={styles.fieldError}>{fieldErrors.legal}</Text>
+          ) : null}
+        </>
+      )}
+
+      <TouchableOpacity
+        style={[styles.primaryButton, isRegister && !isForgot && styles.registerButton]}
+        onPress={isForgot ? handleForgotPassword : runSubmit}
+        disabled={loading || sendingReset || submitting}
+      >
+        {loading || sendingReset || submitting ? (
+          <ActivityIndicator color={theme.color("#FFFFFF", 'text')} />
+        ) : (
+          <Text style={styles.primaryButtonText}>
+            {isForgot ? 'Enviar enlace  →' : isRegister ? 'Crear cuenta  →' : 'Iniciar sesión  →'}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </>
+  );
+
+  const renderLegalFooter = () => (
+    <View style={styles.legalFooter}>
+      <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('privacy')}>
+        {t('legal.privacy_policy')}
+      </Text>
+      <Text style={styles.legalFooterDot}>·</Text>
+      <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('terms')}>
+        {t('legal.terms_of_use')}
+      </Text>
+      <Text style={styles.legalFooterDot}>·</Text>
+      <Text style={styles.legalFooterCopyright}>Hobbier © 2026</Text>
+    </View>
+  );
+
+  // MODO ORDENADOR (ESCRITORIO WEB ESTILO INSTAGRAM - SIN CARDS INNECESARIOS)
+  if (isDesktop) {
+    return (
+      <SafeAreaView style={styles.desktopContainer}>
+        <ScrollView contentContainerStyle={styles.desktopScrollContent} keyboardShouldPersistTaps="handled">
+          {!configured && (
+            <View style={[styles.warningBox, { maxWidth: 880, width: '100%', marginBottom: 24 }]}>
+              <View style={styles.warningRow}>
+                <Ionicons name="warning" size={16} color={theme.color("#E67A15", 'accent')} style={{marginRight: 6}} />
+                <Text style={styles.warningTitle}>Supabase no configurado</Text>
+              </View>
+              <Text style={styles.warningText}>
+                Configura EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY en tu archivo .env
+              </Text>
+            </View>
+          )}
+
+          {/* VISTA LOGIN EN ESCRITORIO: 2 COLUMNAS (HERO A LA IZQUIERDA + FORMULARIO DIRECTO A LA DERECHA, SIN CARDS) */}
+          {!isRegister && !isForgot && (
+            <View style={styles.desktopLayoutRow}>
+              {/* Columna Izquierda: Logo, Eslogan y Mockup de Historias de Comunidad */}
+              <View style={styles.desktopHeroColumn}>
+                <View style={styles.desktopBrandRow}>
+                  <Text style={styles.desktopBrandTitle}>Hobbier</Text>
+                  <Ionicons name="sparkles" size={24} color={theme.color("#FF8F21", 'accent')} style={{ marginLeft: 8, marginTop: 4 }} />
+                </View>
+                <Text style={styles.desktopHeroSlogan}>
+                  Mira los proyectos y aficiones de{' '}
+                  <Text style={styles.desktopHeroSloganAccent}>tu comunidad creativa.</Text>
+                </Text>
+
+                {/* Carrusel interactivo que muestra las posibilidades en Hobbier */}
+                <AuthFeatureCarousel />
+              </View>
+
+              {/* Divisor vertical sutil entre columnas */}
+              <View style={styles.desktopVerticalDivider} />
+
+              {/* Columna Derecha: Formulario directo sin contenedor de tarjeta */}
+              <View style={styles.desktopFormColumn}>
+                <Text style={styles.desktopFormHeading}>Iniciar sesión en Hobbier</Text>
+
+                {renderMessages()}
+                {renderFormFields()}
+
+                {/* Botón secundario contorneado para crear cuenta (estilo Instagram) */}
+                <TouchableOpacity
+                  style={styles.desktopOutlineButton}
+                  onPress={() => {
+                    setErrorMessage('');
+                    setInfoMessage('');
+                    setIsRegister(true);
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.desktopOutlineButtonText}>Crear una cuenta</Text>
+                </TouchableOpacity>
+
+                <View style={styles.desktopBrandMarkFooter}>
+                  <Text style={styles.desktopBrandMarkText}>Hobbier</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* VISTA REGISTRO EN ESCRITORIO: FORMULARIO DIRECTO CENTRADO (SIN CARDS, ESTILO INSTAGRAM SIGNUP) */}
+          {isRegister && !isForgot && (
+            <View style={styles.desktopDirectFormContainer}>
+              <View style={styles.desktopDirectTopBar}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setErrorMessage('');
+                    setInfoMessage('');
+                    setIsRegister(false);
+                  }}
+                  style={styles.desktopBackButton}
+                  accessibilityLabel="Volver a iniciar sesión"
+                >
+                  <Ionicons name="arrow-back" size={20} color={theme.color("#121B22", 'text')} />
+                </TouchableOpacity>
+                <Text style={styles.desktopBrandTitleSmall}>Hobbier</Text>
+                <View style={{ width: 36 }} />
+              </View>
+
+              <Text style={styles.desktopDirectHeading}>Empieza a usar Hobbier</Text>
+              <Text style={styles.desktopDirectSubheading}>
+                Únete para descubrir pasatiempos, compartir tus progresos y conectar con personas afines.
+              </Text>
+
+              {renderMessages()}
+              {renderFormFields()}
+
+              <TouchableOpacity
+                style={styles.desktopDirectToggleBtn}
+                onPress={() => {
+                  setErrorMessage('');
+                  setInfoMessage('');
+                  setIsRegister(false);
+                }}
+              >
+                <Text style={styles.desktopDirectToggleText}>
+                  ¿Ya tienes una cuenta? <Text style={styles.desktopDirectToggleHighlight}>Inicia sesión</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* VISTA RECUPERACIÓN DE CONTRASEÑA EN ESCRITORIO (SIN CARDS) */}
+          {isForgot && (
+            <View style={styles.desktopDirectFormContainer}>
+              <View style={styles.desktopDirectTopBar}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setErrorMessage('');
+                    setInfoMessage('');
+                    setIsForgot(false);
+                  }}
+                  style={styles.desktopBackButton}
+                  accessibilityLabel="Volver a iniciar sesión"
+                >
+                  <Ionicons name="arrow-back" size={20} color={theme.color("#121B22", 'text')} />
+                </TouchableOpacity>
+                <Text style={styles.desktopBrandTitleSmall}>Hobbier</Text>
+                <View style={{ width: 36 }} />
+              </View>
+
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <View style={styles.iconBox}>
+                  <Ionicons name="lock-closed-outline" size={26} color={theme.color("#0C8AA6", 'primary')} />
+                </View>
+                <Text style={[styles.desktopDirectHeading, { textAlign: 'center', marginTop: 14 }]}>
+                  ¿Problemas para iniciar sesión?
+                </Text>
+                <Text style={[styles.desktopDirectSubheading, { textAlign: 'center' }]}>
+                  Ingresa tu correo y te enviaremos un enlace para recuperar el acceso a tu cuenta.
+                </Text>
+              </View>
+
+              {renderMessages()}
+              {renderFormFields()}
+
+              <TouchableOpacity
+                style={styles.desktopDirectToggleBtn}
+                onPress={() => {
+                  setErrorMessage('');
+                  setInfoMessage('');
+                  setIsForgot(false);
+                }}
+              >
+                <Text style={styles.desktopDirectToggleHighlight}>Volver al inicio de sesión</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {renderLegalFooter()}
+        </ScrollView>
+        <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
+      </SafeAreaView>
+    );
+  }
+
+  // MODO MÓVIL
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -328,7 +709,7 @@ export const AuthScreen = () => {
               <Text style={styles.registerTitle}>Únete a Hobbier</Text>
               <Ionicons
                 name="sparkles"
-                size={24}
+                size={22}
                 color={theme.color("#FF8F21", 'accent')}
                 style={styles.registerSparkle}
               />
@@ -352,16 +733,15 @@ export const AuthScreen = () => {
         {/* CARD DE FORMULARIO */}
         <Animated.View style={[styles.card, animatedStyle]}>
 
-          {/* LOGIN Y RECUPERACIÓN: header con logo, DENTRO de la tarjeta.
-              El registro no lo usa: lleva el suyo propio por fuera. */}
+          {/* LOGIN Y RECUPERACIÓN: header con logo, DENTRO de la tarjeta. */}
           {!isRegister && (
             <View style={styles.header}>
               <View style={styles.iconContainer}>
                 <View style={styles.iconBox}>
-                  <MaterialCommunityIcons name="palette" size={30} color={theme.color("#0C8AA6", 'primary')} />
+                  <MaterialCommunityIcons name="palette" size={28} color={theme.color("#0C8AA6", 'primary')} />
                 </View>
                 <View style={styles.iconBadge}>
-                  <Ionicons name="star" size={12} color={theme.color("#ffffff", 'text')} />
+                  <Ionicons name="star" size={11} color={theme.color("#ffffff", 'text')} />
                 </View>
               </View>
 
@@ -376,221 +756,13 @@ export const AuthScreen = () => {
             </View>
           )}
 
-          {errorMessage ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color={theme.color("#A94403", 'danger')} style={{marginRight: 6}} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          ) : null}
-
-          {infoMessage ? (
-            <View style={styles.infoBox}>
-              <Ionicons name="mail-open-outline" size={16} color={theme.color("#0C8AA6", 'primary')} style={{marginRight: 6}} />
-              <Text style={styles.infoText}>{infoMessage}</Text>
-            </View>
-          ) : null}
-
-          {isRegister && !isForgot && (
-            <>
-              <Text style={[styles.label, { marginTop: 0 }]}>Name</Text>
-              <View style={[styles.inputRow, fieldErrors.fullName && styles.inputRowInvalid]}>
-                <Ionicons name="person-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
-                <TextInput {...theme.textInputProps}
-                  style={styles.input}
-                  placeholder="Tu nombre completo"
-                  placeholderTextColor={theme.color("#8A908B", 'muted')}
-                  value={fullName}
-                  onChangeText={editField(setFullName, 'fullName')}
-                />
-              </View>
-              {fieldErrors.fullName ? (
-                <Text style={styles.fieldError}>{fieldErrors.fullName}</Text>
-              ) : null}
-
-              <Text style={styles.label}>Username</Text>
-              <View
-                style={[
-                  styles.inputRow,
-                  (fieldErrors.username || usernameStatus === 'taken') && styles.inputRowInvalid,
-                  !fieldErrors.username && usernameStatus === 'available' && styles.inputRowValid,
-                ]}
-              >
-                <Ionicons
-                  name="at"
-                  size={18}
-                  color={!fieldErrors.username && usernameStatus === 'available' ? theme.color('#2A6347', 'success') : theme.color('#8A908B', 'muted')}
-                  style={styles.inputIcon}
-                />
-                <TextInput {...theme.textInputProps}
-                  style={styles.input}
-                  placeholder="usuario_hobbier"
-                  placeholderTextColor={theme.color("#8A908B", 'muted')}
-                  value={username}
-                  onChangeText={editField(setUsername, 'username')}
-                  autoCapitalize="none"
-                />
-                {usernameStatus === 'checking' ? (
-                  <ActivityIndicator size="small" color={theme.color("#8A908B", 'muted')} />
-                ) : !fieldErrors.username && usernameStatus === 'available' ? (
-                  <Ionicons name="checkmark-circle" size={20} color={theme.color("#2A6347", 'success')} />
-                ) : null}
-              </View>
-              {/* El color por sí solo no basta: siempre va con icono y con texto,
-                  para quien no distingue el verde del rojo. */}
-              {fieldErrors.username ? (
-                <Text style={styles.fieldError}>{fieldErrors.username}</Text>
-              ) : usernameStatus === 'taken' ? (
-                <Text style={styles.fieldError}>Ese nombre de usuario ya está en uso.</Text>
-              ) : usernameStatus === 'available' ? (
-                <Text style={styles.fieldOk}>¡Disponible! Este nombre es tuyo.</Text>
-              ) : usernameStatus === 'checking' ? (
-                <Text style={styles.fieldHint}>Comprobando disponibilidad...</Text>
-              ) : null}
-            </>
-          )}
-
-          <Text style={[styles.label, isRegister && !isForgot ? null : { marginTop: 0 }]}>Email</Text>
-          <View style={[styles.inputRow, fieldErrors.email && styles.inputRowInvalid]}>
-            <Ionicons name="mail-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
-            <TextInput {...theme.textInputProps}
-              style={styles.input}
-              placeholder={isRegister ? 'correo@ejemplo.com' : 'tu@email.com'}
-              placeholderTextColor={theme.color("#8A908B", 'muted')}
-              value={email}
-              onChangeText={editField(setEmail, 'email')}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-          {fieldErrors.email ? (
-            <Text style={styles.fieldError}>{fieldErrors.email}</Text>
-          ) : null}
-
-          {!isForgot && (
-            <>
-              <View style={styles.labelRow}>
-                <Text style={styles.labelInRow}>{isRegister ? 'Password' : 'Contraseña'}</Text>
-                {!isRegister && (
-                  <TouchableOpacity onPress={() => switchMode(() => setIsForgot(true))}>
-                    <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <View style={[styles.inputRow, fieldErrors.password && styles.inputRowInvalid]}>
-                <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
-                <TextInput {...theme.textInputProps}
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor={theme.color("#8A908B", 'muted')}
-                  value={password}
-                  onChangeText={editField(setPassword, 'password')}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={theme.color("#8A908B", 'muted')} />
-                </TouchableOpacity>
-              </View>
-              {fieldErrors.password ? (
-                <Text style={styles.fieldError}>{fieldErrors.password}</Text>
-              ) : null}
-
-              {isRegister && (
-                <>
-                  <Text style={styles.label}>Confirmar contraseña</Text>
-                  <View style={[styles.inputRow, fieldErrors.passwordConfirm && styles.inputRowInvalid]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={theme.color("#8A908B", 'muted')} style={styles.inputIcon} />
-                    <TextInput {...theme.textInputProps}
-                      style={styles.input}
-                      placeholder="••••••••"
-                      placeholderTextColor={theme.color("#8A908B", 'muted')}
-                      value={passwordConfirm}
-                      onChangeText={editField(setPasswordConfirm, 'passwordConfirm')}
-                      // Comparte el ojo con la contraseña: si una se ve, la otra
-                      // también, que es justo lo que se necesita para compararlas.
-                      secureTextEntry={!showPassword}
-                    />
-                  </View>
-                  {fieldErrors.passwordConfirm ? (
-                    <Text style={styles.fieldError}>{fieldErrors.passwordConfirm}</Text>
-                  ) : null}
-                </>
-              )}
-            </>
-          )}
-
-          {/* La fecha va al final en el registro, según el diseño */}
-          {isRegister && !isForgot && (
-            <>
-              <Text style={styles.label}>Date of Birth</Text>
-              <CalendarDateField
-                value={birthDate}
-                onChange={editField(setBirthDate, 'birthDate')}
-                invalid={!!fieldErrors.birthDate}
-                maxDate={latestAllowedBirthDate()}
-                initialDate={BIRTH_CALENDAR_START}
-              />
-              {fieldErrors.birthDate ? (
-                <Text style={styles.fieldError}>{fieldErrors.birthDate}</Text>
-              ) : (
-                <Text style={styles.fieldHint}>Debes tener al menos {MIN_AGE} años para registrarte.</Text>
-              )}
-
-              {/* Aceptación de Términos y Privacidad (pilar legal) */}
-              <View style={styles.legalRow}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setAcceptedLegal((v) => !v);
-                    setFieldErrors((prev) => (prev.legal ? { ...prev, legal: null } : prev));
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: acceptedLegal }}
-                  style={[
-                    styles.checkbox,
-                    acceptedLegal && styles.checkboxChecked,
-                    fieldErrors.legal && styles.checkboxInvalid,
-                  ]}
-                >
-                  {acceptedLegal && <Ionicons name="checkmark" size={14} color={theme.color("#FFFFFF", 'text')} />}
-                </TouchableOpacity>
-                <Text style={styles.legalText}>
-                  {t('legal.accept_prefix')}
-                  <Text style={styles.legalLink} onPress={() => setLegalDoc('terms')}>
-                    {t('legal.terms_of_use')}
-                  </Text>
-                  {t('legal.accept_and')}
-                  <Text style={styles.legalLink} onPress={() => setLegalDoc('privacy')}>
-                    {t('legal.privacy_policy')}
-                  </Text>
-                  .
-                </Text>
-              </View>
-              {fieldErrors.legal ? (
-                <Text style={styles.fieldError}>{fieldErrors.legal}</Text>
-              ) : null}
-            </>
-          )}
-
-          <TouchableOpacity
-            style={[styles.primaryButton, isRegister && !isForgot && styles.registerButton]}
-            onPress={isForgot ? handleForgotPassword : runSubmit}
-            disabled={loading || sendingReset || submitting}
-          >
-            {loading || sendingReset || submitting ? (
-              <ActivityIndicator color={theme.color("#FFFFFF", 'text')} />
-            ) : (
-              <Text style={styles.primaryButtonText}>
-                {isForgot ? 'Enviar enlace  →' : isRegister ? 'Crear cuenta  →' : 'Iniciar sesión  →'}
-              </Text>
-            )}
-          </TouchableOpacity>
+          {renderMessages()}
+          {renderFormFields()}
 
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() =>
               switchMode(() => {
-                // Al cambiar de modo, lo propio del registro se limpia: si no, al
-                // volver aparecería un "¡Disponible!" de un nombre ya olvidado.
                 setPasswordConfirm('');
                 setAcceptedLegal(false);
                 setUsernameStatus('idle');
@@ -616,16 +788,7 @@ export const AuthScreen = () => {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Enlaces legales siempre visibles, también en el inicio de sesión */}
-        <View style={styles.legalFooter}>
-          <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('privacy')}>
-            {t('legal.privacy_policy')}
-          </Text>
-          <Text style={styles.legalFooterDot}>·</Text>
-          <Text style={styles.legalFooterLink} onPress={() => setLegalDoc('terms')}>
-            {t('legal.terms_of_use')}
-          </Text>
-        </View>
+        {renderLegalFooter()}
       </ScrollView>
 
       <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
@@ -647,14 +810,319 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  header: {
+  desktopContainer: {
+    flex: 1,
+    backgroundColor: theme.color('#FFFFFF', 'background'),
+  },
+  desktopScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  desktopLayoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: 960,
+    width: '100%',
+    paddingVertical: 10,
+  },
+  desktopHeroColumn: {
+    flex: 1,
+    maxWidth: 440,
+    paddingRight: 40,
+    alignItems: 'flex-start',
+  },
+  desktopBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  desktopBrandTitle: {
+    fontFamily: 'DynaPuff',
+    fontSize: 40,
+    color: theme.color('#0C8AA6', 'primary'),
+    letterSpacing: 0.5,
+  },
+  desktopBrandTitleSmall: {
+    fontFamily: 'DynaPuff',
+    fontSize: 24,
+    color: theme.color('#0C8AA6', 'primary'),
+  },
+  desktopHeroSlogan: {
+    fontSize: 28,
+    lineHeight: 38,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+    letterSpacing: -0.3,
     marginBottom: 28,
   },
-  // Encabezado propio del registro: vive FUERA de la tarjeta, sobre el fondo beige
+  desktopHeroSloganAccent: {
+    color: theme.color('#FF8F21', 'accent'),
+  },
+  desktopVerticalDivider: {
+    width: 1,
+    height: 480,
+    backgroundColor: theme.color('#E2E8F0', 'border'),
+    marginHorizontal: 36,
+  },
+  desktopFormColumn: {
+    width: 360,
+    maxWidth: '100%',
+    paddingLeft: 4,
+  },
+  desktopFormHeading: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+    letterSpacing: -0.2,
+    marginBottom: 24,
+  },
+  desktopOutlineButton: {
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.color('#CBD5E1', 'border'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      web: { cursor: 'pointer' },
+    }),
+  },
+  desktopOutlineButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+  },
+  desktopBrandMarkFooter: {
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  desktopBrandMarkText: {
+    fontFamily: 'DynaPuff',
+    fontSize: 18,
+    color: theme.color('#8A908B', 'muted'),
+  },
+  phoneMockupContainer: {
+    width: 270,
+    height: 380,
+    position: 'relative',
+    marginTop: 8,
+    alignSelf: 'center',
+  },
+  phoneStoryBackgroundCard: {
+    position: 'absolute',
+    top: 8,
+    left: 28,
+    width: 230,
+    height: 350,
+    borderRadius: 28,
+    backgroundColor: theme.color('#FF8F21', 'accent'),
+    opacity: 0.18,
+    transform: [{ rotate: '6deg' }],
+  },
+  phoneDeviceFrame: {
+    width: 250,
+    height: 370,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: theme.color('#E2E8F0', 'border'),
+    backgroundColor: theme.color('#F8FAFC', 'card'),
+    padding: 12,
+    flexDirection: 'column',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+      },
+      default: {
+        elevation: 3,
+      },
+    }),
+  },
+  phoneSpeakerNotch: {
+    width: 50,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.color('#CBD5E1', 'border'),
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  phoneStoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  phoneUserAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.color('#EAF7FA', 'card'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.color('#0C8AA6', 'primary'),
+  },
+  phoneAvatarText: {
+    fontSize: 13,
+  },
+  phoneStoryUser: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+  },
+  phoneStoryTime: {
+    fontSize: 10,
+    color: theme.color('#8A908B', 'muted'),
+  },
+  phoneStoryBadge: {
+    backgroundColor: theme.color('#EAF7FA', 'card'),
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  phoneStoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.color('#0C8AA6', 'primary'),
+  },
+  phoneStoryVisual: {
+    flex: 1,
+    backgroundColor: theme.color('#FFFFFF', 'background'),
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.color('#E2E8F0', 'border'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    position: 'relative',
+  },
+  phoneStoryVisualText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.color('#121B22', 'text'),
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 16,
+  },
+  phoneReactionBubble1: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.color('#FFFFFF', 'card'),
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.color('#E2E8F0', 'border'),
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+    }),
+  },
+  phoneReactionEmoji: {
+    fontSize: 12,
+  },
+  phoneReactionCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+  },
+  phoneReactionBubble2: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: theme.color('#FFFFFF', 'card'),
+    padding: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.color('#E2E8F0', 'border'),
+  },
+  phoneStoryBottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  phoneReplyInputPill: {
+    flex: 1,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.color('#CBD5E1', 'border'),
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  phoneReplyPlaceholder: {
+    fontSize: 10,
+    color: theme.color('#8A908B', 'muted'),
+  },
+  desktopDirectFormContainer: {
+    width: 380,
+    maxWidth: '100%',
+    paddingVertical: 16,
+  },
+  desktopDirectTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  desktopBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.color('#F0F3F5', 'secondary'),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  desktopDirectHeading: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: theme.color('#121B22', 'text'),
+    letterSpacing: -0.2,
+  },
+  desktopDirectSubheading: {
+    fontSize: 13,
+    color: theme.color('#8A908B', 'muted'),
+    marginTop: 6,
+    marginBottom: 24,
+    lineHeight: 18,
+  },
+  desktopDirectToggleBtn: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginTop: 12,
+  },
+  desktopDirectToggleText: {
+    fontSize: 13,
+    color: theme.color('#8A908B', 'muted'),
+  },
+  desktopDirectToggleHighlight: {
+    color: theme.color('#0C8AA6', 'primary'),
+    fontWeight: '600',
+  },
+  legalFooterCopyright: {
+    fontSize: 12,
+    color: theme.color('#8A908B', 'muted'),
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   registerHeader: {
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: 20,
   },
   registerTitleRow: {
     flexDirection: 'row',
@@ -662,26 +1130,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   registerTitle: {
-    fontSize: 26,
-    fontFamily: 'Poppins_700Bold',
+    fontSize: 24,
+    fontWeight: '600',
     color: theme.color('#0C8AA6', 'primary'),
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
   registerSparkle: {
     marginLeft: 2,
-    marginTop: -10,
+    marginTop: -8,
   },
   registerButton: {
     backgroundColor: theme.color('#0C8AA6', 'primary'),
   },
   iconContainer: {
     position: 'relative',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   iconBox: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 16,
     backgroundColor: theme.color('#F0F8FA', 'card'),
     justifyContent: 'center',
@@ -689,24 +1157,24 @@ const styles = StyleSheet.create({
   },
   iconBadge: {
     position: 'absolute',
-    top: -6,
-    right: -10,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: -5,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: theme.color('#FF8F21', 'accent'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 26,
-    fontFamily: 'Poppins_700Bold',
+    fontSize: 22,
+    fontWeight: '600',
     color: theme.color('#121B22', 'text'),
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: theme.color('#8A908B', 'muted'),
     marginTop: 6,
     textAlign: 'center',
@@ -726,7 +1194,7 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     color: theme.color('#E67A15', 'accent'),
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 14,
   },
   warningText: {
@@ -739,7 +1207,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.color('#F0F3F5', 'border'),
     paddingHorizontal: 24,
-    paddingVertical: 34,
+    paddingVertical: 32,
   },
   errorBox: {
     backgroundColor: theme.color('#F0F3F5', 'card'),
@@ -773,7 +1241,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: theme.color('#121B22', 'text'),
     marginBottom: 6,
     marginTop: 12,
@@ -787,13 +1255,13 @@ const styles = StyleSheet.create({
   },
   labelInRow: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: theme.color('#121B22', 'text'),
   },
   forgotText: {
     fontSize: 12,
     color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '600',
+    fontWeight: '500',
   },
   inputRow: {
     flexDirection: 'row',
@@ -804,8 +1272,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 12,
   },
-  // Marco rojo cuando el campo falla: el color por sí solo no es accesible, por eso
-  // siempre va acompañado del texto explicando qué pasa.
   inputRowInvalid: {
     borderColor: theme.color('#A94403', "danger"),
   },
@@ -814,15 +1280,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
-  // Marco verde cuando el nombre de usuario está libre. Igual que el rojo, nunca
-  // va solo: lo acompañan el tilde dentro del campo y el texto de abajo.
   inputRowValid: {
     borderColor: theme.color('#2A6347', 'border'),
   },
   fieldOk: {
     color: theme.color('#2A6347', 'success'),
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     marginTop: 5,
   },
   fieldHint: {
@@ -835,8 +1299,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 13,
-    fontSize: 15,
+    paddingVertical: 12,
+    fontSize: 14,
     color: theme.color('#121B22', 'text'),
   },
   eyeBtn: {
@@ -845,24 +1309,24 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: theme.color('#0C8AA6', 'primary'),
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 22,
   },
   primaryButtonText: {
     color: theme.color('#FFFFFF', "onAccent"),
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
   legalRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 18,
+    marginTop: 16,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 5,
     borderWidth: 1.5,
     borderColor: theme.color('#8A908B', 'border'),
     backgroundColor: theme.color('#FFFFFF', 'card'),
@@ -880,20 +1344,20 @@ const styles = StyleSheet.create({
   },
   legalText: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     color: theme.color('#4A5568', 'muted'),
   },
   legalLink: {
     color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   legalFooter: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 24,
     gap: 8,
   },
   legalFooterLink: {
@@ -911,12 +1375,12 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     color: theme.color('#8A908B', 'muted'),
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
   },
   toggleButtonBold: {
     color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
 });

@@ -1,3 +1,4 @@
+import { fetchQuery, queryKeys, invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
 import { avisar, AVISO } from './pushService';
 
@@ -54,6 +55,7 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
         .single();
 
       if (updateErr) throw updateErr;
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       return { friendship: updated, error: null };
     }
 
@@ -68,6 +70,7 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     avisar(AVISO.AMISTAD_SOLICITUD, { para: addresseeId });
     return { friendship: data, error: null };
   } catch (error) {
@@ -76,7 +79,7 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
   }
 };
 
-export const getReceivedFriendRequests = async (userId) => {
+const fetchReceivedFriendRequests = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('friendships')
@@ -96,10 +99,15 @@ export const getReceivedFriendRequests = async (userId) => {
   }
 };
 
+export const getReceivedFriendRequests = (userId, options = {}) => fetchQuery(
+  queryKeys.receivedRequests(userId), () => fetchReceivedFriendRequests(userId),
+  { ...options, tags: ["social"] },
+);
+
 // IDs de usuarios a los que ya se les envió solicitud y sigue pendiente. Se usa
 // para pintar "Enviada" en vez de "Agregar" incluso después de recargar la
 // pantalla o volver a buscar a esa misma persona en otra sesión.
-export const getSentFriendRequests = async (userId) => {
+const fetchSentFriendRequests = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('friendships')
@@ -115,6 +123,11 @@ export const getSentFriendRequests = async (userId) => {
   }
 };
 
+export const getSentFriendRequests = (userId, options = {}) => fetchQuery(
+  queryKeys.sentRequests(userId), () => fetchSentFriendRequests(userId),
+  { ...options, tags: ["social"] },
+);
+
 export const respondToFriendRequest = async (friendshipId, status) => {
   try {
     const { data, error } = await supabase
@@ -125,6 +138,7 @@ export const respondToFriendRequest = async (friendshipId, status) => {
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     // Solo se avisa de lo que es buena noticia: un rechazo no se notifica.
     if (status === 'ACCEPTED' && data?.requester_id) {
       avisar(AVISO.AMISTAD_ACEPTADA, { para: data.requester_id });
@@ -136,7 +150,7 @@ export const respondToFriendRequest = async (friendshipId, status) => {
   }
 };
 
-export const getFriendsList = async (userId) => {
+const fetchFriendsList = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('friendships')
@@ -168,6 +182,11 @@ export const getFriendsList = async (userId) => {
   }
 };
 
+export const getFriendsList = (userId, options = {}) => fetchQuery(
+  queryKeys.friends(userId), () => fetchFriendsList(userId),
+  { ...options, tags: ["social"] },
+);
+
 export const removeFriendship = async (friendshipId) => {
   try {
     const { error } = await supabase
@@ -176,6 +195,7 @@ export const removeFriendship = async (friendshipId) => {
       .eq('id', friendshipId);
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { success: true, error: null };
   } catch (error) {
     console.error('Error eliminando amistad:', error.message);
@@ -192,16 +212,14 @@ export const removeFriendship = async (friendshipId) => {
  *   Con offset, si alguien publica mientras haces scroll, todo se desplaza una
  *   posición y la siguiente página repite una publicación que ya estaba en pantalla.
  *
- * `options.friendIds` evita volver a pedir la lista de amigos en cada página:
- * el primer resultado la devuelve y el feed la reutiliza al cargar más.
+ * La caché compartida evita descargar los amigos en cada página y permite
+ * invalidarlos al aceptar o eliminar una amistad, incluso durante una carga.
  */
-export const getFriendsFeed = async (userId, limit = 5, page = 0, options = {}) => {
+const fetchFriendsFeed = async (userId, limit = 5, page = 0, options = {}) => {
   try {
-    let friendIds = options.friendIds;
-    if (!friendIds) {
-      const { friends } = await getFriendsList(userId);
-      friendIds = friends.map((f) => f.profile.id);
-    }
+    const { friends, error: friendsError } = await getFriendsList(userId, { force: options.force });
+    if (friendsError) throw friendsError;
+    const friendIds = friends.map((f) => f.profile.id);
 
     const targetUserIds = Array.from(new Set([...friendIds, userId]));
 
@@ -296,6 +314,11 @@ export const getFriendsFeed = async (userId, limit = 5, page = 0, options = {}) 
   }
 };
 
+export const getFriendsFeed = (userId, limit = 5, page = 0, options = {}) => fetchQuery(
+  queryKeys.feed(userId, limit, page, options.before || null), () => fetchFriendsFeed(userId, limit, page, options),
+  { ...options, tags: ["feed","social"] },
+);
+
 export const togglePostReaction = async (postId, userId) => {
   try {
     const { data: existing, error: checkErr } = await supabase
@@ -314,6 +337,7 @@ export const togglePostReaction = async (postId, userId) => {
         .eq('id', existing.id);
 
       if (delErr) throw delErr;
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       return { reacted: false, error: null };
     } else {
       const { error: insErr } = await supabase
@@ -321,6 +345,7 @@ export const togglePostReaction = async (postId, userId) => {
         .insert({ post_id: postId, user_id: userId });
 
       if (insErr) throw insErr;
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       return { reacted: true, error: null };
     }
   } catch (error) {
@@ -335,6 +360,7 @@ export const deleteOwnPost = async (postId) => {
   try {
     const { error } = await supabase.rpc('delete_own_post', { p_post_id: postId });
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { error: null };
   } catch (error) {
     console.error('Error al eliminar publicación:', error.message);
@@ -342,7 +368,7 @@ export const deleteOwnPost = async (postId) => {
   }
 };
 
-export const getUserPosts = async (userId) => {
+const fetchUserPosts = async (userId) => {
   try {
     const { data, error } = await supabase
       .from('posts')
@@ -372,6 +398,11 @@ export const getUserPosts = async (userId) => {
   }
 };
 
+export const getUserPosts = (userId, options = {}) => fetchQuery(
+  queryKeys.posts(userId), () => fetchUserPosts(userId),
+  { ...options, tags: ["social"] },
+);
+
 export const reportPost = async (postId, reporterId, reason, details = '') => {
   try {
     const { data: rpcData, error: rpcError } = await supabase.rpc('report_post', {
@@ -381,6 +412,7 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
     });
 
     if (!rpcError) {
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
       avisar(AVISO.ADMIN_REPORTE, { clase: 'post', motivo: reason });
       return { report: rpcData, error: null };
     }
@@ -398,6 +430,7 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
       .single();
 
     if (error) throw rpcError || error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     avisar(AVISO.ADMIN_REPORTE, { clase: 'post', motivo: reason });
     return { report: data, error: null };
   } catch (error) {
@@ -421,6 +454,7 @@ export const reportProfile = async (reportedProfileId, reporterId, reason, detai
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     avisar(AVISO.ADMIN_REPORTE, { clase: 'perfil', motivo: reason });
     return { report: data, error: null };
   } catch (error) {
@@ -429,7 +463,7 @@ export const reportProfile = async (reportedProfileId, reporterId, reason, detai
   }
 };
 
-export const getFriendSuggestionsByInterests = async (userId) => {
+const fetchFriendSuggestionsByInterests = async (userId) => {
   try {
     // 1. Obtener los intereses del usuario actual
     const { data: myInterestsData, error: myInterestsErr } = await supabase
@@ -438,9 +472,9 @@ export const getFriendSuggestionsByInterests = async (userId) => {
       .eq('user_id', userId);
 
     if (myInterestsErr) throw myInterestsErr;
-    
+
     const myInterestIds = (myInterestsData || []).map(row => row.interest_id);
-    
+
     if (myInterestIds.length === 0) {
       return { suggestions: [], error: null };
     }
@@ -506,4 +540,9 @@ export const getFriendSuggestionsByInterests = async (userId) => {
     return { suggestions: [], error };
   }
 };
+
+export const getFriendSuggestionsByInterests = (userId, options = {}) => fetchQuery(
+  queryKeys.suggestions(userId), () => fetchFriendSuggestionsByInterests(userId),
+  { ...options, tags: ["social"] },
+);
 

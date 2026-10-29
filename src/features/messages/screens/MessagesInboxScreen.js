@@ -194,7 +194,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat, onOpenAdChat }) => {
         <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mensajes</Text>
+        <Text style={styles.headerTitle}>{t('messages.title') || 'Mensajes'}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -202,7 +202,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat, onOpenAdChat }) => {
         <Feather name="search" size={18} color={colors.textMuted} />
         <TextInput {...theme.textInputProps}
           style={styles.searchInput}
-          placeholder="Buscar amigos..."
+          placeholder={t('messages.search_placeholder') || "Buscar amigos..."}
           placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -217,9 +217,9 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat, onOpenAdChat }) => {
       ) : error ? (
         <View style={styles.centerContainer}>
           <Feather name="alert-circle" size={48} color={colors.danger} />
-          <Text style={styles.stateTitle}>No se pudieron cargar los mensajes.</Text>
+          <Text style={styles.stateTitle}>{t('messages.error_load') || 'No se pudieron cargar los mensajes.'}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry') || 'Reintentar'}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -236,10 +236,10 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat, onOpenAdChat }) => {
             <View style={styles.centerContainer}>
               <Feather name="message-circle" size={48} color={colors.primarySoft} />
               <Text style={styles.stateTitle}>
-                {query ? 'Ningún amigo coincide con la búsqueda.' : 'Aún no tienes amigos con quien chatear.'}
+                {query ? (t('messages.no_matches') || 'Ningún amigo coincide con la búsqueda.') : (t('messages.no_friends_chat') || 'Aún no tienes amigos con quien chatear.')}
               </Text>
               {!query && (
-                <Text style={styles.stateSubtitle}>Agrega amigos desde la pestaña Amigos para empezar.</Text>
+                <Text style={styles.stateSubtitle}>{t('messages.add_friends_start') || 'Agrega amigos desde la pestaña Amigos para empezar.'}</Text>
               )}
             </View>
           }

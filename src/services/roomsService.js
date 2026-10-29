@@ -1,3 +1,4 @@
+import { fetchQuery, queryKeys, invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
 import { avisar, AVISO } from './pushService';
 
@@ -13,6 +14,7 @@ export const roomsService = {
       p_image_path: imagePath || null,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data; // Retorna el room_id UUID
   },
 
@@ -21,6 +23,7 @@ export const roomsService = {
       p_room_id: roomId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data;
   },
 
@@ -29,6 +32,7 @@ export const roomsService = {
       p_room_id: roomId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data;
   },
 
@@ -38,6 +42,7 @@ export const roomsService = {
       p_image_path: imagePath,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data;
   },
 
@@ -50,6 +55,7 @@ export const roomsService = {
       p_receiver_id: receiverId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     avisar(AVISO.SALA_INVITACION, { para: receiverId, salaId: roomId });
     return data; // Retorna invitation_id
   },
@@ -59,6 +65,7 @@ export const roomsService = {
       p_invitation_id: invitationId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data;
   },
 
@@ -67,6 +74,7 @@ export const roomsService = {
       p_invitation_id: invitationId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data;
   },
 
@@ -96,36 +104,39 @@ export const roomsService = {
    * Si la base ya trae `room_status` (script invitaciones_salas_estado.sql),
    * se usa tal cual y esta segunda consulta ni se hace.
    */
-  async getPendingInvitations() {
-    const { data, error } = await supabase.rpc('get_pending_room_invitations');
-    if (error) throw error;
+  async getPendingInvitations(options = {}) {
+    return fetchQuery(queryKeys.roomInvitations(), async () => {
+      const { data, error } = await supabase.rpc('get_pending_room_invitations');
+      if (error) throw error;
 
-    const invitaciones = data || [];
-    const sinEstado = invitaciones.filter((inv) => !inv.room_status && inv.room_id);
-    if (sinEstado.length === 0) return invitaciones;
+      const invitaciones = data || [];
+      const sinEstado = invitaciones.filter((inv) => !inv.room_status && inv.room_id);
+      if (sinEstado.length === 0) return invitaciones;
 
-    const { data: salas, error: errorSalas } = await supabase
-      .from('rooms')
-      .select('id, status, end_at')
-      .in('id', sinEstado.map((inv) => inv.room_id));
+      const { data: salas, error: errorSalas } = await supabase
+        .from('rooms')
+        .select('id, status, end_at')
+        .in('id', sinEstado.map((inv) => inv.room_id));
 
-    if (errorSalas) {
-      // Sin el estado se sigue detectando lo vencido por fecha, que es mejor
-      // que quedarse sin lista de invitaciones.
-      console.warn('No se pudo leer el estado de las salas invitadas:', errorSalas.message);
-      return invitaciones;
-    }
+      if (errorSalas) {
+        // Sin el estado se sigue detectando lo vencido por fecha, que es mejor
+        // que quedarse sin lista de invitaciones.
+        console.warn('No se pudo leer el estado de las salas invitadas:', errorSalas.message);
+        return invitaciones;
+      }
 
-    const porId = new Map((salas || []).map((sala) => [sala.id, sala]));
-    return invitaciones.map((inv) => {
-      const sala = porId.get(inv.room_id);
-      if (!sala) return inv;
-      return {
-        ...inv,
-        room_status: sala.status,
-        room_end_at: inv.room_end_at || sala.end_at,
-      };
-    });
+      const porId = new Map((salas || []).map((sala) => [sala.id, sala]));
+      return invitaciones.map((inv) => {
+        const sala = porId.get(inv.room_id);
+        if (!sala) return inv;
+        return {
+          ...inv,
+          room_status: sala.status,
+          room_end_at: inv.room_end_at || sala.end_at,
+        };
+      });
+
+}, { ...options, tags: ['rooms'] });
   },
 
   // ----------------------------------------------------
@@ -138,6 +149,7 @@ export const roomsService = {
       p_request_id: requestId,
     });
     if (error) throw error;
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
     return data; // Retorna message_id
   },
 
@@ -152,29 +164,32 @@ export const roomsService = {
   // ----------------------------------------------------
   // CONSULTAS DIRECTAS (Respaldadas por RLS)
   // ----------------------------------------------------
-  async getMyRooms() {
-    // La política RLS de `rooms` ya filtra devolviendo solo donde el usuario es miembro
-    // o tiene invitación pendiente. Filtraremos explícitamente los que ya unió.
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-    if (!userId) throw new Error('No user authenticated');
+  async getMyRooms(options = {}) {
+    return fetchQuery(queryKeys.rooms(), async () => {
+      // La política RLS de `rooms` ya filtra devolviendo solo donde el usuario es miembro
+      // o tiene invitación pendiente. Filtraremos explícitamente los que ya unió.
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error('No user authenticated');
 
-    const { data, error } = await supabase
-      .from('rooms')
-      .select(`
-        *,
-        challenge:activities(title, points_awarded),
-        members:room_members(user_id, role)
-      `)
-      .neq('status', 'DELETED')
-      .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('rooms')
+        .select(`
+          *,
+          challenge:activities(title, points_awarded),
+          members:room_members(user_id, role)
+        `)
+        .neq('status', 'DELETED')
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Filtramos solo en las que es miembro (descartando las que solo ve por tener invitación pendiente)
-    return (data || []).filter(room =>
-      room.members?.some(m => m.user_id === userId)
-    );
+      // Filtramos solo en las que es miembro (descartando las que solo ve por tener invitación pendiente)
+      return (data || []).filter(room =>
+        room.members?.some(m => m.user_id === userId)
+      );
+
+}, { ...options, tags: ['rooms'] });
   },
 
   async getRoomDetails(roomId) {

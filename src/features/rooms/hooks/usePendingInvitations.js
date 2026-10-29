@@ -1,17 +1,18 @@
+import { peekQuery, queryKeys } from '../../../services/queryCache';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { roomsService } from '../../../services/roomsService';
 import { isInvitationFinished } from '../utils/roomHelpers';
 
 export const usePendingInvitations = () => {
-  const [recibidas, setRecibidas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [recibidas, setRecibidas] = useState(() => peekQuery(queryKeys.roomInvitations()) || []);
+  const [loading, setLoading] = useState(() => !peekQuery(queryKeys.roomInvitations()));
   const [error, setError] = useState(null);
 
-  const fetchInvitations = useCallback(async () => {
+  const fetchInvitations = useCallback(async (force = false) => {
     try {
-      setLoading(true);
+      setLoading(!peekQuery(queryKeys.roomInvitations()));
       setError(null);
-      const data = await roomsService.getPendingInvitations();
+      const data = await roomsService.getPendingInvitations({ force });
       setRecibidas(data);
     } catch (err) {
       setError(err);
@@ -23,6 +24,8 @@ export const usePendingInvitations = () => {
   useEffect(() => {
     fetchInvitations();
   }, [fetchInvitations]);
+
+  const refetch = useCallback(() => fetchInvitations(true), [fetchInvitations]);
 
   // Las de salas ya terminadas no son solicitudes: no se pueden aceptar, solo
   // avisar de que la sala finalizó y quitarlas de en medio.
@@ -62,7 +65,7 @@ export const usePendingInvitations = () => {
     finishedInvitations,
     loading,
     error,
-    refetch: fetchInvitations,
+    refetch,
     acceptInvitation,
     rejectInvitation,
     dismissInvitation,

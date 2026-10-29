@@ -1,6 +1,7 @@
+import { peekQuery, queryKeys } from '../../services/queryCache';
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -59,20 +60,23 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
 
   // Filtro interno de Mis Amigos
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
-  const [friends, setFriends] = useState([]);
+  const [friends, setFriends] = useState(() => peekQuery(queryKeys.friends(user?.id))?.friends || []);
 
   // Búsqueda de nuevos contactos
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [sendingMap, setSendingMap] = useState({});
-  const [sentMap, setSentMap] = useState({});
+  const [sentMap, setSentMap] = useState(() => Object.fromEntries(
+    (peekQuery(queryKeys.sentRequests(user?.id))?.addresseeIds || []).map((id) => [id, true])));
 
   // Solicitudes
-  const [requests, setRequests] = useState([]);
-  const [roomInvitations, setRoomInvitations] = useState([]);
+  const [requests, setRequests] = useState(() => peekQuery(queryKeys.receivedRequests(user?.id))?.requests || []);
+  const [roomInvitations, setRoomInvitations] = useState(() =>
+    (peekQuery(queryKeys.roomInvitations()) || []).filter((inv) => !isInvitationFinished(inv)));
 
   // Sugerencias
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState(() => peekQuery(queryKeys.suggestions(user?.id))?.suggestions || []);
+  const initializedUser = useRef(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   // Perfil de amigo en modal
@@ -87,47 +91,38 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   const [selectedRoomId, setSelectedRoomId] = useState(null);
 
   useEffect(() => {
-    loadFriends();
-    loadRequests();
-    loadRoomInvitations();
+    if (!user?.id) return;
+    const firstVisit = initializedUser.current !== user.id;
+    initializedUser.current = user.id;
+    // Los contadores se precargan una vez. Después cada opción carga solo
+    // sus datos, sin repetir las llamadas de otro efecto al montar.
+    if (firstVisit || activeTab === 'friends') loadFriends();
+    if (firstVisit || activeTab === 'requests') loadRequests();
+    if (firstVisit || activeTab === 'rooms') loadRoomInvitations();
     if (activeTab === 'search') {
       loadSuggestions();
       loadSentRequests();
     }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'requests') loadRequests();
-    if (activeTab === 'friends') loadFriends();
-    if (activeTab === 'rooms') loadRoomInvitations();
-    if (activeTab === 'search') {
-      loadSuggestions();
-      loadSentRequests();
-    }
-  }, [activeTab]);
+  }, [activeTab, user?.id]);
 
   // Precarga quién ya tiene una solicitud pendiente de mi parte, para pintar
   // "Enviada" en vez de "Agregar" aunque se recargue la pantalla o se repita
   // la búsqueda en otra sesión.
-  const loadSentRequests = async () => {
-    const { addresseeIds } = await getSentFriendRequests(user.id);
-    setSentMap((prev) => {
-      const next = { ...prev };
-      addresseeIds.forEach((id) => { next[id] = true; });
-      return next;
-    });
+  const loadSentRequests = async (force = false) => {
+    const { addresseeIds, error } = await getSentFriendRequests(user.id, { force });
+    if (!error) setSentMap(Object.fromEntries(addresseeIds.map((id) => [id, true])));
   };
 
-  const loadSuggestions = async () => {
-    setSuggestionsLoading(true);
-    const { suggestions } = await getFriendSuggestionsByInterests(user.id);
-    setSuggestions(suggestions || []);
+  const loadSuggestions = async (force = false) => {
+    setSuggestionsLoading(!peekQuery(queryKeys.suggestions(user.id)));
+    const { suggestions, error } = await getFriendSuggestionsByInterests(user.id, { force });
+    if (!error) setSuggestions(suggestions || []);
     setSuggestionsLoading(false);
   };
 
-  const loadRoomInvitations = async () => {
+  const loadRoomInvitations = async (force = false) => {
     try {
-      const invitations = await roomsService.getPendingInvitations();
+      const invitations = await roomsService.getPendingInvitations({ force });
       // El punto rojo es "tienes algo que decidir". Una invitación a una sala
       // que ya terminó no se puede aceptar: se avisa dentro de Salas, pero no
       // cuenta como solicitud.
@@ -162,9 +157,9 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     }
   };
 
-  const loadRequests = async () => {
-    const { requests } = await getReceivedFriendRequests(user.id);
-    setRequests(requests);
+  const loadRequests = async (force = false) => {
+    const { requests, error } = await getReceivedFriendRequests(user.id, { force });
+    if (!error) setRequests(requests);
   };
 
   const handleResponse = async (friendshipId, status) => {
@@ -177,23 +172,24 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
     }
   };
 
-  const loadFriends = async () => {
-    setLoading(true);
-    const { friends } = await getFriendsList(user.id);
-    setFriends(friends);
+  const loadFriends = async (force = false) => {
+    setLoading(!peekQuery(queryKeys.friends(user.id)));
+    const { friends, error } = await getFriendsList(user.id, { force });
+    if (!error) setFriends(friends);
     setLoading(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (activeTab === 'friends') await loadFriends();
-    else if (activeTab === 'requests') await loadRequests();
-    else if (activeTab === 'search') {
-      await loadSuggestions();
-      await loadSentRequests();
+    try {
+      const tasks = [loadRoomInvitations(true)];
+      if (activeTab === 'friends') tasks.push(loadFriends(true));
+      else if (activeTab === 'requests') tasks.push(loadRequests(true));
+      else if (activeTab === 'search') tasks.push(loadSuggestions(true), loadSentRequests(true));
+      await Promise.all(tasks);
+    } finally {
+      setRefreshing(false);
     }
-    await loadRoomInvitations();
-    setRefreshing(false);
   };
 
   /**

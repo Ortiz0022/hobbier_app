@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   Platform,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -63,6 +64,9 @@ const STEPS = [
  */
 export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) => {
   const { theme, TOKENS, getCatalogTint, styles } = useThemeValues(getOnboardingScreenTheme);
+
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   const { user } = useAuth();
   const { notify } = useNotify();
@@ -367,6 +371,110 @@ export const OnboardingScreen = ({ onComplete, onCancel, obligatorio = false }) 
       );
     });
 
+  if (isDesktop) {
+    return (
+      <SafeAreaView style={styles.desktopScreen}>
+        <View style={styles.desktopCardContainer}>
+          {/* Cabecera con botón de retroceso y badge de paso */}
+          <View style={styles.desktopCardHeader}>
+            {modoEdicion ? (
+              onCancel ? (
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={onCancel}
+                  accessibilityRole="button"
+                  accessibilityLabel="Salir sin guardar"
+                >
+                  <Feather name="arrow-left" size={18} color={TOKENS.colors.textDark} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.headerSpacer} />
+              )
+            ) : step > 0 || onCancel ? (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={step > 0 ? anterior : onCancel}
+                accessibilityRole="button"
+                accessibilityLabel={step > 0 ? 'Volver al paso anterior' : 'Salir sin guardar'}
+              >
+                <Feather name="arrow-left" size={18} color={TOKENS.colors.textDark} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerSpacer} />
+            )}
+
+            {!modoEdicion ? (
+              <View style={styles.desktopStepBadge}>
+                <Text style={styles.desktopStepBadgeText}>
+                  Paso {step + 1} de {STEPS.length}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.desktopHeaderTitle}>Editar Preferencias</Text>
+            )}
+
+            <View style={styles.headerSpacer} />
+          </View>
+
+          {/* Barra de progreso centrada */}
+          {!modoEdicion ? (
+            <View style={styles.desktopProgressWrap}>
+              <StepProgressBar currentStep={step + 1} totalSteps={STEPS.length} />
+            </View>
+          ) : null}
+
+          {/* Contenido scrolleable */}
+          <Animated.View style={[styles.stepBody, { opacity: entrada }]}>
+            <ScrollView
+              ref={scrollRef}
+              contentContainerStyle={[
+                styles.contentContainer,
+                styles.desktopContentContainer,
+                modoEdicion && styles.editContentContainer,
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {modoEdicion ? (
+                renderEdicion()
+              ) : (
+                <>
+                  <Text style={styles.desktopStepTitle}>{capitalizarTitulo(seccion.title)}</Text>
+                  <Text style={styles.desktopStepSubtitle}>{seccion.description}</Text>
+                  {renderOpciones(seccion.key)}
+                </>
+              )}
+            </ScrollView>
+          </Animated.View>
+
+          {/* Pie anclado */}
+          <View style={styles.desktopFooter}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.primaryButton}
+              onPress={modoEdicion ? handleSave : siguiente}
+              disabled={saving}
+              accessibilityRole="button"
+            >
+              {saving ? (
+                <ActivityIndicator color={theme.color(TOKENS.colors.white, 'onAccent')} />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>
+                    {modoEdicion ? 'Guardar cambios' : esUltimo ? 'Guardar Preferencias' : 'Continuar'}
+                  </Text>
+                  {!modoEdicion && !esUltimo ? (
+                    <Feather name="arrow-right" size={17} color={theme.color(TOKENS.colors.white, 'onAccent')} />
+                  ) : null}
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       {/* En iOS el teclado de la fecha taparía el botón del pie. */}
@@ -537,6 +645,78 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.color(TOKENS.colors.white, 'background'),
   },
+  desktopScreen: {
+    flex: 1,
+    backgroundColor: theme.color(TOKENS.colors.white, 'background'),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  desktopCardContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 680,
+    flexDirection: 'column',
+    paddingVertical: 16,
+  },
+  desktopCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 10,
+  },
+  desktopStepBadge: {
+    backgroundColor: theme.color('#EAF7FA', 'card'),
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  desktopStepBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.color('#0C8AA6', 'primary'),
+  },
+  desktopHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: TOKENS.colors.textDark,
+  },
+  desktopProgressWrap: {
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 14,
+  },
+  desktopContentContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  desktopStepTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: TOKENS.colors.textDark,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  desktopStepSubtitle: {
+    fontSize: 14,
+    color: TOKENS.colors.textMuted,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 20,
+    maxWidth: 440,
+    alignSelf: 'center',
+    lineHeight: 20,
+  },
+  desktopFooter: {
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+    borderTopWidth: 1,
+    borderTopColor: theme.color('#F0F3F5', 'border'),
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.color(TOKENS.colors.white, 'background'),
@@ -559,9 +739,9 @@ const styles = StyleSheet.create({
     paddingBottom: TOKENS.spacing.sm,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: TOKENS.colors.inactiveBg,
@@ -571,20 +751,17 @@ const styles = StyleSheet.create({
     paddingBottom: TOKENS.spacing.sm,
   },
   headerSpacer: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
     color: TOKENS.colors.textDark,
   },
   contentContainer: {
-    // flexGrow + center: cuando el paso tiene pocas opciones queda centrado en
-    // la pantalla en vez de amontonado arriba con un hueco vacío debajo. Si el
-    // contenido no cabe, vuelve a comportarse como una lista normal.
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: TOKENS.spacing.lg,
@@ -592,9 +769,7 @@ const styles = StyleSheet.create({
     paddingBottom: TOKENS.spacing.lg,
   },
   editContentContainer: {
-    // Pantalla larga de edición: arriba del todo, no centrada en vertical.
     justifyContent: 'flex-start',
-    // Hueco para la flecha de "hay más abajo", que flota sobre el final.
     paddingBottom: TOKENS.spacing.lg * 2,
   },
   editSection: {
@@ -624,10 +799,11 @@ const styles = StyleSheet.create({
     marginBottom: TOKENS.spacing.sm,
   },
   stepTitle: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
     color: TOKENS.colors.textDark,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   stepSubtitle: {
     fontSize: 14,
@@ -636,15 +812,12 @@ const styles = StyleSheet.create({
     marginTop: TOKENS.spacing.sm,
     marginBottom: TOKENS.spacing.lg,
     lineHeight: 20,
-    // Un renglón muy largo cuesta de leer, y centrado todavía más.
     maxWidth: 340,
     alignSelf: 'center',
   },
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // El `gap` es la ÚNICA separación entre tarjetas: si además tuvieran margen
-    // propio, los dos se sumarían y la rejilla dejaría de cuadrar.
     gap: TOKENS.spacing.sm + 4,
   },
   optionsGridCompact: {
@@ -664,8 +837,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.color(TOKENS.colors.white, 'card'),
-    // Sin borde, la sombra es lo ÚNICO que despega la flecha del fondo blanco
-    // de la pantalla. Sacarla la haría desaparecer.
     elevation: 4,
     ...Platform.select({
       web: {
@@ -686,9 +857,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color(TOKENS.colors.white, 'card'),
   },
   primaryButton: {
-    // El fondo, el relleno y el radio se perdieron al resolver el merge de
-    // features-ange (d739432): quedaba texto blanco sobre el pie blanco y el
-    // botón, aunque estaba ahí y respondía, no se veía en ningún paso.
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -711,8 +879,8 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: theme.color(TOKENS.colors.white, "onAccent"),
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
   return { theme, TOKENS, getCatalogTint, styles };
