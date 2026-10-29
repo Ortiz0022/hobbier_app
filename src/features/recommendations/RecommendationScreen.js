@@ -19,6 +19,8 @@ import { HeroBanner } from './components/HeroBanner';
 import { InProgressCard } from './components/InProgressCard';
 import { RecentFriendsList } from './components/RecentFriendsList';
 import { RecommendationModal } from './components/RecommendationModal';
+import { AdRequestCard } from './components/AdRequestCard';
+import { AdRequestModal } from './components/AdRequestModal';
 import { CreateActivityModal } from '../../components/CreateActivityModal';
 
 export const RecommendationScreen = ({
@@ -37,6 +39,7 @@ export const RecommendationScreen = ({
   const [recommended, setRecommended] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [adRequestVisible, setAdRequestVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [pendingActivity, setPendingActivity] = useState(null);
@@ -130,7 +133,13 @@ export const RecommendationScreen = ({
           recentFriendPosts={recentFriendPosts}
           onNavigateToFeed={onNavigateToFeed}
         />
+
+        {/* Solo abre la solicitud: los anuncios aprobados siguen saliendo en el feed. */}
+        {/* El estado de las solicitudes se consulta en Perfil → Mis solicitudes de anuncio. */}
+        <AdRequestCard onPress={() => setAdRequestVisible(true)} />
       </ScrollView>
+
+      <AdRequestModal visible={adRequestVisible} onClose={() => setAdRequestVisible(false)} />
 
       <RecommendationModal
         visible={modalVisible}

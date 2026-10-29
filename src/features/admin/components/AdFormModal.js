@@ -15,12 +15,20 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, TextInput } from '../../../components/scaledText';
 import { CalendarDateField } from '../../../components/CalendarDateField';
-import { SponsoredCard } from '../../../components/SponsoredCard';
 import { CatalogPicker } from '../../onboarding/components/CatalogPicker';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
-import { saveAdAdmin, uploadAdImage } from '../../../services/adsService';
+import {
+  saveAdAdmin,
+  uploadAdImage,
+  diasDeVigencia,
+  precioSugerido,
+  PRECIO_POR_DIA,
+} from '../../../services/adsService';
+
 import { radii, spacing, fonts } from "../../../theme";
+
+const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
 
 // El calendario trabaja con "dd/mm/aaaa"; la base, con "aaaa-mm-dd".
 const isoACampo = (iso) => {
@@ -52,8 +60,7 @@ const CampoBase = ({ etiqueta, ayuda, error, children }) => {
 /**
  * Alta y edición de un anuncio patrocinado.
  *
- * Lo rellena el admin con lo que le pidió el negocio. Abajo se ve la tarjeta
- * tal cual saldrá en el feed, para revisar el texto antes de publicarla.
+ * Lo rellena el admin con lo que le pidió el negocio.
  */
 export const AdFormModal = ({ ad, onClose, onSaved }) => {
   const { theme, colors, input, estilos } = useThemeValues(getAdFormModalTheme);
@@ -61,6 +68,19 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
   const { user } = useAuth();
   const { notify } = useNotify();
   const editando = !!ad?.id;
+
+  // Sin fechas (anuncio nuevo del admin) arranca con una semana, igual que el
+  // formulario de solicitud de Descubre.
+  const desdeInicial = ad?.starts_on ? isoACampo(ad.starts_on) : enDias(0);
+  const hastaInicial = ad?.ends_on ? isoACampo(ad.ends_on) : enDias(6);
+  // En un anuncio nuevo el precio arranca con el sugerido por días; al editar
+  // se respeta lo que ya se cobró.
+  const precioInicial =
+    ad?.price_paid != null
+      ? String(ad.price_paid)
+      : editando
+        ? ''
+        : String(precioSugerido(campoAIso(desdeInicial), campoAIso(hastaInicial)));
 
   const [form, setForm] = useState({
     advertiser_name: ad?.advertiser_name || '',
@@ -70,11 +90,23 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
     link_url: ad?.link_url || '',
     cta_label: ad?.cta_label || '',
     city: ad?.city || '',
-    price_paid: ad?.price_paid != null ? String(ad.price_paid) : '',
+    price_paid: precioInicial,
     notes: ad?.notes || '',
   });
-  const [desde, setDesde] = useState(ad ? isoACampo(ad.starts_on) : enDias(0));
-  const [hasta, setHasta] = useState(ad ? isoACampo(ad.ends_on) : enDias(30));
+  const [desde, setDesde] = useState(desdeInicial);
+  const [hasta, setHasta] = useState(hastaInicial);
+  // Mientras el admin no escriba otro precio, el precio sigue a las fechas
+  // (días × tarifa). Al editar un anuncio ya cobrado, se respeta lo cobrado.
+  const [precioManual, setPrecioManual] = useState(editando && ad?.price_paid != null);
+
+  const cambiarFechas = (nuevoDesde, nuevoHasta) => {
+    setDesde(nuevoDesde);
+    setHasta(nuevoHasta);
+    if (!precioManual) {
+      const precio = precioSugerido(campoAIso(nuevoDesde), campoAIso(nuevoHasta));
+      setForm((f) => ({ ...f, price_paid: precio ? String(precio) : '' }));
+    }
+  };
   const [gustos, setGustos] = useState((ad?.likes || []).map((l) => l.id));
   const [imagenLocal, setImagenLocal] = useState(null);
   const [imagenUrl, setImagenUrl] = useState(ad?.image_url || null);
@@ -115,6 +147,9 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
   };
   const hayErrores = Object.values(errores).some(Boolean);
 
+  const dias = diasDeVigencia(desdeIso, hastaIso);
+  const sugerido = precioSugerido(desdeIso, hastaIso);
+
   const guardar = async () => {
     setIntentado(true);
     if (hayErrores) return;
@@ -131,7 +166,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
       image_url = publicUrl;
     }
 
-    const { error } = await saveAdAdmin(
+    const { ad: guardado, error } = await saveAdAdmin(
       {
         ...form,
         id: ad?.id,
@@ -150,7 +185,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
       return;
     }
     notify(editando ? 'Anuncio actualizado.' : 'Anuncio publicado.', { type: 'success' });
-    onSaved?.();
+    onSaved?.(guardado);
   };
 
   // Los errores solo se enseñan después del primer intento de guardar.
@@ -245,32 +280,59 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
             <CampoBase etiqueta="Vigencia *" error={visibles.fechas}>
               <View style={{ gap: spacing.sm }}>
                 <Text style={estilos.ayuda}>Desde</Text>
-                <CalendarDateField value={desde} onChange={setDesde} />
+                <CalendarDateField value={desde} onChange={(v) => cambiarFechas(v, hasta)} />
                 <Text style={estilos.ayuda}>Hasta</Text>
-                <CalendarDateField value={hasta} onChange={setHasta} />
+                <CalendarDateField
+                  value={hasta}
+                  onChange={(v) => cambiarFechas(desde, v)}
+                  minDate={desdeIso ? new Date(`${desdeIso}T12:00:00`) : undefined}
+                />
               </View>
+              {/* Mismo resumen que ve el anunciante en Descubre. */}
+              {dias > 0 && (
+                <View style={estilos.costo}>
+                  <Text style={estilos.costoEtiqueta}>Total según tarifa</Text>
+                  <Text style={estilos.costoTotal}>{colones(sugerido)}</Text>
+                  <Text style={estilos.costoDetalle}>
+                    {dias} {dias === 1 ? 'día' : 'días'} × {colones(PRECIO_POR_DIA)}
+                  </Text>
+                </View>
+              )}
             </CampoBase>
 
             <Text style={estilos.seccion}>Interno</Text>
-            <CampoBase etiqueta="Precio cobrado (₡)" error={visibles.price_paid}>
-              {entrada('price_paid', { placeholder: '0', keyboardType: 'decimal-pad' })}
+            <CampoBase
+              etiqueta="Precio cobrado (₡)"
+              ayuda={
+                precioManual
+                  ? 'Precio acordado con el negocio. Ya no sigue a las fechas.'
+                  : 'Sigue al total según tarifa. Escribe otra cifra si acordaste un descuento.'
+              }
+              error={visibles.price_paid}
+            >
+              {entrada('price_paid', {
+                placeholder: '0',
+                keyboardType: 'decimal-pad',
+                onChangeText: (v) => {
+                  setPrecioManual(true);
+                  set('price_paid')(v);
+                },
+              })}
+              {precioManual && !!dias && String(sugerido) !== form.price_paid && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setPrecioManual(false);
+                    set('price_paid')(String(sugerido));
+                  }}
+                  style={{ marginTop: 6 }}
+                >
+                  <Text style={estilos.usarSugerido}>Volver a la tarifa ({colones(sugerido)})</Text>
+                </TouchableOpacity>
+              )}
             </CampoBase>
             <CampoBase etiqueta="Notas">
               {entrada('notes', { placeholder: 'Acuerdos con el negocio, factura, etc.', multiline: true })}
             </CampoBase>
-
-            <Text style={estilos.seccion}>Vista previa</Text>
-            <View style={estilos.preview}>
-              <SponsoredCard
-                ad={{
-                  ...form,
-                  advertiser_name: form.advertiser_name || 'Nombre del negocio',
-                  title: form.title || 'Título del anuncio',
-                  image_url: imagenLocal || imagenUrl,
-                  matched: gustos.length > 0,
-                }}
-              />
-            </View>
           </ScrollView>
 
           <View style={estilos.pie}>
@@ -398,14 +460,40 @@ const estilos = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  costo: {
+    marginTop: spacing.md,
+    backgroundColor: theme.color('#FFF5EA', 'card'),
+    borderRadius: 12,
+    padding: spacing.md,
+  },
+  costoEtiqueta: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: colors.accentDark,
+  },
+  costoTotal: {
+    fontSize: 24,
+    fontFamily: fonts.heading,
+    color: colors.text,
+    marginTop: 2,
+  },
+  costoDetalle: {
+    fontSize: 13,
+    color: colors.textFaint,
+    marginTop: 2,
+  },
+  usarSugerido: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   quitar: {
     color: colors.danger,
     fontSize: 12,
     fontWeight: '600',
     paddingHorizontal: 4,
-  },
-  preview: {
-    marginHorizontal: -16,
   },
   pie: {
     flexDirection: 'row',

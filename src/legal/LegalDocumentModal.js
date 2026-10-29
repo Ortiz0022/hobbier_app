@@ -18,8 +18,9 @@ import { fonts } from "../theme";
 import { getLegalDocument } from './legalContent';
 
 /**
- * Muestra la Política de Privacidad o los Términos de Uso a pantalla completa.
- * `doc`: 'privacy' | 'terms' | null (null = cerrado).
+ * Muestra la Política de Privacidad, los Términos de Uso o las Condiciones de
+ * Publicidad a pantalla completa.
+ * `doc`: 'privacy' | 'terms' | 'ads' | null (null = cerrado).
  */
 export const LegalDocumentModal = ({ doc, onClose }) => {
   const { theme, colors, styles } = useThemeValues(getLegalDocumentModalTheme);

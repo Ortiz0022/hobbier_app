@@ -33,6 +33,240 @@ export const logAdEvent = async (adId, kind) => {
   if (error) console.warn('No se pudo registrar el evento del anuncio:', error.message);
 };
 
+// ---------- Solicitudes de anuncio (formulario de Descubre) ----------
+// Esquema en supabase/migrations/20261028_ad_requests.sql. La solicitud nace
+// PENDIENTE y no sale en el feed: solo el admin, al aprobarla, crea el anuncio.
+
+export const submitAdRequest = async (userId, solicitud) => {
+  try {
+    const esEvento = solicitud.kind === 'EVENTO';
+    const { error } = await supabase.from('ad_requests').insert({
+      user_id: userId,
+      advertiser_name: solicitud.advertiser_name.trim(),
+      // Sin correo ni teléfono: todo se habla en el chat de la solicitud.
+      contact: null,
+      kind: solicitud.kind,
+      title: solicitud.title.trim(),
+      body: solicitud.body?.trim() || null,
+      link_url: solicitud.link_url?.trim() || null,
+      event_date: esEvento ? solicitud.event_date || null : null,
+      event_place: esEvento ? solicitud.event_place?.trim() || null : null,
+      image_url: solicitud.image_url || null,
+      starts_on: solicitud.starts_on,
+      ends_on: solicitud.ends_on,
+    });
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    console.error('Error al enviar la solicitud de anuncio:', error.message);
+    // El trigger avisa así cuando la persona ya tiene 3 pendientes.
+    const limite = /LIMITE_SOLICITUDES/.test(error.message || '');
+    return { error, limite };
+  }
+};
+
+/**
+ * Solicitudes de la persona, para "Mis solicitudes". La regla "Usuario ve sus
+ * solicitudes de anuncio" solo le deja leer las suyas; aquí se piden solo las
+ * columnas que le sirven (no quién la revisó).
+ */
+export const getMyAdRequests = async (userId) => {
+  if (!userId) return { requests: [], error: null };
+  try {
+    const { data, error } = await supabase
+      .from('ad_requests')
+      .select(
+        'id, advertiser_name, title, kind, image_url, starts_on, ends_on, status, reject_reason, created_at, reviewed_at, ' +
+          'messages:ad_request_messages(from_team, body, created_at)'
+      )
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return { requests: (data || []).map(conResumenDeMensajes), error: null };
+  } catch (error) {
+    console.warn('No se pudieron cargar tus solicitudes de anuncio:', error.message);
+    return { requests: [], error };
+  }
+};
+
+// Cuántos mensajes tiene la solicitud y cuál fue el último, para mostrarlo en
+// la tarjeta sin abrir el chat.
+const conResumenDeMensajes = ({ messages, ...sol }) => {
+  const orden = [...(messages || [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return { ...sol, messageCount: orden.length, lastMessage: orden[orden.length - 1] || null };
+};
+
+// ---------- Chat de cada solicitud ----------
+// Esquema en 20261028e_ad_request_messages.sql. Solo lo leen y escriben quien
+// envió la solicitud y los admins; from_team lo pone el servidor.
+
+export const getAdRequestMessages = async (requestId) => {
+  try {
+    const { data, error } = await supabase
+      .from('ad_request_messages')
+      .select('id, from_team, body, created_at')
+      .eq('request_id', requestId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return { messages: data || [], error: null };
+  } catch (error) {
+    console.error('Error al cargar los mensajes de la solicitud:', error.message);
+    return { messages: [], error };
+  }
+};
+
+// "No leído" sin tocar la base: se guarda en el dispositivo la hora del último
+// mensaje que la persona ya vio en cada chat. Un mensaje del equipo más nuevo
+// que eso cuenta como no leído en la bandeja de Mensajes. Si el almacenamiento
+// falla, el chat sigue funcionando; solo se pierde el punto de no leído.
+const CLAVE_CHAT_VISTO = 'hobbier.chat_anuncio_visto.';
+
+export const marcarChatAnuncioVisto = async (requestId, ultimoIso) => {
+  if (!requestId || !ultimoIso) return;
+  try {
+    await AsyncStorage.setItem(CLAVE_CHAT_VISTO + requestId, ultimoIso);
+  } catch {
+    // Sin almacenamiento el chat volverá a salir como no leído; no pasa nada.
+  }
+};
+
+export const chatAnuncioSinLeer = async (solicitud) => {
+  const ultimo = solicitud?.lastMessage;
+  if (!ultimo?.from_team) return false;
+  try {
+    const visto = await AsyncStorage.getItem(CLAVE_CHAT_VISTO + solicitud.id);
+    return !visto || ultimo.created_at > visto;
+  } catch {
+    return true;
+  }
+};
+
+export const sendAdRequestMessage = async (requestId, senderId, body) => {
+  const { data, error } = await supabase
+    .from('ad_request_messages')
+    .insert({ request_id: requestId, sender_id: senderId, body: body.trim() })
+    .select('id, from_team, body, created_at')
+    .single();
+  if (error) console.error('Error al enviar el mensaje:', error.message);
+  return { message: data || null, error };
+};
+
+// La foto del anunciante va a su propia carpeta: la política de
+// 20261028b_ad_requests_image_duration.sql solo le deja subir ahí. Las fechas
+// pedidas vienen de 20261028c_ad_requests_dates.sql.
+export const uploadAdRequestImage = async (userId, imageUri) => {
+  try {
+    const fileName = `solicitudes/${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const fileBody = await readImageForUpload(imageUri);
+
+    const { error } = await supabase.storage
+      .from('ad-images')
+      .upload(fileName, fileBody, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('ad-images').getPublicUrl(fileName);
+    return { publicUrl: data.publicUrl, error: null };
+  } catch (error) {
+    console.error('Error al subir la imagen de la solicitud:', error.message);
+    return { publicUrl: null, error };
+  }
+};
+
+// ---------- Precio ----------
+// Tarifa única por día que el anuncio sale en el feed. Es solo la base del
+// precio sugerido: el admin puede cobrar otra cosa si lo acuerda con el negocio.
+export const PRECIO_POR_DIA = 500;
+
+const isoLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Días que sale un anuncio, contando el primero y el último (como get_my_ads). */
+export const diasDeVigencia = (desdeIso, hastaIso) => {
+  if (!desdeIso || !hastaIso || hastaIso < desdeIso) return 0;
+  const desde = new Date(`${desdeIso}T12:00:00`);
+  const hasta = new Date(`${hastaIso}T12:00:00`);
+  return Math.round((hasta - desde) / 86400000) + 1;
+};
+
+export const precioSugerido = (desdeIso, hastaIso) => diasDeVigencia(desdeIso, hastaIso) * PRECIO_POR_DIA;
+
+/**
+ * Fechas con las que se abre el formulario del anuncio al aprobar una
+ * solicitud, en "aaaa-mm-dd": las que pidió el anunciante. Si el admin la
+ * revisa tarde y el inicio ya pasó, arranca hoy y se conserva el final. El
+ * admin puede cambiarlas antes de guardar.
+ */
+export const vigenciaSugerida = (solicitud) => {
+  const hoy = isoLocal(new Date());
+  const desde = solicitud.starts_on && solicitud.starts_on > hoy ? solicitud.starts_on : hoy;
+  const hasta = solicitud.ends_on && solicitud.ends_on >= desde ? solicitud.ends_on : solicitud.event_date || undefined;
+  return { starts_on: desde, ends_on: hasta };
+};
+
+export const getAdRequestsAdmin = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('ad_requests')
+      .select(
+        '*, requester:profiles!ad_requests_user_id_fkey(username, full_name), ' +
+          'messages:ad_request_messages(from_team, body, created_at)'
+      )
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return { requests: (data || []).map(conResumenDeMensajes), error: null };
+  } catch (error) {
+    console.error('Error al obtener las solicitudes de anuncio:', error.message);
+    return { requests: [], error };
+  }
+};
+
+export const approveAdRequestAdmin = async (requestId, adId, adminId) => {
+  const { error } = await supabase
+    .from('ad_requests')
+    .update({ status: 'APROBADA', ad_id: adId, reviewed_by: adminId, reviewed_at: new Date().toISOString() })
+    .eq('id', requestId);
+  if (error) console.error('Error al aprobar la solicitud:', error.message);
+  return { error };
+};
+
+// Ruta dentro del bucket a partir de la URL pública
+// (".../object/public/ad-images/solicitudes/<id>/foto.jpg" → "solicitudes/<id>/foto.jpg").
+const rutaEnBucket = (url) => {
+  const i = (url || '').indexOf('/ad-images/');
+  return i === -1 ? null : decodeURIComponent(url.slice(i + '/ad-images/'.length).split('?')[0]);
+};
+
+/**
+ * Rechaza la solicitud y borra la foto que adjuntó: el bucket es público y,
+ * sin anuncio aprobado, no hay motivo para que siga accesible. Solo se borran
+ * fotos de solicitudes/, nunca las de anuncios creados por el admin.
+ */
+export const rejectAdRequestAdmin = async (solicitud, motivo, adminId) => {
+  const ruta = rutaEnBucket(solicitud.image_url);
+  let fotoBorrada = !ruta;
+  if (ruta?.startsWith('solicitudes/')) {
+    // Si las reglas no dejan borrar, Storage no da error: devuelve la lista
+    // vacía. Por eso se mira también que haya borrado algo.
+    const { data: borrados, error: errorFoto } = await supabase.storage.from('ad-images').remove([ruta]);
+    fotoBorrada = !errorFoto && (borrados || []).length > 0;
+    if (!fotoBorrada) console.warn('No se pudo borrar la foto de la solicitud:', errorFoto?.message || 'sin permiso');
+  }
+
+  const { error } = await supabase
+    .from('ad_requests')
+    .update({
+      status: 'RECHAZADA',
+      reject_reason: motivo?.trim() || null,
+      reviewed_by: adminId,
+      reviewed_at: new Date().toISOString(),
+      // Si la foto no se pudo borrar se conserva el enlace, para poder borrarla a mano.
+      ...(fotoBorrada ? { image_url: null } : {}),
+    })
+    .eq('id', solicitud.id);
+  if (error) console.error('Error al rechazar la solicitud:', error.message);
+  return { error, fotoBorrada };
+};
+
 // ---------- Ciudad automática (para anuncios cercanos) ----------
 // Se pide el permiso de ubicación una sola vez; con él se saca el cantón o
 // ciudad y SOLO eso se guarda en profiles.ads_city (nunca coordenadas). Sin

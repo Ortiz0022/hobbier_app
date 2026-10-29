@@ -1,6 +1,6 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,17 +20,37 @@ import { useNotify } from '../../../context/NotificationContext';
 import { directMessagesService } from '../../../services/directMessagesService';
 import { useDirectInbox } from '../hooks/useDirectInbox';
 import { formatMessageTime } from '../utils/formatMessageTime';
+import { getMyAdRequests, chatAnuncioSinLeer } from '../../../services/adsService';
 import { spacing, fonts, radii } from "../../../theme";
 
-export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
+export const MessagesInboxScreen = ({ onBack, onOpenChat, onOpenAdChat }) => {
   const { theme, colors, input, styles } = useThemeValues(getMessagesInboxScreenTheme);
 
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { notify, confirm } = useNotify();
   const { conversations, loading, error, refetch } = useDirectInbox();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Chats de solicitudes de anuncio con el equipo. No son mensajes directos
+  // (esos exigen amistad), pero se muestran aquí arriba como una conversación
+  // más. Solo salen las que ya tienen algún mensaje.
+  const [chatsAnuncio, setChatsAnuncio] = useState([]);
+
+  const cargarChatsAnuncio = useCallback(async () => {
+    if (!user?.id) return;
+    const { requests } = await getMyAdRequests(user.id);
+    const conMensajes = (requests || [])
+      .filter((r) => r.messageCount > 0)
+      .sort((a, b) => (b.lastMessage.created_at > a.lastMessage.created_at ? 1 : -1));
+    const sinLeer = await Promise.all(conMensajes.map(chatAnuncioSinLeer));
+    setChatsAnuncio(conMensajes.map((r, i) => ({ ...r, sinLeer: sinLeer[i] })));
+  }, [user?.id]);
+
+  useEffect(() => {
+    cargarChatsAnuncio();
+  }, [cargarChatsAnuncio]);
 
   const query = searchQuery.trim().toLowerCase();
   const filtered = query
@@ -39,11 +59,41 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
         (c.friend_full_name || '').toLowerCase().includes(query)
       )
     : conversations;
+  const chatsAnuncioFiltrados = query
+    ? chatsAnuncio.filter((r) =>
+        `${t('ad_request.chat_team')} ${r.title}`.toLowerCase().includes(query)
+      )
+    : chatsAnuncio;
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), cargarChatsAnuncio()]);
     setRefreshing(false);
+  };
+
+  const renderChatAnuncio = (r) => {
+    const ultimo = r.lastMessage;
+    return (
+      <TouchableOpacity key={`ad-${r.id}`} style={styles.row} activeOpacity={0.7} onPress={() => onOpenAdChat(r)}>
+        <View style={[styles.avatarPlaceholder, styles.avatarEquipo]}>
+          <Feather name="volume-2" size={22} color={colors.primary} />
+        </View>
+
+        <View style={styles.rowBody}>
+          <Text style={[styles.name, r.sinLeer && styles.nameUnread]} numberOfLines={1}>
+            {t('ad_request.chat_team')} · {r.title}
+          </Text>
+          <View style={styles.previewRow}>
+            <Text style={[styles.preview, r.sinLeer && styles.previewUnread]} numberOfLines={1}>
+              {`${ultimo.from_team ? '' : 'Tú: '}${ultimo.body}`}
+            </Text>
+            <Text style={styles.time}> · {formatMessageTime(ultimo.created_at, language)}</Text>
+          </View>
+        </View>
+
+        {r.sinLeer && <View style={styles.unreadDot} />}
+      </TouchableOpacity>
+    );
   };
 
   // Solo para mí: la otra persona sigue viendo sus mensajes. El amigo no
@@ -178,6 +228,7 @@ export const MessagesInboxScreen = ({ onBack, onOpenChat }) => {
           keyExtractor={(item) => item.friend_id}
           renderItem={renderItem}
           contentContainerStyle={filtered.length === 0 ? styles.emptyListContent : styles.listContent}
+          ListHeaderComponent={chatsAnuncioFiltrados.length > 0 ? <View>{chatsAnuncioFiltrados.map(renderChatAnuncio)}</View> : null}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.primary]} tintColor={colors.primary} />
           }
@@ -268,6 +319,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarEquipo: {
+    backgroundColor: colors.primarySoft,
   },
   avatarInitial: {
     fontSize: 20,

@@ -41,6 +41,7 @@ import { UserProfileModal } from '../../components/UserProfileModal';
 import { DoAlsoModal } from './components/DoAlsoModal';
 import { MessagesInboxScreen } from '../messages/screens/MessagesInboxScreen';
 import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
+import { AdRequestChatScreen } from '../messages/screens/AdRequestChatScreen';
 import { useDirectUnreadCount } from '../messages/hooks/useDirectUnreadCount';
 import { SponsoredCard } from '../../components/SponsoredCard';
 import { AdInfoModal } from '../../components/AdInfoModal';
@@ -382,6 +383,15 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     );
   }
 
+  if (messagesView?.screen === 'AD_CHAT') {
+    return (
+      <AdRequestChatScreen
+        request={messagesView.request}
+        onBack={() => setMessagesView({ screen: 'INBOX' })}
+      />
+    );
+  }
+
   if (messagesView?.screen === 'INBOX') {
     return (
       <MessagesInboxScreen
@@ -390,6 +400,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
           refetchUnreadCount();
         }}
         onOpenChat={({ conversationId, friend }) => setMessagesView({ screen: 'CHAT', conversationId, friend })}
+        onOpenAdChat={(request) => setMessagesView({ screen: 'AD_CHAT', request })}
       />
     );
   }
