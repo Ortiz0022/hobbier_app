@@ -1,3 +1,4 @@
+import { invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
 
 export const getReportedPostsAdmin = async () => {
@@ -60,6 +61,7 @@ export const resolveReportedPostAdmin = async (postId, newStatus) => {
       console.error('La publicación se resolvió pero sus reportes siguen pendientes:', errorReportes.message);
     }
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { post: data, error: null };
   } catch (error) {
     console.error('Error al resolver reporte admin:', error.message);
@@ -141,6 +143,7 @@ export const createActivityAdmin = async ({
       }
     }
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { activity: data, error: null };
   } catch (error) {
     console.error('Error al crear actividad:', error.message);
@@ -158,6 +161,7 @@ export const toggleActivityActiveAdmin = async (activityId, currentIsActive) => 
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { activity: data, error: null };
   } catch (error) {
     console.error('Error al cambiar estado de actividad:', error.message);
@@ -177,7 +181,7 @@ export const getReportedProfilesAdmin = async () => {
         author:profiles!posts_user_id_fkey(id, full_name, username, avatar_url, status)
       `)
       .eq('status', 'REPORTED');
-      
+
     if (postsError) throw postsError;
 
     // 2. Get profile reports (if the table exists)
@@ -305,6 +309,7 @@ export const resolveProfileAdmin = async (profileId, newStatus) => {
         .eq('status', 'PENDING');
     } catch (_) {}
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { profile: data, error: null };
   } catch (error) {
     console.error('Error al resolver perfil admin:', error.message);
@@ -362,7 +367,10 @@ export const suspendProfileAdmin = async (profileId, motivo) => {
       p_user_id: profileId,
       p_reason: texto,
     });
-    if (!error) return { error: null, motivoGuardado: true };
+    if (!error) {
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
+      return { error: null, motivoGuardado: true };
+    }
 
     const noExisteLaRpc =
       error.code === 'PGRST202' || /admin_suspend_account/.test(error.message || '');
@@ -384,7 +392,10 @@ export const suspendProfileAdmin = async (profileId, motivo) => {
       })
       .eq('id', profileId);
 
-    if (!conMotivo.error) return { error: null, motivoGuardado: true };
+    if (!conMotivo.error) {
+      invalidateQueries('activities', 'social', 'feed', 'rooms');
+      return { error: null, motivoGuardado: true };
+    }
     if (!faltaColumnaSuspension(conMotivo.error)) throw conMotivo.error;
 
     const sinMotivo = await supabase
@@ -393,6 +404,7 @@ export const suspendProfileAdmin = async (profileId, motivo) => {
       .eq('id', profileId);
     if (sinMotivo.error) throw sinMotivo.error;
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { error: null, motivoGuardado: false };
   } catch (error) {
     console.error('Error al sancionar la cuenta:', error.message);
@@ -515,6 +527,7 @@ export const setProfileRoleAdmin = async (profileId, newRole) => {
       .single();
 
     if (error) throw error;
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { profile: data, error: null };
   } catch (error) {
     console.error('Error al cambiar el rol:', error.message);
@@ -697,6 +710,7 @@ export const updateActivityTagsAdmin = async (activityId, { likeIds = [], intere
       }
     }
 
+    invalidateQueries('activities', 'social', 'feed', 'rooms');
     return { error: null };
   } catch (error) {
     console.error('Error al guardar las etiquetas de la actividad:', error.message);

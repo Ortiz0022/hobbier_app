@@ -43,7 +43,7 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
       <View style={styles.centerContainer}>
         <Feather name="alert-circle" size={48} color={colors.danger} />
         <Text style={styles.errorText}>No se pudieron cargar las salas.</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
           <Text style={styles.retryButtonText}>Reintentar</Text>
         </TouchableOpacity>
       </View>

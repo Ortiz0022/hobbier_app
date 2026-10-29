@@ -1,6 +1,7 @@
+import { peekQuery, queryKeys } from '../../services/queryCache';
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -49,10 +50,14 @@ export const PendingActivityScreen = ({
   const { notify } = useNotify();
   const { t } = useLanguage();
   const showMessage = (title, message) => notify(message, { type: 'error', title });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !peekQuery(queryKeys.activities(user?.id)));
+  const activitiesRequest = useRef(0);
   const [completing, setCompleting] = useState(false);
-  const [pendingActivities, setPendingActivities] = useState([]);
-  const [completedActivities, setCompletedActivities] = useState([]);
+  const [pendingActivities, setPendingActivities] = useState(() =>
+    (peekQuery(queryKeys.activities(user?.id))?.activities || []).filter((a) => a.status === 'PENDING')
+      .sort((a, b) => a.id === initialExpandedId ? -1 : b.id === initialExpandedId ? 1 : 0));
+  const [completedActivities, setCompletedActivities] = useState(() =>
+    (peekQuery(queryKeys.activities(user?.id))?.activities || []).filter((a) => a.status === 'COMPLETED'));
   const [activeTab, setActiveTab] = useState('now');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [evidenceTarget, setEvidenceTarget] = useState(null);
@@ -64,12 +69,15 @@ export const PendingActivityScreen = ({
 
   useEffect(() => {
     loadUserActivities();
+    return () => { activitiesRequest.current += 1; };
   }, [user?.id, initialExpandedId]);
 
-  const loadUserActivities = async () => {
+  const loadUserActivities = async (force = false) => {
     if (!user?.id) return;
-    setLoading(true);
-    const { activities, error } = await getUserActivities(user.id);
+    const request = ++activitiesRequest.current;
+    setLoading(!peekQuery(queryKeys.activities(user.id)));
+    const { activities, error } = await getUserActivities(user.id, { force });
+    if (request !== activitiesRequest.current) return;
 
     if (!error) {
       const pending = (activities || []).filter((activity) => activity.status === 'PENDING');
@@ -88,7 +96,7 @@ export const PendingActivityScreen = ({
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadUserActivities();
+    await loadUserActivities(true);
     setRefreshing(false);
   };
 
@@ -262,7 +270,7 @@ export const PendingActivityScreen = ({
                 <Text style={[styles.filterMenuText, activeTab === 'now' && styles.filterMenuTextActive]}>{t('missions.pending_tab')}</Text>
                 <Feather name={activeTab === 'now' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'now' ? colors.primary : colors.textMuted} />
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.filterMenuItem} onPress={() => { setActiveTab('history'); setShowFilterDropdown(false); }}>
                 <Text style={[styles.filterMenuText, activeTab === 'history' && styles.filterMenuTextActive]}>{t('missions.completed_tab')}</Text>
                 <Feather name={activeTab === 'history' ? 'check-circle' : 'circle'} size={20} color={activeTab === 'history' ? colors.primary : colors.textMuted} />

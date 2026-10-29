@@ -1,3 +1,4 @@
+import { peekQuery, queryKeys } from '../../services/queryCache';
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -79,11 +80,13 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const { user, profile } = useAuth();
   const { notify, confirm } = useNotify();
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0)));
+  const feedRequest = useRef(0);
+  const adsRequest = useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [posts, setPosts] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
+  const [posts, setPosts] = useState(() => peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0))?.posts || []);
+  const [hasMore, setHasMore] = useState(() => peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0))?.hasMore || false);
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [ads, setAds] = useState([]);
   const [adInfo, setAdInfo] = useState(null);
@@ -95,7 +98,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   // la ref impide pedir la misma página dos veces.
   const loadingMoreRef = useRef(false);
   // La lista de amigos se pide una vez por carga del feed, no en cada página.
-  const friendIdsRef = useRef(null);
+  const friendIdsRef = useRef(peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0))?.friendIds || null);
 
   // Estado para el modal de reportes y perfil de usuario
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -115,7 +118,8 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   useEffect(() => {
     loadFeed();
-  }, []);
+    return () => { feedRequest.current += 1; adsRequest.current += 1; };
+  }, [user?.id]);
 
   const handleOpenDoAlso = (post) => {
     setDoAlsoPost(post);
@@ -190,14 +194,22 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   };
 
   // Primera página (o recarga completa). Devuelve si fue bien.
-  const fetchFirstPage = async () => {
-    const [{ posts: newPosts, hasMore: more, friendIds, error }, { ads: misAnuncios }] = await Promise.all([
-      getFriendsFeed(user.id, FEED_PAGE_SIZE, 0),
-      getMyAds(3),
-    ]);
-    setAds(misAnuncios);
+  const loadAds = async () => {
+    const request = ++adsRequest.current;
+    const { ads: misAnuncios, error } = await getMyAds(3);
+    if (request === adsRequest.current && !error) setAds(misAnuncios);
+  };
+
+  const fetchFirstPage = async (force = false) => {
+    const request = ++feedRequest.current;
+    // Anuncios y publicaciones empiezan juntos, pero solo estas últimas
+    // determinan cuándo se puede mostrar el contenido principal.
+    void loadAds();
     adsVistosRef.current = new Set();
-    if (error) return false;
+    const { posts: newPosts, hasMore: more, friendIds, error } = await getFriendsFeed(
+      user.id, FEED_PAGE_SIZE, 0, { force },
+    );
+    if (request !== feedRequest.current || error) return false;
     setPosts(newPosts);
     setHasMore(more);
     setLoadMoreError(false);
@@ -211,8 +223,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const actualizarCiudad = async (pedirPermiso) => {
     const cambio = await syncAdCity(user.id, profile?.ads_city, { pedirPermiso });
     if (!cambio) return;
-    const { ads: misAnuncios } = await getMyAds(3);
-    setAds(misAnuncios);
+    await loadAds();
   };
 
   useEffect(() => {
@@ -243,7 +254,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   const loadFeed = async () => {
     if (!user?.id) return;
-    setLoading(true);
+    setLoading(!peekQuery(queryKeys.feed(user.id, FEED_PAGE_SIZE, 0)));
     await fetchFirstPage();
     setLoading(false);
   };
@@ -281,7 +292,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const onRefresh = async () => {
     if (!user?.id) return;
     setRefreshing(true);
-    await fetchFirstPage();
+    await fetchFirstPage(true);
     setRefreshing(false);
   };
 

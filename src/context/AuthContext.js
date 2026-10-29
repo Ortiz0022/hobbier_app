@@ -1,3 +1,4 @@
+import { setQueryCacheUser, invalidateQueries } from '../services/queryCache';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { AppState } from 'react-native';
 import { supabase, getRedirectUrl } from '../config/supabase';
@@ -149,6 +150,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // 1. Obtener la sesión inicial
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setQueryCacheUser(session?.user?.id);
       setSession(session);
       if (session?.user) {
         const sus = await checkSuspension(session.user.id);
@@ -169,6 +171,7 @@ export const AuthProvider = ({ children }) => {
     // 2. Escuchar cambios de estado de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        setQueryCacheUser(session?.user?.id);
         if (event === 'PASSWORD_RECOVERY') {
           setPasswordRecovery(true);
         }
@@ -277,6 +280,7 @@ export const AuthProvider = ({ children }) => {
       if (data?.user) {
         const sus = await checkSuspension(data.user.id);
         if (sus) {
+          setQueryCacheUser(data.user.id);
           setUser(data.user);
           setSession(data.session);
           await fetchProfile(data.user.id);
@@ -358,6 +362,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setQueryCacheUser(null);
       setUser(null);
       setSession(null);
       setProfile(null);
@@ -371,6 +376,7 @@ export const AuthProvider = ({ children }) => {
 
   // Refrescar el perfil manualmente
   const refreshProfile = async () => {
+    invalidateQueries('social', 'feed');
     if (user?.id) {
       return await fetchProfile(user.id);
     }
