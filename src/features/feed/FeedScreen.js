@@ -33,6 +33,8 @@ import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { translateContent } from '../../services/translationService';
+import { formatTimeAgo } from '../../utils/dateFormat';
 import { getFriendsFeed, reportPost, togglePostReaction, deleteOwnPost } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
@@ -91,7 +93,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   const { user, profile } = useAuth();
   const { notify, confirm } = useNotify();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -121,6 +123,69 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [doAlsoPost, setDoAlsoPost] = useState(null);
   const [acceptingDoAlso, setAcceptingDoAlso] = useState(false);
 
+  // Estado para traducciones de publicaciones: { [postId]: { text: string, isTranslated: boolean } }
+  const [translations, setTranslations] = useState({});
+  const [translatingIds, setTranslatingIds] = useState(new Set());
+
+  const handleToggleTranslation = async (postId, originalText) => {
+    const current = translations[postId];
+
+    // Si ya está traducido y activo, volvemos a mostrar el original al pulsar "Ver original"
+    if (current?.isTranslated) {
+      setTranslations((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: false,
+        },
+      }));
+      return;
+    }
+
+    // Si ya tenemos en memoria la traducción para este post, solo la activamos
+    if (current?.text) {
+      setTranslations((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: true,
+        },
+      }));
+      return;
+    }
+
+    // Traducir por primera vez
+    setTranslatingIds((prev) => new Set(prev).add(postId));
+    try {
+      const { translatedText, error } = await translateContent(originalText, language);
+      if (error) {
+        notify(
+          language === 'en' ? 'Could not translate text.' : 'No se pudo traducir el texto.',
+          { type: 'warning' }
+        );
+      } else {
+        setTranslations((prev) => ({
+          ...prev,
+          [postId]: {
+            text: translatedText,
+            isTranslated: true,
+          },
+        }));
+      }
+    } catch (_err) {
+      notify(
+        language === 'en' ? 'Translation error.' : 'Error al traducir.',
+        { type: 'error' }
+      );
+    } finally {
+      setTranslatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
   // Mensajes directos: navegación interna, igual que las salas dentro de Amigos.
   // null = feed | { screen: 'INBOX' } | { screen: 'CHAT', conversationId, friend }
   const [messagesView, setMessagesView] = useState(null);
@@ -131,7 +196,12 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   }, []);
 
   const handleOpenDoAlso = (post) => {
-    setDoAlsoPost(post);
+    const postTranslation = translations[post.id];
+    const postWithTranslation = {
+      ...post,
+      ...(postTranslation?.isTranslated ? { activityTitle: postTranslation.text } : {}),
+    };
+    setDoAlsoPost(postWithTranslation);
     setDoAlsoModalVisible(true);
   };
 
@@ -429,35 +499,80 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     const pillStyle = getPillStyle(activityTitle, index);
     const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
 
+    const postTranslation = translations[post.id];
+    const isTranslated = !!postTranslation?.isTranslated;
+    const displayedTitle = isTranslated ? postTranslation.text : activityTitle;
+    const isTranslating = translatingIds.has(post.id);
+    const timeAgo = formatTimeAgo(post.created_at, language);
+
     return (
       <View style={styles.postCard}>
         {/* CABECERA DE LA PUBLICACIÓN */}
         <View style={styles.postHeader}>
           <View style={styles.authorRow}>
-            <TouchableOpacity
-              style={styles.authorClickArea}
-              onPress={() => setSelectedUserProfile(post.author)}
-              activeOpacity={0.8}
-            >
-              {post.author?.avatar_url ? (
-                <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
-              ) : (
-                <View style={styles.authorAvatar}>
-                  <Text style={styles.authorInitial}>
-                    {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
-                  </Text>
-                </View>
-              )}
+            <View style={styles.authorClickArea}>
+              <TouchableOpacity
+                onPress={() => setSelectedUserProfile(post.author)}
+                activeOpacity={0.8}
+              >
+                {post.author?.avatar_url ? (
+                  <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
+                ) : (
+                  <View style={styles.authorAvatar}>
+                    <Text style={styles.authorInitial}>
+                      {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
               <View style={styles.authorInfo}>
-                <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
-                <View style={styles.authorActionRow}>
-                  {pillStyle.Icon && <pillStyle.Icon size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 4 }} />}
-                  <Text style={styles.authorAction} numberOfLines={1}>
-                    {activityTitle}
-                  </Text>
+                <TouchableOpacity
+                  onPress={() => setSelectedUserProfile(post.author)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
+                  <View style={styles.authorActionRow}>
+                    {pillStyle.Icon && <pillStyle.Icon size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 4 }} />}
+                    <Text style={styles.authorAction} numberOfLines={1}>
+                      {displayedTitle}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* META INFO: TIEMPO RELATIVO + VER TRADUCCIÓN (ESTILO INSTAGRAM) */}
+                <View style={styles.translationMetaRow}>
+                  {Boolean(timeAgo) && (
+                    <>
+                      <Text style={styles.timeAgoText}>{timeAgo}</Text>
+                      <Text style={styles.metaDot}> • </Text>
+                    </>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => handleToggleTranslation(post.id, activityTitle)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                    disabled={isTranslating}
+                    style={styles.translateTouchArea}
+                  >
+                    {isTranslating ? (
+                      <View style={styles.translatingRow}>
+                        <ActivityIndicator size="small" color={theme.color('#0C8AA6', 'primary')} style={styles.translateSpinner} />
+                        <Text style={styles.translateBtnText}>
+                          {language === 'en' ? 'Translating...' : 'Traduciendo...'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.translateBtnText}>
+                        {isTranslated
+                          ? (language === 'en' ? 'See original' : 'Ver original')
+                          : (language === 'en' ? 'See translation' : 'Ver traducción')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
-            </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={styles.optionsBtn}
@@ -559,8 +674,8 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         getItemType={(item) => (item.__ad ? 'ad' : 'post')}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }}
-        // renderPost depende del usuario actual (Repetir / Hacer también)
-        extraData={user?.id}
+        // renderPost depende del usuario actual y de las traducciones activas
+        extraData={[user?.id, translations, translatingIds, language]}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
@@ -850,6 +965,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 1,
+  },
+  translationMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  timeAgoText: {
+    fontSize: 11,
+    color: theme.color('#64748B', 'muted'),
+    fontWeight: '400',
+  },
+  metaDot: {
+    fontSize: 11,
+    color: theme.color('#94A3B8', 'muted'),
+  },
+  translateTouchArea: {
+    paddingVertical: 1,
+  },
+  translatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  translateSpinner: {
+    transform: [{ scale: 0.65 }],
+    marginRight: 4,
+  },
+  translateBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.color('#0C8AA6', 'primary'),
   },
   optionsBtn: {
     padding: 6,

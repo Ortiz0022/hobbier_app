@@ -18,6 +18,8 @@ import { RefreshControl } from '../../components/refrescoArrastrando';
 import { Text, TextInput } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { Languages } from 'lucide-react-native';
+import { SettingsScreen } from './SettingsScreen';
+import { ChangePasswordScreen } from './ChangePasswordScreen';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
@@ -44,7 +46,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   const { notify, confirm } = useNotify();
   const { t, language, setLanguage, languages } = useLanguage();
   const [editing, setEditing] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [subScreen, setSubScreen] = useState('profile');
   const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [newImageUri, setNewImageUri] = useState(null);
@@ -206,6 +208,117 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
   const displayImageUri = newImageUri || profile?.avatar_url;
 
+  if (subScreen === 'change_password') {
+    return <ChangePasswordScreen onBack={() => setSubScreen('settings')} />;
+  }
+
+  if (subScreen === 'settings') {
+    return (
+      <>
+        <SettingsScreen
+          onBack={() => setSubScreen('profile')}
+          onNavigateToChangePassword={() => setSubScreen('change_password')}
+          onEditProfile={() => {
+            setSubScreen('profile');
+            setFullName(profile?.full_name || '');
+            setNewImageUri(null);
+            setEditing(true);
+          }}
+          onGoToPreferences={onGoToPreferences}
+          onOpenLanguage={() => setLanguageModalOpen(true)}
+          onOpenCreateActivity={() => setCreateActivityOpen(true)}
+          onOpenMyAds={() => {
+            loadMyAdRequests();
+            setMyAdRequestsOpen(true);
+          }}
+          onNavigateToAdmin={() => {
+            if (onNavigateToAdmin) onNavigateToAdmin();
+          }}
+          onOpenPrivacy={() => setLegalDoc('privacy')}
+          onOpenTerms={() => setLegalDoc('terms')}
+        />
+
+        {/* MODAL PARA CAMBIAR IDIOMA (ESPAÑOL / ENGLISH) */}
+        <Modal
+          visible={languageModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setLanguageModalOpen(false)}
+        >
+          <Pressable style={styles.menuOverlay} onPress={() => setLanguageModalOpen(false)}>
+            <View style={styles.langModalCard}>
+              <View style={styles.langModalHeader}>
+                <Feather name="globe" size={20} color={COLORS.cyanIcon} />
+                <Text style={styles.langModalTitle}>{t('language.select')}</Text>
+              </View>
+
+              <View style={styles.langOptionsList}>
+                {languages.map((item) => {
+                  const isSelected = language === item.code;
+                  return (
+                    <TouchableOpacity
+                      key={item.code}
+                      style={[styles.langOptionItem, isSelected && styles.langOptionItemActive]}
+                      onPress={() => {
+                        setLanguage(item.code);
+                        setLanguageModalOpen(false);
+                        notify(
+                          item.code === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English',
+                          { type: 'success' }
+                        );
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.langOptionLeft}>
+                        <Languages size={18} color={isSelected ? COLORS.cyanIcon : COLORS.slateMuted} style={{ marginRight: 10 }} />
+                        <Text style={[styles.langOptionLabel, isSelected && styles.langOptionLabelActive]}>
+                          {item.label}
+                        </Text>
+                      </View>
+                      {isSelected && <Feather name="check" size={18} color={COLORS.cyanIcon} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                style={styles.langCloseBtn}
+                onPress={() => setLanguageModalOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.langCloseBtnText}>{t('common.close')}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        <CreateActivityModal
+          visible={createActivityOpen}
+          onClose={() => setCreateActivityOpen(false)}
+        />
+
+        <LegalDocumentModal doc={legalDoc} onClose={() => setLegalDoc(null)} />
+
+        <MyAdRequestsModal
+          visible={myAdRequestsOpen}
+          requests={myAdRequests}
+          onClose={() => setMyAdRequestsOpen(false)}
+          onChanged={loadMyAdRequests}
+          onNewRequest={() => {
+            setMyAdRequestsOpen(false);
+            setAdRequestOpen(true);
+          }}
+        />
+
+        <AdRequestModal
+          visible={adRequestOpen}
+          onClose={() => setAdRequestOpen(false)}
+          onSent={loadMyAdRequests}
+        />
+      </>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -243,7 +356,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
               </Pressable>
               <TouchableOpacity
                 style={styles.iconBtn}
-                onPress={() => setMenuOpen(true)}
+                onPress={() => setSubScreen('settings')}
                 activeOpacity={0.8}
               >
                 <Feather name="menu" size={17} color={COLORS.textPrimary} />
@@ -252,135 +365,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
           </View>
         </View>
 
-        <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-          <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
-            <View style={styles.menuDropdown}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setFullName(profile?.full_name || '');
-                  setNewImageUri(null);
-                  setEditing(true);
-                }}
-              >
-                <Feather name="edit-2" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>{t('profile.edit_profile')}</Text>
-              </TouchableOpacity>
 
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  onGoToPreferences();
-                }}
-              >
-                <Feather name="sliders" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>{t('profile.config_preferences')}</Text>
-              </TouchableOpacity>
-
-              {isAdmin && (
-                <>
-                  <View style={styles.menuDivider} />
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setMenuOpen(false);
-                      if (onNavigateToAdmin) onNavigateToAdmin();
-                    }}
-                  >
-                    <Feather name="shield" size={16} color={COLORS.orange} />
-                    <Text style={styles.menuItemText}>Administrar aplicación</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setLanguageModalOpen(true);
-                }}
-              >
-                <Feather name="globe" size={16} color={COLORS.cyanIcon} />
-                <Text style={styles.menuItemText}>
-                  {t('language.title')} ({language === 'es' ? 'ES' : 'EN'})
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setCreateActivityOpen(true);
-                }}
-              >
-                <Feather name="plus-circle" size={16} color={COLORS.orange} />
-                <Text style={styles.menuItemText}>{t('profile.create_own_activity')}</Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  loadMyAdRequests();
-                  setMyAdRequestsOpen(true);
-                }}
-              >
-                <Feather name="volume-2" size={16} color={COLORS.cyanIcon} />
-                <Text style={styles.menuItemText}>{t('profile.my_ad_requests')}</Text>
-              </TouchableOpacity>
-
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setLegalDoc('privacy');
-                }}
-              >
-                <Feather name="shield" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>{t('legal.privacy_policy')}</Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setLegalDoc('terms');
-                }}
-              >
-                <Feather name="file-text" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>{t('legal.terms_of_use')}</Text>
-              </TouchableOpacity>
-
-              <View style={styles.menuDivider} />
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  signOut();
-                }}
-              >
-                <Feather name="log-out" size={16} color={COLORS.danger} />
-                <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>{t('profile.logout')}</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Modal>
 
         {/* MODAL PARA CAMBIAR IDIOMA (ESPAÑOL / ENGLISH) */}
         <Modal

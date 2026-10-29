@@ -21,6 +21,7 @@ import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { isSupabaseConfigured } from '../../config/supabase';
 import { LegalDocumentModal } from '../../legal/LegalDocumentModal';
+import { AuthFeatureCarousel } from './components/AuthFeatureCarousel';
 import {
   validateEmail,
   validateNewPassword,
@@ -566,50 +567,8 @@ export const AuthScreen = () => {
                   <Text style={styles.desktopHeroSloganAccent}>tu comunidad creativa.</Text>
                 </Text>
 
-                {/* Mockup visual de historias / móvil inspirado en Instagram */}
-                <View style={styles.phoneMockupContainer}>
-                  {/* Tarjeta de fondo inclinada con brillo */}
-                  <View style={styles.phoneStoryBackgroundCard} />
-
-                  {/* Teléfono frontal */}
-                  <View style={styles.phoneDeviceFrame}>
-                    <View style={styles.phoneSpeakerNotch} />
-
-                    <View style={styles.phoneStoryHeader}>
-                      <View style={styles.phoneUserAvatar}>
-                        <Palette size={14} color={theme.color('#0C8AA6', 'primary')} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={styles.phoneStoryUser}>camila_art</Text>
-                        <Text style={styles.phoneStoryTime}>Pintura al óleo · Hace 2h</Text>
-                      </View>
-                      <View style={styles.phoneStoryBadge}>
-                        <Text style={styles.phoneStoryBadgeText}>Arte</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.phoneStoryVisual}>
-                      <MaterialCommunityIcons name="palette-swatch-outline" size={50} color={theme.color('#0C8AA6', 'primary')} />
-                      <Text style={styles.phoneStoryVisualText}>Lienzo terminado en el taller de fin de semana</Text>
-
-                      {/* Burbujas de reacción flotantes */}
-                      <View style={styles.phoneReactionBubble1}>
-                        <Heart size={12} color="#E11D48" fill="#E11D48" />
-                        <Text style={styles.phoneReactionCount}>124</Text>
-                      </View>
-                      <View style={styles.phoneReactionBubble2}>
-                        <Flame size={12} color="#F97316" fill="#F97316" />
-                      </View>
-                    </View>
-
-                    <View style={styles.phoneStoryBottomBar}>
-                      <View style={styles.phoneReplyInputPill}>
-                        <Text style={styles.phoneReplyPlaceholder}>Enviar mensaje...</Text>
-                      </View>
-                      <Ionicons name="heart-outline" size={18} color={theme.color('#8A908B', 'muted')} />
-                    </View>
-                  </View>
-                </View>
+                {/* Carrusel interactivo que muestra las posibilidades en Hobbier */}
+                <AuthFeatureCarousel />
               </View>
 
               {/* Divisor vertical sutil entre columnas */}
