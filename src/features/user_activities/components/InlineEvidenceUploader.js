@@ -3,7 +3,7 @@ import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-
+import { useLanguage } from '../../../context/LanguageContext';
 
 export const InlineEvidenceUploader = ({
   imageUri,
@@ -11,9 +11,13 @@ export const InlineEvidenceUploader = ({
   onPickImage,
   onTakePhoto,
   onComplete,
-  buttonText = 'Superar misión',
+  buttonText,
 }) => {
   const { theme, colors, styles } = useThemeValues(getInlineEvidenceUploaderTheme);
+  const { t } = useLanguage();
+
+  const finalButtonText = buttonText || t('missions.complete_mission') || 'Superar misión';
+
   return (<View style={styles.container}>
     {imageUri ? (
       <View style={styles.readyCard}>
@@ -21,9 +25,9 @@ export const InlineEvidenceUploader = ({
           <Feather name="check" size={24} color={colors.success} />
         </View>
         <View style={styles.readyCopy}>
-          <Text style={styles.readyTitle}>Evidencia lista</Text>
+          <Text style={styles.readyTitle}>{t('missions.evidence_ready') || 'Evidencia lista'}</Text>
           <Text style={styles.readyText}>
-            La foto está preparada. La encontrarás en tu Perfil al completar.
+            {t('missions.evidence_ready_text') || 'La foto está preparada. La encontrarás en tu Perfil al completar.'}
           </Text>
         </View>
       </View>
@@ -32,9 +36,9 @@ export const InlineEvidenceUploader = ({
         <View style={styles.introIcon}>
           <Feather name="camera" size={25} color={colors.primary} />
         </View>
-        <Text style={styles.introTitle}>Guarda este momento</Text>
+        <Text style={styles.introTitle}>{t('missions.save_moment') || 'Guarda este momento'}</Text>
         <Text style={styles.introText}>
-          Necesitamos una foto como evidencia, pero no la mostraremos en Actividad.
+          {t('missions.evidence_note') || 'Necesitamos una foto como evidencia, pero no la mostraremos en Actividad.'}
         </Text>
       </View>
     )}
@@ -47,7 +51,7 @@ export const InlineEvidenceUploader = ({
         accessibilityRole="button"
       >
         <Feather name="camera" size={18} color={colors.primaryDark} />
-        <Text style={styles.sourceButtonText}>Cámara</Text>
+        <Text style={styles.sourceButtonText}>{t('missions.camera') || 'Cámara'}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.sourceButton}
@@ -56,7 +60,7 @@ export const InlineEvidenceUploader = ({
         accessibilityRole="button"
       >
         <Feather name="image" size={18} color={colors.primaryDark} />
-        <Text style={styles.sourceButtonText}>Galería</Text>
+        <Text style={styles.sourceButtonText}>{t('missions.gallery') || 'Galería'}</Text>
       </TouchableOpacity>
     </View>
 
@@ -72,7 +76,7 @@ export const InlineEvidenceUploader = ({
       ) : (
         <>
           <Text style={[styles.completeText, !imageUri && styles.completeTextDisabled]}>
-            {buttonText}
+            {finalButtonText}
           </Text>
           <Feather
             name="arrow-right"

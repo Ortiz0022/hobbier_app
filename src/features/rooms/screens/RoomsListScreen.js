@@ -8,8 +8,11 @@ import { usePendingInvitations } from '../hooks/usePendingInvitations';
 import { RoomCard } from '../components/RoomCard';
 import { spacing, fonts, radii } from "../../../theme";
 
+import { useLanguage } from '../../../context/LanguageContext';
+
 export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
   const { theme, colors, primaryButton, card, styles } = useThemeValues(getRoomsListScreenTheme);
+  const { t } = useLanguage();
 
   const { rooms, loading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms();
   const {
@@ -42,9 +45,9 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
     return (
       <View style={styles.centerContainer}>
         <Feather name="alert-circle" size={48} color={colors.danger} />
-        <Text style={styles.errorText}>No se pudieron cargar las salas.</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
+        <Text style={styles.errorText}>{t('rooms.error_load') || 'No se pudieron cargar las salas.'}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+          <Text style={styles.retryButtonText}>{t('rooms.retry') || 'Reintentar'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -54,15 +57,19 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
     <View>
       {invitations.length > 0 && (
         <View style={styles.invitationsSection}>
-          <Text style={styles.sectionTitle}>Invitaciones Pendientes ({invitations.length})</Text>
+          <Text style={styles.sectionTitle}>
+            {t('rooms.pending_invitations', { count: invitations.length }) || `Invitaciones Pendientes (${invitations.length})`}
+          </Text>
           {invitations.map(inv => (
             <View key={inv.invitation_id} style={styles.invitationCard}>
               <View style={styles.invitationInfo}>
                 <Text style={styles.invitationRoomName}>{inv.room_name}</Text>
                 <Text style={styles.invitationSender}>
-                  Invitado por <Text style={{fontWeight: 'bold'}}>@{inv.sender_username}</Text>
+                  {t('rooms.invited_by', { username: inv.sender_username }) || `Invitado por @${inv.sender_username}`}
                 </Text>
-                <Text style={styles.invitationChallenge}>Reto: {inv.challenge_title}</Text>
+                <Text style={styles.invitationChallenge}>
+                  {t('rooms.challenge', { title: inv.challenge_title }) || `Reto: ${inv.challenge_title}`}
+                </Text>
               </View>
               <View style={styles.invitationActions}>
                 <TouchableOpacity
@@ -83,9 +90,7 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
         </View>
       )}
 
-      {/* Invitaciones a salas que ya terminaron: no hay nada que aceptar, solo
-          enterarse y quitarlas. Al descartar se marcan en la base, así que no
-          vuelven a salir. */}
+      {/* Invitaciones a salas que ya terminaron */}
       {finishedInvitations.length > 0 && (
         <View style={styles.invitationsSection}>
           {finishedInvitations.map(inv => (
@@ -94,16 +99,16 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
               <View style={styles.invitationInfo}>
                 <Text style={styles.finishedRoomName}>{inv.room_name}</Text>
                 <Text style={styles.finishedText}>
-                  <Text style={{ fontWeight: 'bold' }}>@{inv.sender_username}</Text> te invitó a esta
-                  sala, pero ya finalizó: la invitación venció.
+                  <Text style={{ fontWeight: 'bold' }}>@{inv.sender_username}</Text>{' '}
+                  {t('rooms.expired_invite') || 'te invitó a esta sala, pero ya finalizó: la invitación venció.'}
                 </Text>
               </View>
               <TouchableOpacity
                 style={styles.finishedDismissBtn}
                 onPress={() => dismissInvitation(inv.invitation_id)}
-                accessibilityLabel="Descartar aviso"
+                accessibilityLabel={t('common.got_it') || 'Entendido'}
               >
-                <Text style={styles.finishedDismissText}>Entendido</Text>
+                <Text style={styles.finishedDismissText}>{t('common.got_it') || 'Entendido'}</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -115,7 +120,7 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Salas</Text>
+        <Text style={styles.title}>{t('rooms.title') || 'Salas'}</Text>
         <TouchableOpacity style={styles.createButton} onPress={onNavigateToCreate}>
           <Feather name="plus" size={20} color={colors.onPrimary} />
         </TouchableOpacity>
@@ -139,12 +144,12 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
             <View style={styles.emptyIconContainer}>
               <Feather name="users" size={48} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>Sin salas grupales</Text>
+            <Text style={styles.emptyTitle}>{t('rooms.no_rooms') || 'Sin salas grupales'}</Text>
             <Text style={styles.emptyText}>
-              Crea una sala para desafiar a tus amigos a completar un reto juntos.
+              {t('rooms.create_first_room') || 'Crea una sala para desafiar a tus amigos a completar un reto juntos.'}
             </Text>
             <TouchableOpacity style={styles.primaryBtn} onPress={onNavigateToCreate}>
-              <Text style={styles.primaryBtnText}>Crear mi primera sala</Text>
+              <Text style={styles.primaryBtnText}>{t('rooms.create_room') || 'Crear mi primera sala'}</Text>
             </TouchableOpacity>
           </View>
         }

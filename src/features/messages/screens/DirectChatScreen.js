@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { Text } from '../../../components/scaledText';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { directMessagesService } from '../../../services/directMessagesService';
 import { useDirectChat } from '../hooks/useDirectChat';
 import { ChatThread } from '../../rooms/components/ChatThread';
@@ -20,6 +21,7 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
   const { theme, colors, styles } = useThemeValues(getDirectChatScreenTheme);
 
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [conversationId, setConversationId] = useState(initialConversationId || null);
   const [openError, setOpenError] = useState(null);
 
@@ -45,7 +47,7 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
     });
   }, [conversationId, newestIncomingId]);
 
-  const displayName = friend?.full_name || friend?.username || 'Amigo';
+  const displayName = friend?.full_name || friend?.username || t('messages.friend') || 'Amigo';
   // Un fallo al paginar no debe tapar los mensajes que ya se ven.
   const failure = openError || (error && messages.length === 0 ? error : null);
 
@@ -76,10 +78,10 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
         <View style={styles.centerContainer}>
           <Feather name="alert-circle" size={48} color={colors.danger} />
           <Text style={styles.errorText}>
-            {failure.message?.includes('amigos') ? failure.message : 'No se pudo abrir la conversación.'}
+            {failure.message?.includes('amigos') ? failure.message : (t('messages.open_error') || 'No se pudo abrir la conversación.')}
           </Text>
           <TouchableOpacity style={styles.backBtnError} onPress={onBack}>
-            <Text style={styles.backBtnErrorText}>Volver</Text>
+            <Text style={styles.backBtnErrorText}>{t('common.back') || 'Volver'}</Text>
           </TouchableOpacity>
         </View>
       ) : !conversationId ? (
@@ -97,8 +99,8 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
           onDiscard={discardMessage}
           showSenderName={false}
           emptyIcon="message-circle"
-          emptyTitle={`Saluda a ${displayName}`}
-          emptySubtitle="Envía un mensaje para iniciar la conversación"
+          emptyTitle={t('messages.say_hi', { name: displayName }) || `Saluda a ${displayName}`}
+          emptySubtitle={t('messages.send_message_start') || "Envíale un mensaje para iniciar la conversación."}
         />
       )}
     </View>

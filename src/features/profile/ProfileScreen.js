@@ -679,7 +679,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                   {completedActivities.map((item) => {
                     const isExpanded = expandedActivityId === item.id;
                     const activityPosts = item.posts || [];
-                    const catStyle = getCategoryStyle(item.activity?.category, item.activity?.title);
+                    const catStyle = getCategoryStyle(item.activity?.category, item.activity?.title, language);
                     const totalRepetitions = activityPosts.length > 0 ? activityPosts.length : 1;
                     return (
                       <View
@@ -759,7 +759,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                                         postId: post.id,
                                         uri: post.image_url,
                                         title: item.activity?.title,
-                                        category: getCategoryLabel(item.activity?.category),
+                                        category: getCategoryLabel(item.activity?.category, language),
                                         points: item.activity?.points_awarded || 0,
                                         completedAt: post.created_at,
                                         reactionsCount: (post.post_reactions || []).length,
@@ -795,8 +795,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
               ) : (
                 <View style={styles.photoGrid}>
                   {posts.map((post) => {
-                    const title = post.user_activity?.activity?.title || 'Actividad completada';
-                    const category = getCategoryLabel(post.user_activity?.activity?.category);
+                    const title = post.user_activity?.activity?.title || t('recommendations.new_activity') || 'Actividad completada';
+                    const category = getCategoryLabel(post.user_activity?.activity?.category, language);
                     const points = post.user_activity?.activity?.points_awarded || 0;
                     const reactionsCount = (post.post_reactions || []).length;
                     return (

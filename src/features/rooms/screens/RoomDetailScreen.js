@@ -38,7 +38,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { theme, colors, styles } = useThemeValues(getRoomDetailScreenTheme);
 
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { notify, confirm } = useNotify();
   const { room, ranking, loading: detailsLoading, error: detailsError, refetch } = useRoomDetails(roomId);
   const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useRoomChat(roomId);
@@ -47,7 +47,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const { url: coverUrl } = useSignedUrl('room-images', room?.image_path);
 
-  const [activeTab, setActiveTab] = useState('Reto'); // 'RETO', 'CHAT', 'RANKING'
+  const [activeTab, setActiveTab] = useState('Reto'); // 'Reto', 'Chat', 'Ranking'
   const [adminModalVisible, setAdminModalVisible] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
@@ -63,9 +63,9 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
     return (
       <View style={styles.centerContainer}>
         <Feather name="alert-circle" size={48} color={colors.danger} />
-        <Text style={styles.errorText}>No se pudo cargar la sala.</Text>
+        <Text style={styles.errorText}>{t('rooms.error_load') || 'No se pudo cargar la sala.'}</Text>
         <TouchableOpacity style={styles.backBtnError} onPress={onBack}>
-          <Text style={styles.backBtnErrorText}>Volver</Text>
+          <Text style={styles.backBtnErrorText}>{t('common.back') || 'Volver'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -79,9 +79,9 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const memberIds = (room.members || []).map((m) => m.profile?.id).filter(Boolean);
 
   const getStatusText = () => {
-    if (isClosed) return 'Reto finalizado';
-    if (isActiveWithoutDeadline) return 'Reto activo · Sin fecha límite';
-    return `Reto activo · Finaliza el ${formatDateTime(room.end_at, language)}`;
+    if (isClosed) return t('rooms.status_closed') || 'Reto finalizado';
+    if (isActiveWithoutDeadline) return t('rooms.status_no_deadline') || 'Reto activo · Sin fecha límite';
+    return t('rooms.status_ends_at', { date: formatDateTime(room.end_at, language) }) || `Reto activo · Finaliza el ${formatDateTime(room.end_at, language)}`;
   };
 
   const handlePickEvidence = async () => {
@@ -95,7 +95,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
       try {
         await submitEvidence(result.assets[0].uri);
         refetch();
-        setActiveTab('CHAT');
+        setActiveTab('Chat');
       } catch (err) {
         alert(err.message || 'Error registrando evidencia');
       }
@@ -121,9 +121,9 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const confirmClose = async () => {
     const ok = await confirm({
-      title: 'Cerrar sala',
-      message: '¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.',
-      confirmLabel: 'Cerrar sala',
+      title: t('rooms.close_room_title') || 'Cerrar sala',
+      message: t('rooms.close_room_msg') || '¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.',
+      confirmLabel: t('rooms.close_room_btn') || 'Cerrar sala',
       destructive: true,
     });
     if (ok) closeRoom(roomId).then(refetch);
@@ -131,9 +131,9 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const confirmDelete = async () => {
     const ok = await confirm({
-      title: 'Eliminar sala',
-      message: '¿Eliminar la sala? Esta acción no se puede deshacer.',
-      confirmLabel: 'Eliminar',
+      title: t('rooms.delete_room_title') || 'Eliminar sala',
+      message: t('rooms.delete_room_msg') || '¿Eliminar la sala? Esta acción no se puede deshacer.',
+      confirmLabel: t('common.delete') || 'Eliminar',
       destructive: true,
     });
     if (ok) deleteRoom(roomId).then(onBack);
@@ -141,16 +141,22 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const alert = (msg) => notify(msg, { type: 'error', title: 'Aviso' });
 
+  const tabs = [
+    { key: 'Reto', label: t('rooms.tab_challenge') || 'Reto' },
+    { key: 'Chat', label: t('rooms.tab_chat') || 'Chat' },
+    { key: 'Ranking', label: t('rooms.tab_ranking') || 'Ranking' },
+  ];
+
   const renderTabs = () => (
     <View style={styles.tabContainer}>
-      {['Reto', 'Chat', 'Ranking'].map(tab => (
+      {tabs.map(tab => (
         <TouchableOpacity
-          key={tab}
-          style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-          onPress={() => setActiveTab(tab)}
+          key={tab.key}
+          style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
+          onPress={() => setActiveTab(tab.key)}
         >
-          <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-            {tab}
+          <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+            {tab.label}
           </Text>
         </TouchableOpacity>
       ))}
@@ -159,7 +165,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
 
   const renderRetoTab = () => {
     const ownerMember = room.members?.find((m) => m.role === 'OWNER' || m.profile?.id === room.owner_id);
-    const ownerName = ownerMember?.profile?.full_name || (ownerMember?.profile?.username ? `@${ownerMember.profile.username}` : 'Anfitrión');
+    const ownerName = ownerMember?.profile?.full_name || (ownerMember?.profile?.username ? `@${ownerMember.profile.username}` : (t('rooms.host') || 'Anfitrión'));
 
     return (
       <View style={styles.retoTabWrapper}>
@@ -189,7 +195,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                 <Text style={[styles.statusText, isClosed && styles.statusTextClosed]}>{getStatusText()}</Text>
               </View>
               <Text style={styles.lobbyTitleDark}>{room.name}</Text>
-              <Text style={styles.lobbySubtitleDark}>Anfitrión: {ownerName}</Text>
+              <Text style={styles.lobbySubtitleDark}>{t('rooms.host') || 'Anfitrión'}: {ownerName}</Text>
             </View>
             {/* 2. FACEPILE MEMBERS */}
             <View style={styles.membersRow}>
@@ -214,7 +220,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                   </View>
                 )}
               </View>
-              <Text style={styles.membersCountText}>{ranking?.length || 1} Hobbiers en sala</Text>
+              <Text style={styles.membersCountText}>{ranking?.length || 1} {t('rooms.hobbiers_in_room') || 'Hobbiers en sala'}</Text>
               {canInvite && (
                 <TouchableOpacity
                   style={styles.inviteBtn}
@@ -222,7 +228,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                   activeOpacity={0.8}
                 >
                   <Feather name="user-plus" size={15} color={colors.primary} />
-                  <Text style={styles.inviteBtnText}>Invitar</Text>
+                  <Text style={styles.inviteBtnText}>{t('rooms.invite') || 'Invitar'}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -232,7 +238,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
               <View style={styles.missionHeaderRow}>
                 <View style={styles.missionEyebrow}>
                   <Feather name="target" size={14} color={colors.primary} />
-                  <Text style={styles.missionEyebrowText}>MISIÓN ACTUAL</Text>
+                  <Text style={styles.missionEyebrowText}>{t('rooms.current_mission') || 'MISIÓN ACTUAL'}</Text>
                 </View>
                 <View style={styles.pointsPill}>
                   <Feather name="star" size={12} color={theme.color("#C2530A", 'accent')} style={{ marginRight: 4 }} />
@@ -240,7 +246,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                 </View>
               </View>
 
-              <Text style={styles.missionTitle}>{room.challenge?.title || 'Reto de la sala'}</Text>
+              <Text style={styles.missionTitle}>{room.challenge?.title || t('rooms.room_challenge') || 'Reto de la sala'}</Text>
 
               {room.challenge?.description ? (
                 <Text style={styles.missionDesc}>{room.challenge?.description}</Text>
@@ -263,7 +269,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
               ) : (
                 <>
                   <Feather name="camera" size={19} color={colors.onPrimary} style={{ marginRight: 8 }} />
-                  <Text style={styles.submitEvidenceBtnText}>Registrar avance</Text>
+                  <Text style={styles.submitEvidenceBtnText}>{t('rooms.record_advance') || 'Registrar avance'}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -283,7 +289,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
       onRetry={retryMessage}
       onDiscard={discardMessage}
       readOnly={isClosed}
-      readOnlyText="El reto finalizó. Chat en modo solo lectura."
+      readOnlyText={t('rooms.chat_readonly') || "El reto finalizó. Chat en modo solo lectura."}
     />
   );
 
@@ -296,7 +302,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         isClosed ? (
           <View style={styles.rankingFinalBanner}>
             <Feather name="award" size={24} color={colors.accent} />
-            <Text style={styles.rankingFinalText}>Ranking Final</Text>
+            <Text style={styles.rankingFinalText}>{t('rooms.final_ranking') || 'Ranking Final'}</Text>
           </View>
         ) : null
       }
@@ -304,7 +310,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         <RoomRankingItem user={item} position={index + 1} isFinal={isClosed} />
       )}
       ListEmptyComponent={
-        <Text style={styles.emptyText}>No hay miembros en el ranking aún.</Text>
+        <Text style={styles.emptyText}>{t('rooms.empty_ranking') || 'No hay miembros en el ranking aún.'}</Text>
       }
     />
   );
@@ -315,7 +321,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Sala de Reto</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{t('rooms.room_title') || 'Sala de Reto'}</Text>
         {isOwner ? (
           <TouchableOpacity onPress={() => setAdminModalVisible(true)} style={{ width: 24, alignItems: 'center' }}>
             <Feather name="more-horizontal" size={24} color={colors.text} />
@@ -342,7 +348,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         <Pressable style={styles.modalOverlay} onPress={() => setAdminModalVisible(false)}>
           <Pressable style={styles.modalContent}>
             <View style={styles.modalGrabber} />
-            <Text style={styles.modalTitle}>Administración de Sala</Text>
+            <Text style={styles.modalTitle}>{t('rooms.room_admin') || 'Administración de Sala'}</Text>
 
             {canInvite && (
               <TouchableOpacity
@@ -350,7 +356,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                 onPress={() => { setAdminModalVisible(false); setInviteModalVisible(true); }}
               >
                 <Feather name="user-plus" size={18} color={colors.text} style={{ marginRight: 10 }} />
-                <Text style={styles.modalActionText}>Invitar amigos</Text>
+                <Text style={styles.modalActionText}>{t('rooms.invite_friends') || 'Invitar amigos'}</Text>
               </TouchableOpacity>
             )}
 
@@ -361,7 +367,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
                 disabled={actionLoading}
               >
                 <Feather name="x-circle" size={18} color={colors.text} style={{ marginRight: 10 }} />
-                <Text style={styles.modalActionText}>Cerrar Reto</Text>
+                <Text style={styles.modalActionText}>{t('rooms.close_challenge') || 'Cerrar Reto'}</Text>
               </TouchableOpacity>
             )}
 
@@ -371,7 +377,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
               disabled={actionLoading}
             >
               <Feather name="trash-2" size={18} color={colors.danger} style={{ marginRight: 10 }} />
-              <Text style={styles.modalDeleteText}>Eliminar Sala</Text>
+              <Text style={styles.modalDeleteText}>{t('rooms.delete_room') || 'Eliminar Sala'}</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
