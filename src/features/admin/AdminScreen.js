@@ -15,6 +15,7 @@ import { Text } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getCategoryLabel } from '../../utils/category';
 import { capitalizarTitulo } from '../../utils/titleCase';
 import { radii, spacing, fonts } from "../../theme";
@@ -51,6 +52,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
 
   const { isAdmin } = useAuth();
   const { notify } = useNotify();
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [activities, setActivities] = useState([]);
   const [totalActividades, setTotalActividades] = useState(0);
@@ -111,12 +113,12 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
   // Un rótulo por sección: el título grande de la cabecera y la línea que
   // explica qué se está mirando.
   const SECCIONES = {
-    overview: { titulo: 'Resumen General', subtitulo: 'Cómo va el sistema ahora mismo' },
-    support: { titulo: 'Soporte y Apelaciones', subtitulo: 'Revisa las apelaciones de cuentas sancionadas y reactiva perfiles' },
-    users: { titulo: 'Usuarios', subtitulo: 'Quién está registrado, denunciado o suspendido' },
-    posts: { titulo: 'Publicaciones', subtitulo: 'Todo lo que la gente publica en el feed' },
-    activities: { titulo: 'Actividades', subtitulo: 'El catálogo que se recomienda a los usuarios' },
-    ads: { titulo: 'Anuncios', subtitulo: 'Negocios y actividades que pagan por aparecer en la app' },
+    overview: { titulo: t('admin.section_overview_title') || 'Resumen General', subtitulo: t('admin.section_overview_subtitle') || 'Cómo va el sistema ahora mismo' },
+    support: { titulo: t('admin.section_support_title') || 'Soporte y Apelaciones', subtitulo: t('admin.section_support_subtitle') || 'Revisa las apelaciones de cuentas sancionadas y reactiva perfiles' },
+    users: { titulo: t('admin.section_users_title') || 'Usuarios', subtitulo: t('admin.section_users_subtitle') || 'Quién está registrado, denunciado o suspendido' },
+    posts: { titulo: t('admin.section_posts_title') || 'Publicaciones', subtitulo: t('admin.section_posts_subtitle') || 'Todo lo que la gente publica en el feed' },
+    activities: { titulo: t('admin.section_activities_title') || 'Actividades', subtitulo: t('admin.section_activities_subtitle') || 'El catálogo que se recomienda a los usuarios' },
+    ads: { titulo: t('admin.section_ads_title') || 'Anuncios', subtitulo: t('admin.section_ads_subtitle') || 'Negocios y actividades que pagan por aparecer en la app' },
   };
   const seccion = SECCIONES[section] || SECCIONES.overview;
 
@@ -125,9 +127,9 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
       <SafeAreaView style={styles.container}>
         <View style={styles.forbiddenBox}>
           <Ionicons name="lock-closed" size={54} color={colors.text} style={{ marginBottom: spacing.md }} />
-          <Text style={styles.forbiddenTitle}>Acceso Restringido</Text>
+          <Text style={styles.forbiddenTitle}>{t('admin.forbidden_title') || 'Acceso Restringido'}</Text>
           <Text style={styles.forbiddenSubtitle}>
-            Esta sección solo está disponible para usuarios con rol de Administrador.
+            {t('admin.forbidden_subtitle') || 'Esta sección solo está disponible para usuarios con rol de Administrador.'}
           </Text>
         </View>
       </SafeAreaView>
@@ -138,15 +140,15 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.kicker}>PANEL DE ADMINISTRACIÓN</Text>
+          <Text style={styles.kicker}>{t('admin.panel_title') || 'PANEL DE ADMINISTRACIÓN'}</Text>
           <TouchableOpacity
             style={styles.exitBtn}
             onPress={onExit}
             activeOpacity={0.8}
-            accessibilityLabel="Volver a la aplicación como usuario normal"
+            accessibilityLabel={t('admin.back_to_app') || 'Volver a la app'}
           >
             <Ionicons name="arrow-back" size={13} color={colors.textFaint} />
-            <Text style={styles.exitBtnText}>Volver a la app</Text>
+            <Text style={styles.exitBtnText}>{t('admin.back_to_app') || 'Volver a la app'}</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.title}>{seccion.titulo}</Text>
@@ -195,14 +197,14 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
               onPress={() => setShowCreateModal(true)}
               activeOpacity={0.85}
             >
-              <Text style={styles.createBtnText}>+ Crear Nueva Actividad</Text>
+              <Text style={styles.createBtnText}>{t('admin.create_new_activity_btn') || '+ Crear Nueva Actividad'}</Text>
             </TouchableOpacity>
 
             {loading && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />}
 
             {!loading && (
               <Text style={styles.catalogoTotal}>
-                {totalActividades} {totalActividades === 1 ? 'actividad' : 'actividades'} en el catálogo
+                {totalActividades} {totalActividades === 1 ? (t('admin.activity_single') || 'actividad') : (t('admin.activity_plural') || 'actividades')} {t('admin.in_the_catalog') || 'en el catálogo'}
               </Text>
             )}
 
@@ -220,7 +222,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
                         { color: act.is_active ? colors.primaryDark : colors.textMuted },
                       ]}
                     >
-                      {act.is_active ? 'ACTIVA' : 'INACTIVA'}
+                      {act.is_active ? (t('admin.active_badge') || 'ACTIVA') : (t('admin.inactive_badge') || 'INACTIVA')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -231,7 +233,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
                 <View style={styles.metaRow}>
                   <View style={styles.metaBadge}>
                     <Ionicons name="pricetag-outline" size={11} color={colors.textFaint} />
-                    <Text style={styles.metaBadgeText}>{getCategoryLabel(act.category)}</Text>
+                    <Text style={styles.metaBadgeText}>{getCategoryLabel(act.category, language)}</Text>
                   </View>
                   <View style={styles.metaBadge}>
                     <Ionicons name="star-outline" size={11} color={colors.textFaint} />
@@ -240,7 +242,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
                   <View style={styles.metaBadge}>
                     <Ionicons name="person-outline" size={11} color={colors.textFaint} />
                     <Text style={styles.metaBadgeText}>
-                      {act.max_age ? `${act.min_age || 0}-${act.max_age} años` : `${act.min_age || 0}+ años`}
+                      {act.max_age ? `${act.min_age || 0}-${act.max_age} ${t('admin.years_old') || 'años'}` : `${act.min_age || 0}+ ${t('admin.years_old') || 'años'}`}
                     </Text>
                   </View>
                 </View>
@@ -256,7 +258,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
                       <>
                         {sinGustos ? (
                           <Text style={styles.sinEtiquetas}>
-                            Sin gustos: solo se ofrece como comodín
+                            {t('admin.no_tags_wildcard') || 'Sin gustos: solo se ofrece como comodín'}
                           </Text>
                         ) : (
                           <View style={adminStyles.badgeRow}>
@@ -271,7 +273,7 @@ export const AdminScreen = ({ section = 'overview', onNavigateSection, onExit })
 
                         <View style={styles.etiquetasAccion}>
                           <BotonAccion
-                            texto={sinGustos ? 'Agregar gustos' : 'Editar etiquetas'}
+                            texto={sinGustos ? (t('admin.add_tags') || 'Agregar gustos') : (t('admin.edit_tags') || 'Editar etiquetas')}
                             icono="pricetag"
                             tono={sinGustos ? 'marca' : 'neutro'}
                             onPress={() => setEtiquetando(act)}

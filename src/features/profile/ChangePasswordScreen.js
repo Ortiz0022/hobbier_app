@@ -45,10 +45,10 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (!userEmail) return;
 
     const accepted = await confirm({
-      title: '¿Restablecer contraseña?',
-      message: `Enviaremos un enlace de recuperación a:\n${userEmail}`,
-      confirmText: 'Enviar correo',
-      cancelText: 'Cancelar',
+      title: t('change_password.reset_title') || '¿Restablecer contraseña?',
+      message: (t('change_password.reset_msg', { email: userEmail }) || `Enviaremos un enlace de recuperación a:\n${userEmail}`),
+      confirmText: t('change_password.send_email') || 'Enviar correo',
+      cancelText: t('common.cancel') || 'Cancelar',
     });
 
     if (!accepted) return;
@@ -59,12 +59,12 @@ export const ChangePasswordScreen = ({ onBack }) => {
       if (error) {
         notify({
           type: 'error',
-          message: error.message || 'No se pudo enviar el correo de recuperación.',
+          message: error.message || t('change_password.reset_error') || 'No se pudo enviar el correo de recuperación.',
         });
       } else {
         notify({
           type: 'success',
-          message: 'Hemos enviado el enlace a tu correo electrónico.',
+          message: t('change_password.reset_sent') || 'Hemos enviado el enlace a tu correo electrónico.',
         });
       }
     } catch (err) {
@@ -81,7 +81,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (!currentPassword) {
       notify({
         type: 'warning',
-        message: 'Por favor, ingresa tu contraseña actual.',
+        message: t('change_password.current_required') || 'Por favor, ingresa tu contraseña actual.',
       });
       return;
     }
@@ -89,7 +89,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (newPassword.length < 6) {
       notify({
         type: 'warning',
-        message: 'La nueva contraseña debe tener al menos 6 caracteres.',
+        message: t('change_password.min_length') || 'La nueva contraseña debe tener al menos 6 caracteres.',
       });
       return;
     }
@@ -100,7 +100,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (!hasLetter || !hasNumber) {
       notify({
         type: 'warning',
-        message: 'La nueva contraseña debe incluir al menos una letra y un número.',
+        message: t('change_password.letters_and_numbers') || 'La nueva contraseña debe incluir al menos una letra y un número.',
       });
       return;
     }
@@ -108,7 +108,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (newPassword === currentPassword) {
       notify({
         type: 'warning',
-        message: 'La nueva contraseña no puede ser igual a la contraseña actual.',
+        message: t('change_password.different_from_current') || 'La nueva contraseña no puede ser igual a la contraseña actual.',
       });
       return;
     }
@@ -116,7 +116,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
     if (newPassword !== confirmPassword) {
       notify({
         type: 'warning',
-        message: 'Las nuevas contraseñas no coinciden.',
+        message: t('change_password.passwords_dont_match') || 'Las nuevas contraseñas no coinciden.',
       });
       return;
     }
@@ -132,7 +132,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
       if (verifyError) {
         notify({
           type: 'error',
-          message: 'La contraseña actual es incorrecta.',
+          message: t('change_password.current_incorrect') || 'La contraseña actual es incorrecta.',
         });
         setLoading(false);
         return;
@@ -148,7 +148,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
       } else {
         notify({
           type: 'success',
-          message: 'Contraseña actualizada correctamente.',
+          message: t('change_password.update_success') || 'Contraseña actualizada correctamente.',
         });
         if (onBack) onBack();
       }
@@ -174,7 +174,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cambiar contraseña</Text>
+        <Text style={styles.headerTitle}>{t('change_password.title') || 'Cambiar contraseña'}</Text>
         <View style={styles.headerRightSpacer} />
       </View>
 
@@ -186,7 +186,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
         <View style={styles.cardContainer}>
           {/* EXPLANATORY TEXT */}
           <Text style={styles.descriptionText}>
-            Usarás esta contraseña para iniciar sesión en tu cuenta de Hobbier. Crea una que tenga al menos 6 letras y números.
+            {t('change_password.description') || 'Usarás esta contraseña para iniciar sesión en tu cuenta de Hobbier. Crea una que tenga al menos 6 letras y números.'}
           </Text>
 
           <TouchableOpacity
@@ -194,7 +194,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
             onPress={() => setShowTipsModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.secureTipsLink}>Cómo crear una contraseña segura</Text>
+            <Text style={styles.secureTipsLink}>{t('change_password.tips_link') || 'Cómo crear una contraseña segura'}</Text>
           </TouchableOpacity>
 
           {/* ACCOUNT PILL CARD */}
@@ -229,7 +229,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.inputField}
-                placeholder="Contraseña actual"
+                placeholder={t('change_password.current_password') || 'Contraseña actual'}
                 placeholderTextColor={COLORS.textMuted}
                 secureTextEntry={!showCurrent}
                 value={currentPassword}
@@ -253,7 +253,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.inputField}
-                placeholder="Contraseña nueva"
+                placeholder={t('change_password.new_password') || 'Contraseña nueva'}
                 placeholderTextColor={COLORS.textMuted}
                 secureTextEntry={!showNew}
                 value={newPassword}
@@ -277,7 +277,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.inputField}
-                placeholder="Repetir contraseña nueva"
+                placeholder={t('change_password.confirm_password') || 'Repetir contraseña nueva'}
                 placeholderTextColor={COLORS.textMuted}
                 secureTextEntry={!showConfirm}
                 value={confirmPassword}
@@ -308,13 +308,13 @@ export const ChangePasswordScreen = ({ onBack }) => {
             {sendingReset ? (
               <ActivityIndicator size="small" color={COLORS.cyan} />
             ) : (
-              <Text style={styles.forgotLink}>¿Olvidaste tu contraseña?</Text>
+              <Text style={styles.forgotLink}>{t('change_password.forgot_password') || '¿Olvidaste tu contraseña?'}</Text>
             )}
           </TouchableOpacity>
 
           {/* SECURITY NOTE */}
           <Text style={styles.securityNote}>
-            Si otra persona usó tu cuenta, te recomendamos cambiar la contraseña periódicamente y no compartirla.
+            {t('change_password.security_note') || 'Si otra persona usó tu cuenta, te recomendamos cambiar la contraseña periódicamente y no compartirla.'}
           </Text>
 
           {/* SUBMIT BUTTON */}
@@ -330,7 +330,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Cambiar contraseña</Text>
+              <Text style={styles.submitButtonText}>{t('change_password.submit_btn') || 'Cambiar contraseña'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -357,11 +357,11 @@ export const ChangePasswordScreen = ({ onBack }) => {
               <View style={styles.sheetIconWrap}>
                 <Shield size={22} color={COLORS.cyan} />
               </View>
-              <Text style={styles.sheetTitle}>Contraseña segura</Text>
+              <Text style={styles.sheetTitle}>{t('change_password.tips_title') || 'Contraseña segura'}</Text>
             </View>
 
             <Text style={styles.sheetSubtitle}>
-              Recomendaciones para proteger tu cuenta de Hobbier:
+              {t('change_password.tips_subtitle') || 'Recomendaciones para proteger tu cuenta de Hobbier:'}
             </Text>
 
             <View style={styles.tipsList}>
@@ -370,7 +370,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
                   <Check size={14} color={COLORS.cyan} />
                 </View>
                 <Text style={styles.tipText}>
-                  Usa al menos 6 caracteres (recomendado 8 o más).
+                  {t('change_password.tip_1') || 'Usa al menos 6 caracteres (recomendado 8 o más).'}
                 </Text>
               </View>
 
@@ -379,7 +379,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
                   <Check size={14} color={COLORS.cyan} />
                 </View>
                 <Text style={styles.tipText}>
-                  Combina letras mayúsculas, minúsculas y números.
+                  {t('change_password.tip_2') || 'Combina letras mayúsculas, minúsculas y números.'}
                 </Text>
               </View>
 
@@ -388,7 +388,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
                   <Check size={14} color={COLORS.cyan} />
                 </View>
                 <Text style={styles.tipText}>
-                  Evita palabras comunes o secuencias numéricas (ej: 123456).
+                  {t('change_password.tip_3') || 'Evita palabras comunes o secuencias numéricas (ej: 123456).'}
                 </Text>
               </View>
 
@@ -397,7 +397,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
                   <Check size={14} color={COLORS.cyan} />
                 </View>
                 <Text style={styles.tipText}>
-                  No uses información personal fácil de averiguar, como tu fecha de nacimiento.
+                  {t('change_password.tip_4') || 'No uses información personal fácil de averiguar, como tu fecha de nacimiento.'}
                 </Text>
               </View>
             </View>
@@ -407,7 +407,7 @@ export const ChangePasswordScreen = ({ onBack }) => {
               onPress={() => setShowTipsModal(false)}
               activeOpacity={0.8}
             >
-              <Text style={styles.sheetCloseBtnText}>Entendido</Text>
+              <Text style={styles.sheetCloseBtnText}>{t('change_password.tips_close') || 'Entendido'}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing, fonts } from "../../../theme";
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import {
   getAllUsersAdmin,
   getPendingProfileReportsAdmin,
@@ -33,9 +34,9 @@ const estaSuspendido = (perfil) =>
   (!perfil?.suspended_until || new Date(perfil.suspended_until) > new Date());
 
 /** "ago 2026": para "se registró" basta el mes, y ocupa una línea menos. */
-const mesYAnio = (iso) => {
+const mesYAnio = (iso, language = 'es') => {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', { month: 'short', year: 'numeric' });
 };
 
 /**
@@ -59,6 +60,7 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
 
   const { user } = useAuth();
   const { notify, confirm } = useNotify();
+  const { t, language } = useLanguage();
   const [usuarios, setUsuarios] = useState([]);
   // Reportes contra el perfil, indexados por id: { cuenta, motivos: [] }
   const [reportes, setReportes] = useState({});
@@ -94,11 +96,11 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
   // aparte repitiendo las mismas tres cifras.
   const filtros = useMemo(
     () => [
-      { key: 'todos', label: `Todos (${usuarios.length})` },
-      { key: 'reportados', label: `Reportados (${reportados})` },
-      { key: 'suspendidos', label: `Suspendidos (${suspendidos})` },
+      { key: 'todos', label: t('admin.filter_all', { count: usuarios.length }) || `Todos (${usuarios.length})` },
+      { key: 'reportados', label: t('admin.filter_reported', { count: reportados }) || `Reportados (${reportados})` },
+      { key: 'suspendidos', label: t('admin.filter_suspended', { count: suspendidos }) || `Suspendidos (${suspendidos})` },
     ],
-    [usuarios.length, reportados, suspendidos]
+    [usuarios.length, reportados, suspendidos, t]
   );
 
   const visibles = useMemo(() => {
@@ -204,7 +206,7 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
         <Ionicons name="search" size={16} color={colors.textMuted} />
         <TextInput {...theme.textInputProps}
           style={adminStyles.searchInput}
-          placeholder="Buscar por nombre o usuario"
+          placeholder={t('admin.search_users_placeholder') || 'Buscar por nombre o usuario'}
           placeholderTextColor={colors.textMuted}
           value={busqueda}
           onChangeText={setBusqueda}
@@ -223,14 +225,14 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
         activeOpacity={0.7}
       >
         <Ionicons name="shield-checkmark" size={15} color={colors.primaryDark} />
-        <Text style={estilos.filaAdminsTexto}>Administradores ({administradores})</Text>
+        <Text style={estilos.filaAdminsTexto}>{t('admin.admins_count', { count: administradores }) || `Administradores (${administradores})`}</Text>
         <Ionicons name="chevron-forward" size={15} color={colors.textMuted} />
       </TouchableOpacity>
 
       {/* Solo al buscar: el resto del tiempo los totales ya están en las pestañas. */}
       {!!busqueda.trim() && !cargando && (
         <Text style={adminStyles.countLine}>
-          {visibles.length === 1 ? '1 coincidencia' : `${visibles.length} coincidencias`}
+          {visibles.length === 1 ? `1 ${t('admin.match_single') || 'coincidencia'}` : `${visibles.length} ${t('admin.match_plural') || 'coincidencias'}`}
         </Text>
       )}
 
@@ -287,13 +289,13 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
                   </View>
 
                   <Text style={adminStyles.listSubtitle} numberOfLines={1}>
-                    @{u.username} · {u.points || 0} pts · desde {mesYAnio(u.created_at)}
+                    @{u.username} · {u.points || 0} pts · {t('admin.since_date', { date: mesYAnio(u.created_at, language) }) || `desde ${mesYAnio(u.created_at, language)}`}
                   </Text>
 
                   {suspendido && (
                     <View style={adminStyles.badgeRow}>
                       <Insignia
-                        texto="SANCIÓN PERMANENTE"
+                        texto={t('admin.permanent_penalty') || 'SANCIÓN PERMANENTE'}
                         tono="alerta"
                       />
                     </View>
@@ -307,14 +309,14 @@ export const AdminUsers = ({ refreshKey, onGoToSupport }) => {
                   <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
                     {suspendido && onGoToSupport && (
                       <BotonAccion
-                        texto="Apelación"
+                        texto={t('admin.appeal') || 'Apelación'}
                         icono="chatbubbles"
                         tono="marca"
                         onPress={() => onGoToSupport(u.id)}
                       />
                     )}
                     <BotonAccion
-                      texto={suspendido ? 'Reactivar' : 'Sancionar'}
+                      texto={suspendido ? (t('admin.reactivate') || 'Reactivar') : (t('admin.penalize') || 'Sancionar')}
                       icono={suspendido ? 'lock-open' : 'lock-closed'}
                       tono={suspendido ? 'neutro' : 'rojo'}
                       onPress={() => cambiarEstado(u, !suspendido)}

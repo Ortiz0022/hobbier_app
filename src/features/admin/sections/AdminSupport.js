@@ -17,6 +17,7 @@ import { Text } from '../../../components/scaledText';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { supportService } from '../../../services/supportService';
 import { radii, spacing, fonts } from "../../../theme";
 import { Insignia, BotonAccion, BarraBusqueda, getAdminUITheme } from "../adminUI";
@@ -26,6 +27,7 @@ export const AdminSupport = ({ initialUserId = null }) => {
 
   const { user: currentAdmin } = useAuth();
   const { notify, confirm } = useNotify();
+  const { t } = useLanguage();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -471,9 +473,9 @@ export const AdminSupport = ({ initialUserId = null }) => {
       {/* Filtros de estado */}
       <View style={styles.filtersRow}>
         {[
-          { key: 'OPEN', label: 'Pendientes' },
-          { key: 'RESOLVED', label: 'Resueltos' },
-          { key: 'ALL', label: 'Todos' },
+          { key: 'OPEN', label: t('admin.filter_pending') || 'Pendientes' },
+          { key: 'RESOLVED', label: t('admin.filter_resolved') || 'Resueltos' },
+          { key: 'ALL', label: t('admin.nav_all') || 'Todos' },
         ].map((f) => {
           const active = filter === f.key;
           return (
@@ -497,7 +499,7 @@ export const AdminSupport = ({ initialUserId = null }) => {
           valor={search}
           alCambiar={setSearch}
           alLimpiar={() => setSearch('')}
-          placeholder="Buscar por @usuario o nombre..."
+          placeholder={t('admin.search_users_placeholder') || 'Buscar por @usuario o nombre...'}
         />
       </View>
 

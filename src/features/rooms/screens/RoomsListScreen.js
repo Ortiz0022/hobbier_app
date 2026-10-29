@@ -65,10 +65,10 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
               <View style={styles.invitationInfo}>
                 <Text style={styles.invitationRoomName}>{inv.room_name}</Text>
                 <Text style={styles.invitationSender}>
-                  {t('rooms.invited_by', { username: inv.sender_username }) || `Invitado por @${inv.sender_username}`}
+                  {t('rooms.invited_by', { username: inv.sender_username, name: inv.sender_username ? `@${inv.sender_username}` : '' }) || `Invitado por @${inv.sender_username}`}
                 </Text>
                 <Text style={styles.invitationChallenge}>
-                  {t('rooms.challenge', { title: inv.challenge_title }) || `Reto: ${inv.challenge_title}`}
+                  {t('rooms.challenge', { title: inv.challenge_title || '' }) || `Reto: ${inv.challenge_title}`}
                 </Text>
               </View>
               <View style={styles.invitationActions}>

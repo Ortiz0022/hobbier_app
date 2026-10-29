@@ -1,10 +1,11 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../../components/scaledText';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { capitalizarTitulo } from '../../../utils/titleCase';
 import { spacing, fonts } from "../../../theme";
 import { Insignia, BotonAccion, TarjetaVacia, ControlSegmentado, TarjetaDato, getAdminUITheme } from "../adminUI";
@@ -36,8 +37,8 @@ const VISTAS = [
   { key: 'solicitudes', label: 'Solicitudes', icono: 'mail-unread-outline' },
 ];
 
-const fechaLegible = (iso) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+const fechaLegible = (iso, lang = 'es') =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
 
@@ -48,12 +49,23 @@ const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFra
  */
 export const AdminAds = () => {
   const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
+  const { t, language } = useLanguage();
 
   const { notify, confirm } = useNotify();
   const [ads, setAds] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [vista, setVista] = useState('anuncios');
   const [filtro, setFiltro] = useState('vigentes');
+
+  const vistas = useMemo(() => [
+    { key: 'anuncios', label: t('admin.nav_ads') || 'Anuncios', icono: 'megaphone-outline' },
+    { key: 'solicitudes', label: t('admin.ad_requests') || 'Solicitudes', icono: 'mail-unread-outline' },
+  ], [t]);
+
+  const filtros = useMemo(() => [
+    { key: 'vigentes', label: t('admin.filter_active_ads') || 'Vigentes', icono: 'radio-outline' },
+    { key: 'todos', label: t('admin.nav_all') || 'Todos', icono: 'albums-outline' },
+  ], [t]);
   // undefined = formulario cerrado, null = anuncio nuevo, objeto = edición.
   const [editando, setEditando] = useState(undefined);
 
@@ -113,18 +125,18 @@ export const AdminAds = () => {
 
   return (
     <View>
-      <ControlSegmentado opciones={VISTAS} valor={vista} onChange={setVista} />
+      <ControlSegmentado opciones={vistas} valor={vista} onChange={setVista} />
 
       <TouchableOpacity style={estilos.crearBtn} onPress={() => setEditando(null)} activeOpacity={0.85}>
-        <Text style={estilos.crearBtnTexto}>+ Nuevo anuncio</Text>
+        <Text style={estilos.crearBtnTexto}>{t('admin.new_ad_btn') || '+ Nuevo anuncio'}</Text>
       </TouchableOpacity>
 
       <View style={adminStyles.statGrid}>
-        <TarjetaDato icono="megaphone-outline" valor={activos} etiqueta="Anuncios activos hoy" />
-        <TarjetaDato icono="cash-outline" valor={colones(ingresos)} etiqueta="Ingresos registrados" tono="acento" />
+        <TarjetaDato icono="megaphone-outline" valor={activos} etiqueta={t('admin.active_ads_today') || 'Anuncios activos hoy'} />
+        <TarjetaDato icono="cash-outline" valor={colones(ingresos)} etiqueta={t('admin.registered_revenue') || 'Ingresos registrados'} tono="acento" />
       </View>
 
-      <ControlSegmentado opciones={FILTROS} valor={filtro} onChange={setFiltro} />
+      <ControlSegmentado opciones={filtros} valor={filtro} onChange={setFiltro} />
 
       {cargando && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />}
 
@@ -163,8 +175,8 @@ export const AdminAds = () => {
                     {ad.title}
                   </Text>
                   <Text style={adminStyles.listMeta}>
-                    {fechaLegible(ad.starts_on)} → {fechaLegible(ad.ends_on)}
-                    {ad.city ? ` · ${ad.city}` : ' · Todas las ciudades'}
+                    {fechaLegible(ad.starts_on, language)} → {fechaLegible(ad.ends_on, language)}
+                    {ad.city ? ` · ${ad.city}` : ` · ${t('admin.all_cities') || 'Todas las ciudades'}`}
                     {ad.price_paid != null ? ` · ${colones(ad.price_paid)}` : ''}
                   </Text>
                 </View>
@@ -172,7 +184,7 @@ export const AdminAds = () => {
 
               <View style={adminStyles.badgeRow}>
                 {ad.likes.length === 0 ? (
-                  <Insignia texto="Para todos" tono="neutro" />
+                  <Insignia texto={t('admin.for_everyone') || 'Para todos'} tono="neutro" />
                 ) : (
                   ad.likes.map((g) => <Insignia key={g.id} texto={capitalizarTitulo(g.name)} tono="marca" />)
                 )}
