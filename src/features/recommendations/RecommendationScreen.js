@@ -1,7 +1,7 @@
 import { peekQuery, queryKeys } from '../../services/queryCache';
 import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';

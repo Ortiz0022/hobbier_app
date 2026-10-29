@@ -63,8 +63,10 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
     setMyAdRequests(requests);
   };
 
-  const [completedActivities, setCompletedActivities] = useState([]);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [completedActivities, setCompletedActivities] = useState(() =>
+    (peekQuery(queryKeys.activities(profile?.id))?.activities || []).filter((a) => a.status === 'COMPLETED'));
+  const extrasRequest = useRef(0);
+  const [loadingStats, setLoadingStats] = useState(() => !peekQuery(queryKeys.activities(profile?.id)));
 
   const [posts, setPosts] = useState(() => peekQuery(queryKeys.posts(profile?.id))?.posts || []);
   const [loadingPosts, setLoadingPosts] = useState(() => !peekQuery(queryKeys.posts(profile?.id)));
