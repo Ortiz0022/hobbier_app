@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Text, TextInput } from './scaledText';
+import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { createActivityAdmin } from '../services/adminService';
 import { fetchActivityCategories, fetchAllCatalogs } from '../services/catalogService';
 import { acceptActivity, moderateActivityContent } from '../services/activityService';
@@ -222,7 +223,11 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
             <Text style={[styles.dropdownText, !likeSeleccionado && styles.dropdownPlaceholder]}>
               {likeSeleccionado ? nombreDeGusto(likeSeleccionado.name) : (t('create_activity.no_like_assigned') || 'Sin gusto asignado')}
             </Text>
-            <Text style={styles.dropdownChevron}>{likeOpen ? '▲' : '▼'}</Text>
+            {likeOpen ? (
+              <ChevronUp size={16} color={theme.color('#8A908B', 'muted')} />
+            ) : (
+              <ChevronDown size={16} color={theme.color('#8A908B', 'muted')} />
+            )}
           </TouchableOpacity>
 
           {/* Se despliega en línea y no en otro Modal: anidar modales en React

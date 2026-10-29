@@ -117,7 +117,7 @@ const MainApp = () => {
   // (`onCancel` ausente). Al terminar se entra a la app sin volver a consultar.
   if (estadoOnboarding === 'falta') {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, isDesktop && styles.safeAreaDesktop]}>
         <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.color("#ffffff", 'background')} />
         <OnboardingScreen
           obligatorio

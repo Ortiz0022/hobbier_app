@@ -11,8 +11,8 @@ const translations = {
 };
 
 export const SUPPORTED_LANGUAGES = [
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'es', label: 'Español' },
+  { code: 'en', label: 'English' },
 ];
 
 const LanguageContext = createContext(null);

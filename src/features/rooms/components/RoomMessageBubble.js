@@ -3,6 +3,7 @@ import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { Camera } from 'lucide-react-native';
 import { useRecyclingState } from '@shopify/flash-list';
 import { radii, spacing, fonts } from "../../../theme";
 import { useSignedUrl } from '../hooks/useSignedUrl';
@@ -76,9 +77,18 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                 <Text style={styles.replyQuoteAuthor}>
                   {message.reply_to.sender?.username || 'Usuario'}
                 </Text>
-                <Text style={styles.replyQuoteText} numberOfLines={1}>
-                  {message.reply_to.message_type === 'EVIDENCE' ? '📷 Registró un avance' : message.reply_to.content}
-                </Text>
+                {message.reply_to.message_type === 'EVIDENCE' ? (
+                  <View style={styles.replyEvidenceRow}>
+                    <Camera size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={styles.replyQuoteText} numberOfLines={1}>
+                      Registró un avance
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.replyQuoteText} numberOfLines={1}>
+                    {message.reply_to.content}
+                  </Text>
+                )}
               </TouchableOpacity>
             )}
 
@@ -147,9 +157,18 @@ export const RoomMessageBubble = ({ message, isMe, onReply, onJumpToReply, isHig
                 <Text style={[styles.replyQuoteAuthor, isMe && styles.replyQuoteAuthorMe]}>
                   {message.reply_to.sender?.username || 'Usuario'}
                 </Text>
-                <Text style={[styles.replyQuoteText, isMe && styles.replyQuoteTextMe]} numberOfLines={1}>
-                  {message.reply_to.message_type === 'EVIDENCE' ? '📷 Registró un avance' : message.reply_to.content}
-                </Text>
+                {message.reply_to.message_type === 'EVIDENCE' ? (
+                  <View style={styles.replyEvidenceRow}>
+                    <Camera size={12} color={isMe ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.replyQuoteText, isMe && styles.replyQuoteTextMe]} numberOfLines={1}>
+                      Registró un avance
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.replyQuoteText, isMe && styles.replyQuoteTextMe]} numberOfLines={1}>
+                    {message.reply_to.content}
+                  </Text>
+                )}
               </TouchableOpacity>
             )}
             <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
@@ -370,6 +389,10 @@ const styles = StyleSheet.create({
   replyQuoteTextMe: {
     color: theme.color(colors.onPrimary, 'text'),
     opacity: 0.85,
+  },
+  replyEvidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   footerRow: {
     flexDirection: 'row',

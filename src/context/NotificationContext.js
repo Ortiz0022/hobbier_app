@@ -134,7 +134,7 @@ const ConfirmDialog = ({ state, onResolve }) => {
               activeOpacity={0.8}
             >
               <Text style={confirmStyles.confirmText}>
-                {state.confirmLabel || (destructive ? 'Sí, eliminar' : 'Confirmar')}
+                {state.confirmLabel || state.confirmText || (destructive ? 'Sí, eliminar' : 'Confirmar')}
               </Text>
             </TouchableOpacity>
 
@@ -143,7 +143,7 @@ const ConfirmDialog = ({ state, onResolve }) => {
               onPress={() => onResolve(false)}
               activeOpacity={0.8}
             >
-              <Text style={confirmStyles.cancelText}>{state.cancelLabel || 'Cancelar'}</Text>
+              <Text style={confirmStyles.cancelText}>{state.cancelLabel || state.cancelText || 'Cancelar'}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

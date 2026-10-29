@@ -11,6 +11,7 @@ import {
   Easing,
   SafeAreaView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +31,9 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 // nueva; no se le vuelve a pedir la anterior.
 export const ResetPasswordScreen = () => {
   const { theme, styles } = useThemeValues(getResetPasswordScreenTheme);
+
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   const { updatePassword, signOut, loading } = useAuth();
   const { notify } = useNotify();
@@ -93,25 +97,23 @@ export const ResetPasswordScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <Animated.View style={[styles.card, animatedStyle]}>
-
-          {/* HEADER DENTRO DE LA TARJETA, igual que en el login.
-              Mismo tratamiento de icono: cuadro verde claro con insignia de
-              estrella. El icono de dentro sí cambia, para que se entienda de un
-              vistazo en qué paso está el usuario. */}
+    <SafeAreaView style={[styles.container, isDesktop && styles.desktopContainer]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, isDesktop && styles.desktopScrollContainer]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Animated.View style={[styles.card, isDesktop && styles.desktopCard, animatedStyle]}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <View style={styles.iconBox}>
-                <Ionicons name="key-outline" size={30} color={theme.color("#0C8AA6", 'primary')} />
+                <Ionicons name="key-outline" size={28} color={theme.color("#0C8AA6", 'primary')} />
               </View>
               <View style={styles.iconBadge}>
-                <Ionicons name="star" size={12} color={theme.color("#ffffff", 'text')} />
+                <Ionicons name="star" size={11} color={theme.color("#ffffff", 'text')} />
               </View>
             </View>
 
-            <Text style={styles.title}>Crea una Contraseña Nueva</Text>
+            <Text style={styles.title}>Crea una contraseña nueva</Text>
             <Text style={styles.subtitle}>
               Escríbela dos veces para confirmar que no hay erratas.
             </Text>
@@ -163,7 +165,7 @@ export const ResetPasswordScreen = () => {
 
           <TouchableOpacity style={styles.primaryButton} onPress={handleSubmit} disabled={loading}>
             {loading ? (
-              <ActivityIndicator color={theme.color("#121B22", 'text')} />
+              <ActivityIndicator color={theme.color("#FFFFFF", 'onAccent')} />
             ) : (
               <Text style={styles.primaryButtonText}>Guardar contraseña  →</Text>
             )}
@@ -189,22 +191,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.color('#F0F3F5', 'background'),
   },
+  desktopContainer: {
+    backgroundColor: theme.color('#FFFFFF', 'background'),
+  },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
   },
+  desktopScrollContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   iconContainer: {
     position: 'relative',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   iconBox: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 16,
     backgroundColor: theme.color('#F0F8FA', 'card'),
     justifyContent: 'center',
@@ -212,34 +221,49 @@ const styles = StyleSheet.create({
   },
   iconBadge: {
     position: 'absolute',
-    top: -6,
-    right: -10,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: -5,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: theme.color('#FF8F21', 'accent'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '600',
     color: theme.color('#121B22', 'text'),
-    letterSpacing: 0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: theme.color('#8A908B', 'muted'),
     marginTop: 6,
     textAlign: 'center',
+    lineHeight: 20,
   },
   card: {
     backgroundColor: theme.color('#ffffff', 'card'),
-    borderRadius: 24,
+    borderRadius: 20,
     paddingHorizontal: 24,
-    paddingVertical: 34,
+    paddingVertical: 32,
+    borderWidth: 1,
+    borderColor: theme.color('#F0F3F5', 'border'),
+  },
+  desktopCard: {
+    width: 380,
+    maxWidth: '100%',
+    backgroundColor: 'transparent',
     borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 20,
+    ...Platform.select({
+      web: {
+        boxShadow: 'none',
+      },
+    }),
   },
   errorBox: {
     backgroundColor: theme.color('#F0F3F5', 'card'),
@@ -258,7 +282,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: theme.color('#121B22', 'text'),
     marginBottom: 6,
     marginTop: 12,
@@ -285,8 +309,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 13,
-    fontSize: 15,
+    paddingVertical: 12,
+    fontSize: 14,
     color: theme.color('#121B22', 'text'),
   },
   eyeBtn: {
@@ -295,14 +319,14 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: theme.color('#0C8AA6', 'primary'),
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 22,
   },
   primaryButtonText: {
-    color: theme.color('#121B22', "onAccent"),
-    fontSize: 16,
-    fontWeight: '700',
+    color: theme.color('#FFFFFF', "onAccent"),
+    fontSize: 15,
+    fontWeight: '600',
   },
   toggleButton: {
     marginTop: 18,
@@ -310,12 +334,12 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     color: theme.color('#8A908B', 'muted'),
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
   },
   toggleButtonBold: {
     color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
 });

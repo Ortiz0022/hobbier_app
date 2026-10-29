@@ -17,10 +17,25 @@ import {
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
 import Feather from '@expo/vector-icons/Feather';
+import {
+  Camera,
+  RefreshCw,
+  Palette,
+  Sprout,
+  UtensilsCrossed,
+  Activity,
+  BookOpen,
+  Music,
+  Gamepad2,
+  Languages,
+  Award,
+} from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { translateContent } from '../../services/translationService';
+import { formatTimeAgo } from '../../utils/dateFormat';
 import { getFriendsFeed, reportPost, togglePostReaction, deleteOwnPost } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
@@ -79,7 +94,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   const { user, profile } = useAuth();
   const { notify, confirm } = useNotify();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(() => !peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0)));
   const feedRequest = useRef(0);
   const adsRequest = useRef(0);
@@ -111,6 +126,69 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [doAlsoPost, setDoAlsoPost] = useState(null);
   const [acceptingDoAlso, setAcceptingDoAlso] = useState(false);
 
+  // Estado para traducciones de publicaciones: { [postId]: { text: string, isTranslated: boolean } }
+  const [translations, setTranslations] = useState({});
+  const [translatingIds, setTranslatingIds] = useState(new Set());
+
+  const handleToggleTranslation = async (postId, originalText) => {
+    const current = translations[postId];
+
+    // Si ya está traducido y activo, volvemos a mostrar el original al pulsar "Ver original"
+    if (current?.isTranslated) {
+      setTranslations((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: false,
+        },
+      }));
+      return;
+    }
+
+    // Si ya tenemos en memoria la traducción para este post, solo la activamos
+    if (current?.text) {
+      setTranslations((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: true,
+        },
+      }));
+      return;
+    }
+
+    // Traducir por primera vez
+    setTranslatingIds((prev) => new Set(prev).add(postId));
+    try {
+      const { translatedText, error } = await translateContent(originalText, language);
+      if (error) {
+        notify(
+          language === 'en' ? 'Could not translate text.' : 'No se pudo traducir el texto.',
+          { type: 'warning' }
+        );
+      } else {
+        setTranslations((prev) => ({
+          ...prev,
+          [postId]: {
+            text: translatedText,
+            isTranslated: true,
+          },
+        }));
+      }
+    } catch (_err) {
+      notify(
+        language === 'en' ? 'Translation error.' : 'Error al traducir.',
+        { type: 'error' }
+      );
+    } finally {
+      setTranslatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
   // Mensajes directos: navegación interna, igual que las salas dentro de Amigos.
   // null = feed | { screen: 'INBOX' } | { screen: 'CHAT', conversationId, friend }
   const [messagesView, setMessagesView] = useState(null);
@@ -122,7 +200,12 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   }, [user?.id]);
 
   const handleOpenDoAlso = (post) => {
-    setDoAlsoPost(post);
+    const postTranslation = translations[post.id];
+    const postWithTranslation = {
+      ...post,
+      ...(postTranslation?.isTranslated ? { activityTitle: postTranslation.text } : {}),
+    };
+    setDoAlsoPost(postWithTranslation);
     setDoAlsoModalVisible(true);
   };
 
@@ -427,32 +510,80 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     const pillStyle = getPillStyle(activityTitle, index);
     const pointsAwarded = post.pointsAwarded || post.user_activity?.points_awarded || 20;
 
+    const postTranslation = translations[post.id];
+    const isTranslated = !!postTranslation?.isTranslated;
+    const displayedTitle = isTranslated ? postTranslation.text : activityTitle;
+    const isTranslating = translatingIds.has(post.id);
+    const timeAgo = formatTimeAgo(post.created_at, language);
+
     return (
       <View style={styles.postCard}>
         {/* CABECERA DE LA PUBLICACIÓN */}
         <View style={styles.postHeader}>
           <View style={styles.authorRow}>
-            <TouchableOpacity
-              style={styles.authorClickArea}
-              onPress={() => setSelectedUserProfile(post.author)}
-              activeOpacity={0.8}
-            >
-              {post.author?.avatar_url ? (
-                <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
-              ) : (
-                <View style={styles.authorAvatar}>
-                  <Text style={styles.authorInitial}>
-                    {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
-                  </Text>
-                </View>
-              )}
+            <View style={styles.authorClickArea}>
+              <TouchableOpacity
+                onPress={() => setSelectedUserProfile(post.author)}
+                activeOpacity={0.8}
+              >
+                {post.author?.avatar_url ? (
+                  <Image source={{ uri: post.author.avatar_url }} style={styles.authorAvatarImage} />
+                ) : (
+                  <View style={styles.authorAvatar}>
+                    <Text style={styles.authorInitial}>
+                      {(post.author?.full_name || post.author?.username || 'U')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
               <View style={styles.authorInfo}>
-                <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
-                <Text style={styles.authorAction} numberOfLines={1}>
-                  {pillStyle.emoji} {activityTitle}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => setSelectedUserProfile(post.author)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.authorHandle}>@{post.author?.username || t('feed.someone')}</Text>
+                  <View style={styles.authorActionRow}>
+                    {pillStyle.Icon && <pillStyle.Icon size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 4 }} />}
+                    <Text style={styles.authorAction} numberOfLines={1}>
+                      {displayedTitle}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* META INFO: TIEMPO RELATIVO + VER TRADUCCIÓN (ESTILO INSTAGRAM) */}
+                <View style={styles.translationMetaRow}>
+                  {Boolean(timeAgo) && (
+                    <>
+                      <Text style={styles.timeAgoText}>{timeAgo}</Text>
+                      <Text style={styles.metaDot}> • </Text>
+                    </>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => handleToggleTranslation(post.id, activityTitle)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.7}
+                    disabled={isTranslating}
+                    style={styles.translateTouchArea}
+                  >
+                    {isTranslating ? (
+                      <View style={styles.translatingRow}>
+                        <ActivityIndicator size="small" color={theme.color('#0C8AA6', 'primary')} style={styles.translateSpinner} />
+                        <Text style={styles.translateBtnText}>
+                          {language === 'en' ? 'Translating...' : 'Traduciendo...'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.translateBtnText}>
+                        {isTranslated
+                          ? (language === 'en' ? 'See original' : 'Ver original')
+                          : (language === 'en' ? 'See translation' : 'Ver traducción')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-            </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={styles.optionsBtn}
@@ -499,8 +630,9 @@ export const FeedScreen = ({ onActivityAccepted }) => {
             </TouchableOpacity>
 
             <View style={styles.pointsPill}>
+              <Award size={12} color={theme.color('#0C8AA6', 'primary')} style={{ marginRight: 3 }} />
               <Text style={styles.pointsPillText}>
-                ✪ +{pointsAwarded}
+                +{pointsAwarded}
               </Text>
             </View>
           </View>
@@ -553,15 +685,18 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         getItemType={(item) => (item.__ad ? 'ad' : 'post')}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }}
-        // renderPost depende del usuario actual (Repetir / Hacer también)
-        extraData={user?.id}
+        // renderPost depende del usuario actual y de las traducciones activas
+        extraData={[user?.id, translations, translatingIds, language]}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>📸</Text>
+            <View style={styles.emptyIconContainer}>
+              <Camera size={44} color={theme.color('#0C8AA6', 'primary')} strokeWidth={1.75} />
+            </View>
             <Text style={styles.emptyTitle}>{t('feed.empty_title')}</Text>
             <Text style={styles.emptySubtitle}>{t('feed.empty_subtitle')}</Text>
-            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed}>
+            <TouchableOpacity style={styles.refreshEmptyBtn} onPress={loadFeed} activeOpacity={0.8}>
+              <RefreshCw size={14} color={theme.color('#334155', 'text')} style={{ marginRight: 6 }} />
               <Text style={styles.refreshEmptyBtnText}>{t('feed.refresh')}</Text>
             </TouchableOpacity>
           </View>
@@ -623,287 +758,328 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
 // Los valores claros originales se conservan; solo se resuelven colores según el tema.
 export const getFeedScreenTheme = createThemeStyles((theme) => {
-const { colors } = theme;
-const getPillStyle = (title, index) => {
-  const t = (title || '').toLowerCase();
+  const { colors } = theme;
+  const getPillStyle = (title, index) => {
+    const t = (title || '').toLowerCase();
 
-  const bgList = [theme.color('#dbeafe', 'card'), theme.color('#ffe4e6', 'card'), theme.color('#dcfce7', 'card'), theme.color('#fef3c7', 'card'), theme.color('#f3e8ff', 'card')];
-  const backgroundColor = bgList[index % bgList.length];
+    const bgList = [theme.color('#dbeafe', 'card'), theme.color('#ffe4e6', 'card'), theme.color('#dcfce7', 'card'), theme.color('#fef3c7', 'card'), theme.color('#f3e8ff', 'card')];
+    const backgroundColor = bgList[index % bgList.length];
 
-  let emoji = '🎨';
+    let Icon = Palette;
 
-  if (t.includes('pint') || t.includes('dibuj') || t.includes('arte') || t.includes('creativ')) {
-    emoji = '🎨';
-  } else if (t.includes('jardin') || t.includes('plant') || t.includes('flor') || t.includes('urbana')) {
-    emoji = '🪴';
-  } else if (t.includes('cocin') || t.includes('recet') || t.includes('pan') || t.includes('comida') || t.includes('bebida') || t.includes('té')) {
-    emoji = '🍳';
-  } else if (t.includes('corr') || t.includes('ejercic') || t.includes('deport') || t.includes('bicicleta') || t.includes('fit')) {
-    emoji = '🏃';
-  } else if (t.includes('libr') || t.includes('lectur') || t.includes('le') || t.includes('capítulo')) {
-    emoji = '📚';
-  } else if (t.includes('music') || t.includes('cant') || t.includes('guitarr')) {
-    emoji = '🎵';
-  } else if (t.includes('foto') || t.includes('camar')) {
-    emoji = '📸';
-  } else if (t.includes('ajedrez') || t.includes('juego') || t.includes('carta')) {
-    emoji = '♟️';
-  } else if (t.includes('idioma') || t.includes('hablar')) {
-    emoji = '🗣️';
-  }
+    if (t.includes('pint') || t.includes('dibuj') || t.includes('arte') || t.includes('creativ')) {
+      Icon = Palette;
+    } else if (t.includes('jardin') || t.includes('plant') || t.includes('flor') || t.includes('urbana')) {
+      Icon = Sprout;
+    } else if (t.includes('cocin') || t.includes('recet') || t.includes('pan') || t.includes('comida') || t.includes('bebida') || t.includes('té')) {
+      Icon = UtensilsCrossed;
+    } else if (t.includes('corr') || t.includes('ejercic') || t.includes('deport') || t.includes('bicicleta') || t.includes('fit')) {
+      Icon = Activity;
+    } else if (t.includes('libr') || t.includes('lectur') || t.includes('le') || t.includes('capítulo')) {
+      Icon = BookOpen;
+    } else if (t.includes('music') || t.includes('cant') || t.includes('guitarr')) {
+      Icon = Music;
+    } else if (t.includes('foto') || t.includes('camar')) {
+      Icon = Camera;
+    } else if (t.includes('ajedrez') || t.includes('juego') || t.includes('carta')) {
+      Icon = Gamepad2;
+    } else if (t.includes('idioma') || t.includes('hablar')) {
+      Icon = Languages;
+    }
 
-  return {
-    backgroundColor,
-    emoji,
+    return {
+      backgroundColor,
+      Icon,
+    };
   };
-};
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.color('#ffffff', 'background'),
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: theme.color('#ffffff', 'card'),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: theme.color('#64748b', "muted"),
-    marginTop: 12,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  scrollContent: {
-    // Al menos tan alto como la pantalla: si el contenido no desborda, en
-    // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
-    // no llega a dispararse nunca.
-    flexGrow: 1,
-    paddingBottom: 30,
-  },
-  navHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  logoTitle: {
-    fontSize: 24, // DynaPuff es más robusta
-    color: theme.color('#121B22', 'text'),
-    fontFamily: 'DynaPuff',
-    marginBottom: 0, // Restaurando márgenes naturales
-    textAlign: 'center',
-  },
-  // Absoluto para que el logo siga centrado en la pantalla
-  messagesBtn: {
-    position: 'absolute',
-    right: 20,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  messagesBadge: {
-    position: 'absolute',
-    top: '50%',
-    right: -8,
-    marginTop: -20,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    borderRadius: 9,
-    backgroundColor: colors.accent,
-    borderWidth: 2,
-    borderColor: theme.color('#ffffff', 'border'),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  messagesBadgeText: {
-    color: theme.color('#ffffff', 'text'),
-    fontSize: 10,
-    fontWeight: '700',
-    lineHeight: 12,
-  },
-  emptyCard: {
-    backgroundColor: theme.color('#ffffff', 'card'),
-    marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    elevation: 2,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 10px rgba(0,0,0,0.05)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      }
-    }),
-    marginTop: 20,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.color('#121B22', 'text'),
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    color: theme.color('#64748b', "muted"),
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  refreshEmptyBtn: {
-    backgroundColor: theme.color('#f1f5f9', 'card'),
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  refreshEmptyBtnText: {
-    color: theme.color('#334155', 'text'),
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  postCard: {
-    backgroundColor: theme.color('#ffffff', 'background'),
-    marginBottom: 20,
-    width: '100%',
-    borderBottomWidth: theme.isDark ? 0 : 1,
-    borderBottomColor: theme.color('#F0F3F5', 'background'),
-  },
-  postHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  authorClickArea: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  authorAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: theme.color('#F0F3F5', 'card'),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    borderWidth: 2,
-    borderColor: theme.color('#00DBFF', 'border'),
-  },
-  authorAvatarImage: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    marginRight: 10,
-    borderWidth: 2,
-    borderColor: theme.color('#00DBFF', 'border'),
-  },
-  authorInitial: {
-    color: theme.color('#334155', 'text'),
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  authorInfo: {
-    flex: 1,
-  },
-  authorHandle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.color('#121B22', 'text'),
-  },
-  authorAction: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: theme.color('#475569', 'muted'),
-    marginTop: 1,
-  },
-  optionsBtn: {
-    padding: 6,
-  },
-  optionsIcon: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: theme.color('#121B22', 'text'),
-    letterSpacing: -1,
-  },
-  postImage: {
-    width: '100%',
-    height: 460,
-    backgroundColor: theme.color('#f1f5f9', 'background'),
-  },
-  postFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: theme.color('#ffffff', 'background'),
-  },
-  postFooterRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  doAlsoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: theme.color('#EAF7FA', 'card'),
-    borderWidth: 1,
-    borderColor: theme.color('#BDECF3', 'border'),
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  doAlsoBtnText: {
-    color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  pointsPill: {
-    backgroundColor: theme.color('#F0F3F5', 'card'),
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  pointsPillText: {
-    color: theme.color('#0C8AA6', 'primary'),
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  loadMoreBtn: {
-    backgroundColor: theme.color('#ffffff', 'card'),
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: theme.color('#F0F3F5', 'border'),
-  },
-  loadMoreBtnText: {
-    color: theme.color('#334155', 'text'),
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  loadMoreSpinner: {
-    marginVertical: 24,
-  },
-});
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.color('#ffffff', 'background'),
+    },
+    centerContainer: {
+      flex: 1,
+      backgroundColor: theme.color('#ffffff', 'card'),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      color: theme.color('#64748b', "muted"),
+      marginTop: 12,
+      fontSize: 15,
+      fontWeight: '500',
+    },
+    scrollContent: {
+      // Al menos tan alto como la pantalla: si el contenido no desborda, en
+      // Android el ScrollView no se deja arrastrar y el "tirar para recargar"
+      // no llega a dispararse nunca.
+      flexGrow: 1,
+      paddingBottom: 30,
+    },
+    navHeader: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 16,
+    },
+    logoTitle: {
+      fontSize: 24, // DynaPuff es más robusta
+      color: theme.color('#121B22', 'text'),
+      fontFamily: 'DynaPuff',
+      marginBottom: 0, // Restaurando márgenes naturales
+      textAlign: 'center',
+    },
+    // Absoluto para que el logo siga centrado en la pantalla
+    messagesBtn: {
+      position: 'absolute',
+      right: 20,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
+    },
+    messagesBadge: {
+      position: 'absolute',
+      top: '50%',
+      right: -8,
+      marginTop: -20,
+      minWidth: 18,
+      height: 18,
+      paddingHorizontal: 4,
+      borderRadius: 9,
+      backgroundColor: colors.accent,
+      borderWidth: 2,
+      borderColor: theme.color('#ffffff', 'border'),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    messagesBadgeText: {
+      color: theme.color('#ffffff', 'text'),
+      fontSize: 10,
+      fontWeight: '700',
+      lineHeight: 12,
+    },
+    emptyCard: {
+      backgroundColor: theme.color('#ffffff', 'card'),
+      marginHorizontal: 20,
+      borderRadius: 20,
+      padding: 32,
+      alignItems: 'center',
+      elevation: 2,
+      ...Platform.select({
+        web: {
+          boxShadow: '0px 2px 10px rgba(0,0,0,0.05)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+        }
+      }),
+      marginTop: 20,
+    },
+    emptyIconContainer: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: theme.color('#F0F8FA', 'card'),
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.color('#121B22', 'text'),
+      marginBottom: 6,
+    },
+    emptySubtitle: {
+      color: theme.color('#64748b', "muted"),
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    refreshEmptyBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.color('#f1f5f9', 'card'),
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+    },
+    refreshEmptyBtnText: {
+      color: theme.color('#334155', 'text'),
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    postCard: {
+      backgroundColor: theme.color('#ffffff', 'background'),
+      marginBottom: 20,
+      width: '100%',
+      borderBottomWidth: theme.isDark ? 0 : 1,
+      borderBottomColor: theme.color('#F0F3F5', 'background'),
+    },
+    postHeader: {
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 10,
+    },
+    authorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    authorClickArea: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    authorAvatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.color('#F0F3F5', 'card'),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+      borderWidth: 2,
+      borderColor: theme.color('#00DBFF', 'border'),
+    },
+    authorAvatarImage: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      marginRight: 10,
+      borderWidth: 2,
+      borderColor: theme.color('#00DBFF', 'border'),
+    },
+    authorInitial: {
+      color: theme.color('#334155', 'text'),
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    authorInfo: {
+      flex: 1,
+    },
+    authorHandle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.color('#121B22', 'text'),
+    },
+    authorAction: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.color('#475569', 'muted'),
+    },
+    authorActionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 1,
+    },
+    translationMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 3,
+    },
+    timeAgoText: {
+      fontSize: 11,
+      color: theme.color('#64748B', 'muted'),
+      fontWeight: '400',
+    },
+    metaDot: {
+      fontSize: 11,
+      color: theme.color('#94A3B8', 'muted'),
+    },
+    translateTouchArea: {
+      paddingVertical: 1,
+    },
+    translatingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    translateSpinner: {
+      transform: [{ scale: 0.65 }],
+      marginRight: 4,
+    },
+    translateBtnText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.color('#0C8AA6', 'primary'),
+    },
+    optionsBtn: {
+      padding: 6,
+    },
+    optionsIcon: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: theme.color('#121B22', 'text'),
+      letterSpacing: -1,
+    },
+    postImage: {
+      width: '100%',
+      height: 460,
+      backgroundColor: theme.color('#f1f5f9', 'background'),
+    },
+    postFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: theme.color('#ffffff', 'background'),
+    },
+    postFooterRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    doAlsoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: theme.color('#EAF7FA', 'card'),
+      borderWidth: 1,
+      borderColor: theme.color('#BDECF3', 'border'),
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    doAlsoBtnText: {
+      color: theme.color('#0C8AA6', 'primary'),
+      fontWeight: '700',
+      fontSize: 12,
+    },
+    pointsPill: {
+      backgroundColor: theme.color('#F0F3F5', 'card'),
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    pointsPillText: {
+      color: theme.color('#0C8AA6', 'primary'),
+      fontWeight: '700',
+      fontSize: 13,
+    },
+    loadMoreBtn: {
+      backgroundColor: theme.color('#ffffff', 'card'),
+      borderRadius: 16,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginHorizontal: 20,
+      marginTop: 10,
+      marginBottom: 30,
+      borderWidth: 1,
+      borderColor: theme.color('#F0F3F5', 'border'),
+    },
+    loadMoreBtnText: {
+      color: theme.color('#334155', 'text'),
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    loadMoreSpinner: {
+      marginVertical: 24,
+    },
+  });
   return { theme, colors, getPillStyle, styles };
 });

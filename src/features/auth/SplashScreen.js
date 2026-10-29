@@ -8,7 +8,9 @@ import {
   Platform,
   TouchableOpacity,
   useWindowDimensions,
+  View,
 } from 'react-native';
+import { Text } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 // En web no existe el driver nativo. Pedirlo igualmente deja la animación en manos
@@ -23,22 +25,15 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 // se reparte igual de bien en un móvil estrecho que en una ventana ancha.
 // La franja central (y entre 0.38 y 0.64) se deja libre para el título.
 
-
 export const SplashScreen = ({ onFinish }) => {
   const { theme, FLOATING_ICONS, styles } = useThemeValues(getSplashScreenTheme);
 
-  // Las medidas para repartir los iconos se tomaban UNA vez, al cargar el
-  // módulo, con Dimensions.get('window'). En web eso se queda viejo en cuanto
-  // la ventana cambia de tamaño, y además mide la VENTANA, no esta pantalla:
-  // los iconos acababan esparcidos fuera del fondo, en medio del blanco.
-  //
-  // Ahora manda la caja real de la pantalla (onLayout, que se vuelve a disparar
-  // al redimensionar). Hasta que llegue esa medida se usa la de la ventana, por
-  // si onLayout no llega a dispararse en algún entorno.
+  // Medidas de pantalla y detección de modo ordenador (escritorio web)
   const ventana = useWindowDimensions();
   const [caja, setCaja] = useState({ width: 0, height: 0 });
   const width = caja.width || ventana.width;
   const height = caja.height || ventana.height;
+  const isDesktop = width >= 768;
 
   // Animated values
   const bgFade = useRef(new Animated.Value(0)).current;
@@ -278,10 +273,22 @@ export const SplashScreen = ({ onFinish }) => {
       {FLOATING_ICONS.map((icon, index) => {
         const anim = iconAnims[index];
         const { IconLib } = icon;
-        // Se acotan a la caja para que los iconos del borde no queden cortados
-        // en pantallas estrechas ni se salgan por abajo.
-        const left = Math.max(8, Math.min(icon.x * width, width - icon.size - 8));
-        const top = Math.max(8, Math.min(icon.y * height, height - icon.size - 8));
+
+        // En escritorio acotamos la constelación a un área central elegante para
+        // que los iconos enmarquen el título y no queden disparados a los bordes de un monitor 4K.
+        let left, top;
+        if (isDesktop) {
+          const spreadWidth = Math.min(width * 0.82, 980);
+          const spreadHeight = Math.min(height * 0.85, 680);
+          const startX = (width - spreadWidth) / 2;
+          const startY = (height - spreadHeight) / 2;
+          left = startX + icon.x * spreadWidth;
+          top = startY + icon.y * spreadHeight;
+        } else {
+          left = Math.max(8, Math.min(icon.x * width, width - icon.size - 8));
+          top = Math.max(8, Math.min(icon.y * height, height - icon.size - 8));
+        }
+
         return (
           <Animated.View
             key={index}
@@ -299,7 +306,7 @@ export const SplashScreen = ({ onFinish }) => {
               },
             ]}
           >
-            <IconLib name={icon.name} size={icon.size} color={icon.color} />
+            <IconLib name={icon.name} size={isDesktop ? icon.size * 1.15 : icon.size} color={icon.color} />
           </Animated.View>
         );
       })}
@@ -314,6 +321,7 @@ export const SplashScreen = ({ onFinish }) => {
         <Animated.Text
           style={[
             styles.title,
+            isDesktop && styles.titleDesktop,
             {
               opacity: titleOpacity,
               transform: [{ scale: titleScale }],
@@ -323,21 +331,38 @@ export const SplashScreen = ({ onFinish }) => {
           Hobbier
         </Animated.Text>
 
-        <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>
+        <Animated.Text
+          style={[
+            styles.subtitle,
+            isDesktop && styles.subtitleDesktop,
+            { opacity: subtitleOpacity },
+          ]}
+        >
           Encuentra algo nuevo que hacer.
         </Animated.Text>
 
-        <TouchableOpacity onPress={handleFinish} activeOpacity={0.7}>
-          <Animated.View
-            style={{
-              opacity: chevronOpacity,
-              transform: [{ translateY: chevronBounce }],
-              marginTop: 24,
-            }}
+        {isDesktop ? (
+          <TouchableOpacity
+            onPress={handleFinish}
+            activeOpacity={0.8}
+            style={styles.desktopCtaButton}
           >
-            <Ionicons name="chevron-down" size={28} color={theme.color("#0C8AA6", 'primary')} />
-          </Animated.View>
-        </TouchableOpacity>
+            <Text style={styles.desktopCtaText}>Comenzar</Text>
+            <Feather name="arrow-right" size={17} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleFinish} activeOpacity={0.7}>
+            <Animated.View
+              style={{
+                opacity: chevronOpacity,
+                transform: [{ translateY: chevronBounce }],
+                marginTop: 24,
+              }}
+            >
+              <Ionicons name="chevron-down" size={28} color={theme.color("#0C8AA6", 'primary')} />
+            </Animated.View>
+          </TouchableOpacity>
+        )}
       </Animated.View>
     </Animated.View>
   );
@@ -399,11 +424,44 @@ const styles = StyleSheet.create({
     fontFamily: 'DynaPuff',
     letterSpacing: 0.5,
   },
+  titleDesktop: {
+    fontSize: 48,
+    letterSpacing: 0.8,
+  },
   subtitle: {
     fontSize: 16,
     color: theme.color('#8A908B', 'muted'),
     marginTop: 10,
     fontWeight: '500',
+  },
+  subtitleDesktop: {
+    fontSize: 18,
+    marginTop: 14,
+  },
+  desktopCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 32,
+    backgroundColor: theme.color('#0C8AA6', 'primary'),
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 999,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        boxShadow: '0 4px 14px rgba(12, 138, 166, 0.28)',
+      },
+      default: {
+        elevation: 3,
+      },
+    }),
+  },
+  desktopCtaText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });
   return { theme, FLOATING_ICONS, styles };

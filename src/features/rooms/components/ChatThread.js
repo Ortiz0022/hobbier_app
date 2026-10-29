@@ -12,11 +12,13 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
+import { Camera } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 
 import { RoomMessageBubble } from './RoomMessageBubble';
 import { spacing, fonts, radii } from "../../../theme";
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 /**
  * Conversación completa: lista de mensajes, responder a un mensaje concreto,
@@ -36,17 +38,21 @@ export const ChatThread = ({
   onRetry,
   onDiscard,
   readOnly = false,
-  readOnlyText = 'Chat en modo solo lectura.',
+  readOnlyText,
   emptyIcon = 'message-square',
   emptyTitle,
   emptySubtitle,
-  emptyText = 'No hay mensajes aún.',
+  emptyText,
   showSenderName = true,
   // Sin respuestas citadas (el chat de solicitudes de anuncio no las guarda).
   allowReply = true,
   keyboardVerticalOffset = 90,
 }) => {
   const { theme, colors, styles } = useThemeValues(getChatThreadTheme);
+  const { t } = useLanguage();
+
+  const finalReadOnlyText = readOnlyText || t('messages.readonly_chat') || 'Chat en modo solo lectura.';
+  const finalEmptyText = emptyText || t('messages.no_messages') || 'No hay mensajes aún.';
 
   const [textMessage, setTextMessage] = useState('');
   // El texto también vive en una ref: Enter y el botón pueden disparar dos envíos
@@ -134,7 +140,7 @@ export const ChatThread = ({
                 </View>
               ) : null}
               <Text style={styles.emptyChatTitle}>
-                {emptyTitle || emptyText}
+                {emptyTitle || finalEmptyText}
               </Text>
               {emptySubtitle ? (
                 <Text style={styles.emptyChatSubtitle}>{emptySubtitle}</Text>
@@ -184,9 +190,18 @@ export const ChatThread = ({
                 <Text style={styles.replyPreviewAuthor}>
                   {replyingTo.sender?.username || 'Usuario'}
                 </Text>
-                <Text style={styles.replyPreviewText} numberOfLines={1}>
-                  {replyingTo.message_type === 'EVIDENCE' ? '📷 Registró un avance' : replyingTo.content}
-                </Text>
+                {replyingTo.message_type === 'EVIDENCE' ? (
+                  <View style={styles.replyPreviewEvidenceRow}>
+                    <Camera size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={styles.replyPreviewText} numberOfLines={1}>
+                      {t('messages.recorded_advance') || 'Registró un avance'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.replyPreviewText} numberOfLines={1}>
+                    {replyingTo.content}
+                  </Text>
+                )}
               </View>
               <TouchableOpacity
                 onPress={() => setReplyingTo(null)}
@@ -200,7 +215,7 @@ export const ChatThread = ({
           <View style={styles.chatInputContainer}>
             <TextInput {...theme.textInputProps}
               style={styles.chatInput}
-              placeholder="Escribe un mensaje..."
+              placeholder={t('messages.type_message') || "Escribe un mensaje..."}
               value={textMessage}
               onChangeText={handleChangeText}
               placeholderTextColor={colors.textMuted}
@@ -217,7 +232,7 @@ export const ChatThread = ({
         </View>
       ) : (
         <View style={styles.chatClosedBanner}>
-          <Text style={styles.chatClosedText}>{readOnlyText}</Text>
+          <Text style={styles.chatClosedText}>{finalReadOnlyText}</Text>
         </View>
       )}
     </KeyboardAvoidingView>
@@ -293,6 +308,11 @@ const styles = StyleSheet.create({
   replyPreviewText: {
     fontSize: 12.5,
     color: colors.textMuted,
+    marginTop: 1,
+  },
+  replyPreviewEvidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 1,
   },
   chatInputContainer: {

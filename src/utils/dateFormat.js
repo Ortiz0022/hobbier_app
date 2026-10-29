@@ -101,3 +101,33 @@ export const getDatePartOrder = (language) =>
     .formatToParts(new Date(2026, 3, 3))
     .map((p) => p.type)
     .filter((t) => t === 'day' || t === 'month' || t === 'year');
+
+/**
+ * Tiempo relativo para publicaciones del feed, estilo Instagram:
+ * "Hace 2 min" / "Hace 3 h" / "Hace 2 d" (o "2m ago" / "3h ago" / "2d ago").
+ */
+export const formatTimeAgo = (value, language, now = new Date()) => {
+  if (!value) return '';
+  const date = toDate(value);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const isEn = language === 'en';
+
+  if (diffSec < 60) {
+    return isEn ? 'just now' : 'ahora';
+  }
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) {
+    return isEn ? `${diffMin}m ago` : `hace ${diffMin} min`;
+  }
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) {
+    return isEn ? `${diffHours}h ago` : `hace ${diffHours} h`;
+  }
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) {
+    return isEn ? `${diffDays}d ago` : `hace ${diffDays} d`;
+  }
+  return formatDate(date, language);
+};
+

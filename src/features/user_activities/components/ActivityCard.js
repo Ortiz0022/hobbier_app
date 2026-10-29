@@ -5,39 +5,14 @@ import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native
 import Feather from '@expo/vector-icons/Feather';
 
 import { useLanguage } from '../../../context/LanguageContext';
-import { capitalizarTitulo } from '../../../utils/titleCase';
-
-const getCategoryStyle = (categoryObj, title = '') => {
-  const categoryName = categoryObj?.name || '';
-  const searchKey = `${categoryName} ${title}`.toLowerCase();
-
-  if (searchKey.includes('arte') || searchKey.includes('pint') || searchKey.includes('cerám')) {
-    return { name: categoryName || 'Arte', icon: 'edit-2' };
-  }
-  if (searchKey.includes('tecno') || searchKey.includes('python') || searchKey.includes('program')) {
-    return { name: categoryName || 'Tecnología', icon: 'monitor' };
-  }
-  if (searchKey.includes('natura') || searchKey.includes('deport') || searchKey.includes('camin')) {
-    return { name: categoryName || 'Naturaleza', icon: 'map' };
-  }
-  if (searchKey.includes('músic') || searchKey.includes('instrum')) {
-    return { name: categoryName || 'Música', icon: 'music' };
-  }
-  if (searchKey.includes('juego') || searchKey.includes('ajedrez')) {
-    return { name: categoryName || 'Juegos', icon: 'award' };
-  }
-  if (searchKey.includes('leer') || searchKey.includes('libro')) {
-    return { name: categoryName || 'Lectura', icon: 'book-open' };
-  }
-  return { name: categoryName || 'Hobby', icon: 'compass' };
-};
+import { getCategoryStyle } from '../../../utils/category';
 
 export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
   const { theme, colors, styles } = useThemeValues(getActivityCardTheme);
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const activity = item.activity || {};
-  const category = getCategoryStyle(activity.category, activity.title);
+  const category = getCategoryStyle(activity.category, activity.title, language);
   const repetitions = Math.max(item.posts?.length || 0, isPending ? 0 : 1);
   const points = activity.points_awarded || 10;
   const actionLabel = isPending ? t('missions.continue') || 'Continuar' : t('missions.repeat') || 'Repetir';
@@ -48,12 +23,12 @@ export const ActivityCard = ({ item, isPending, onAction, currentUserId }) => {
       <View style={styles.topRow}>
         <View style={styles.categoryGroup}>
           <View style={styles.iconBox}>
-            <Feather name={category.icon} size={14} color={colors.primary} />
+            <Feather name={category.icon || 'compass'} size={14} color={colors.primary} />
           </View>
-          <Text style={styles.categoryText}>{capitalizarTitulo(category.name)}</Text>
+          <Text style={styles.categoryText}>{category.name}</Text>
           {isMine && (
             <View style={styles.myActivityPill}>
-              <Text style={styles.myActivityText}>Mi actividad</Text>
+              <Text style={styles.myActivityText}>{t('missions.my_activity') || 'Mi actividad'}</Text>
             </View>
           )}
         </View>
