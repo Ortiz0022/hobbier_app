@@ -1,6 +1,6 @@
 import { ThemeProvider, useThemeValues } from './src/context/ThemeContext';
 import { createThemeStyles } from './src/theme/themeRuntime';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   useWindowDimensions,
+  BackHandler,
 } from 'react-native';
 import { Text } from './src/components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
@@ -51,6 +52,7 @@ const MainApp = () => {
   const isDesktop = width >= 768;
 
   const [currentScreen, setCurrentScreen] = useState('recommendations');
+  const [navHistory, setNavHistory] = useState([]);
   const [autoExpandId, setAutoExpandId] = useState(null);
   // A qué pestaña volver si se sale de preferencias sin guardar. Se recuerda
   // porque a preferencias se entra desde dos sitios (Sugerencia y Perfil) y
@@ -63,6 +65,59 @@ const MainApp = () => {
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
   const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
+
+  const navegarA = useCallback((nuevaPantalla) => {
+    if (nuevaPantalla === currentScreen) return;
+    setNavHistory((prev) => [...prev.slice(-15), currentScreen]);
+    setCurrentScreen(nuevaPantalla);
+  }, [currentScreen]);
+
+  // Manejo de retroceso físico / gestos de Android
+  useEffect(() => {
+    const onBackPress = () => {
+      // 1. Panel de administración
+      if (currentScreen === 'admin') {
+        if (adminSection !== 'overview') {
+          setAdminSection('overview');
+          return true;
+        }
+        setCurrentScreen('profile');
+        return true;
+      }
+
+      // 2. Preferencias
+      if (currentScreen === 'preferences') {
+        setCurrentScreen(volverA || 'recommendations');
+        return true;
+      }
+
+      // 3. Amigos dentro del perfil
+      if (currentScreen === 'profile_friends') {
+        setCurrentScreen('profile');
+        return true;
+      }
+
+      // 4. Historial de pestañas anteriores
+      if (navHistory.length > 0) {
+        const previo = navHistory[navHistory.length - 1];
+        setNavHistory((prev) => prev.slice(0, -1));
+        setCurrentScreen(previo);
+        return true;
+      }
+
+      // 5. Si no está en recommendations y no hay historial, volver a recommendations
+      if (currentScreen !== 'recommendations') {
+        setCurrentScreen('recommendations');
+        return true;
+      }
+
+      // 6. En inicio con historial vacío, salir de la app
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [currentScreen, adminSection, volverA, navHistory]);
 
   // Avisos push: se pide permiso y se guarda el token de este aparato una vez
   // por sesión. Si la persona dice que no, no se vuelve a insistir, y si la
@@ -145,7 +200,7 @@ const MainApp = () => {
 
   const irAPreferencias = (origen) => {
     setVolverA(origen);
-    setCurrentScreen('preferences');
+    navegarA('preferences');
   };
 
   const renderScreen = () => {
@@ -157,11 +212,11 @@ const MainApp = () => {
               if (userActivity?.id) {
                 setAutoExpandId(userActivity.id);
               }
-              setCurrentScreen('my_activities');
+              navegarA('my_activities');
             }}
             onGoToPreferences={() => irAPreferencias('recommendations')}
-            onNavigateToFeed={() => setCurrentScreen('feed')}
-            onNavigateToActivities={() => setCurrentScreen('my_activities')}
+            onNavigateToFeed={() => navegarA('feed')}
+            onNavigateToActivities={() => navegarA('my_activities')}
           />
         );
       case 'my_activities':
@@ -170,9 +225,9 @@ const MainApp = () => {
             initialExpandedId={autoExpandId}
             onNavigateToProfile={() => {
               setAutoExpandId(null);
-              setCurrentScreen('profile');
+              navegarA('profile');
             }}
-            onNavigateToRecommendations={() => setCurrentScreen('recommendations')}
+            onNavigateToRecommendations={() => navegarA('recommendations')}
           />
         );
       case 'feed':
@@ -182,33 +237,39 @@ const MainApp = () => {
               if (userActivity?.id) {
                 setAutoExpandId(userActivity.id);
               }
-              setCurrentScreen('my_activities');
+              navegarA('my_activities');
             }}
           />
         );
       case 'friends':
         return <FriendsScreen />;
       case 'profile_friends':
-        return <FriendsScreen isProfileView={true} onBack={() => setCurrentScreen('profile')} />;
+        return <FriendsScreen isProfileView={true} onBack={() => {
+          setNavHistory((prev) => prev.slice(0, -1));
+          setCurrentScreen('profile');
+        }} />;
       case 'profile':
         return (
           <ProfileScreen
             onGoToPreferences={() => irAPreferencias('profile')}
-            onNavigateToFriends={() => setCurrentScreen('profile_friends')}
+            onNavigateToFriends={() => navegarA('profile_friends')}
             onNavigateToAdmin={() => {
               setAdminSection('overview');
-              setCurrentScreen('admin');
+              navegarA('admin');
             }}
           />
         );
       case 'preferences':
         return (
           <OnboardingScreen
-            onComplete={() => setCurrentScreen('recommendations')}
+            onComplete={() => navegarA('recommendations')}
             // Sin barra de navegación abajo, la flecha del primer paso es la
             // ÚNICA salida: sin esto el usuario queda encerrado en el asistente
             // hasta terminarlo.
-            onCancel={() => setCurrentScreen(volverA)}
+            onCancel={() => {
+              setNavHistory((prev) => prev.slice(0, -1));
+              setCurrentScreen(volverA);
+            }}
           />
         );
       case 'admin':
@@ -218,7 +279,10 @@ const MainApp = () => {
             onNavigateSection={setAdminSection}
             // Cada pantalla del panel tiene su salida: se vuelve a Perfil, que
             // es de donde se entra al panel.
-            onExit={() => setCurrentScreen('profile')}
+            onExit={() => {
+              setNavHistory((prev) => prev.slice(0, -1));
+              setCurrentScreen('profile');
+            }}
           />
         );
       default:
@@ -249,7 +313,7 @@ const MainApp = () => {
   const enPanelAdmin = currentScreen === 'admin' && isAdmin;
   const navItems = enPanelAdmin ? navItemsAdmin : navItemsUsuario;
   const claveActiva = enPanelAdmin ? adminSection : currentScreen;
-  const irA = (clave) => (enPanelAdmin ? setAdminSection(clave) : setCurrentScreen(clave));
+  const irA = (clave) => (enPanelAdmin ? setAdminSection(clave) : navegarA(clave));
 
 
   // El asistente de preferencias ocupa la pantalla entera: es un flujo con sus

@@ -13,6 +13,7 @@ import {
   Modal,
   Platform,
   Linking,
+  BackHandler,
 } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
@@ -193,6 +194,35 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   // null = feed | { screen: 'INBOX' } | { screen: 'CHAT', conversationId, friend }
   const [messagesView, setMessagesView] = useState(null);
   const { unreadCount, refetch: refetchUnreadCount } = useDirectUnreadCount();
+
+  // Retroceso físico / gestual en pantalla de Feed
+  useEffect(() => {
+    const onBackPress = () => {
+      if (reportModalVisible) {
+        setReportModalVisible(false);
+        return true;
+      }
+      if (doAlsoModalVisible) {
+        setDoAlsoModalVisible(false);
+        return true;
+      }
+      if (selectedUserProfile) {
+        setSelectedUserProfile(null);
+        return true;
+      }
+      if (messagesView) {
+        if (messagesView.screen === 'CHAT') {
+          setMessagesView({ screen: 'INBOX' });
+          return true;
+        }
+        setMessagesView(null);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [reportModalVisible, doAlsoModalVisible, selectedUserProfile, messagesView]);
 
   useEffect(() => {
     loadFeed();

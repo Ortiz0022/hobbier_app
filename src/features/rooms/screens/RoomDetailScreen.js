@@ -12,7 +12,8 @@ import {
   FlatList,
   Platform,
   Modal,
-  Pressable
+  Pressable,
+  BackHandler,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
@@ -76,11 +77,35 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const isActiveWithoutDeadline = room.status === 'ACTIVE' && !room.end_at;
   // Invitar solo tiene sentido mientras el reto sigue abierto (el RPC también lo exige)
   const canInvite = isOwner && !isClosed;
-  // Con el reto terminado, quien no es anfitrión puede quitarse la sala de su
-  // lista; el anfitrión no se sale de la suya, la elimina.
-  const canLeave = !isOwner && isClosed;
+  // Cualquier miembro que no sea el anfitrión puede salirse de la sala cuando quiera o si terminó.
+  const canLeave = !isOwner;
   const hayMenu = isOwner || canLeave;
   const memberIds = (room.members || []).map((m) => m.profile?.id).filter(Boolean);
+
+  // Retroceso físico / gestual en detalle de sala
+  React.useEffect(() => {
+    const onBackPress = () => {
+      if (adminModalVisible) {
+        setAdminModalVisible(false);
+        return true;
+      }
+      if (inviteModalVisible) {
+        setInviteModalVisible(false);
+        return true;
+      }
+      if (activeTab !== 'Reto') {
+        setActiveTab('Reto');
+        return true;
+      }
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [adminModalVisible, inviteModalVisible, activeTab, onBack]);
 
   const getStatusText = () => {
     if (isClosed) return t('rooms.status_closed') || 'Reto finalizado';
@@ -148,8 +173,12 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const confirmLeave = async () => {
     const ok = await confirm({
       title: t('rooms.leave_room_title') || 'Salir de la sala',
-      message: t('rooms.leave_room_msg') || 'El reto ya terminó. Si sales, la sala desaparece de tu lista y dejas de ver su chat y su ranking.',
-      confirmLabel: t('rooms.leave_room_btn') || 'Salir y borrar',
+      message: isClosed
+        ? (t('rooms.leave_room_msg_closed') || 'El reto ya terminó. Al salir, la sala se eliminará de tu lista para ahorrar espacio.')
+        : (t('rooms.leave_room_msg_active') || '¿Deseas salir de esta sala? La sala desaparecerá de tu lista y dejarás de ver su chat y ranking.'),
+      confirmLabel: isClosed
+        ? (t('rooms.leave_room_btn') || 'Salir y borrar')
+        : (t('rooms.leave_room_btn_active') || 'Salir de la sala'),
       destructive: true,
     });
     if (!ok) return;
