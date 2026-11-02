@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -232,7 +233,11 @@ const toastStyles = StyleSheet.create({
   },
   stack: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 12 : 4,
+    // En Android la app se dibuja por debajo de la barra de estado y
+    // SafeAreaView no aparta nada (solo hace algo en iOS), así que el aviso
+    // salía pisando el reloj y la batería. Se baja lo que mide esa barra,
+    // igual que hace la pantalla principal en App.js.
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 4,
     gap: 8,
   },
   card: {
