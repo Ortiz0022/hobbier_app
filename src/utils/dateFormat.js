@@ -20,28 +20,68 @@ export const toLocale = (language) => LOCALES[language] || LOCALES.es;
 
 const toDate = (value) => (value instanceof Date ? value : new Date(value));
 
+const safeFormat = (locale, styleOptions, fallbackOptions, date) => {
+  try {
+    return new Intl.DateTimeFormat(locale, styleOptions).format(date);
+  } catch (_e) {
+    try {
+      return new Intl.DateTimeFormat(locale, fallbackOptions).format(date);
+    } catch (_e2) {
+      return date.toLocaleDateString();
+    }
+  }
+};
+
 /** "3 abr 2026" / "Apr 3, 2026" */
 export const formatDate = (value, language) => {
   if (!value) return '';
-  return new Intl.DateTimeFormat(toLocale(language), { dateStyle: 'medium' }).format(toDate(value));
+  const d = toDate(value);
+  if (isNaN(d.getTime())) return '';
+  return safeFormat(
+    toLocale(language),
+    { dateStyle: 'medium' },
+    { day: 'numeric', month: 'short', year: 'numeric' },
+    d
+  );
 };
 
 /** "3 de abril de 2026" / "April 3, 2026" */
 export const formatLongDate = (value, language) => {
   if (!value) return '';
-  return new Intl.DateTimeFormat(toLocale(language), { dateStyle: 'long' }).format(toDate(value));
+  const d = toDate(value);
+  if (isNaN(d.getTime())) return '';
+  return safeFormat(
+    toLocale(language),
+    { dateStyle: 'long' },
+    { day: 'numeric', month: 'long', year: 'numeric' },
+    d
+  );
 };
 
 /** "14:32" / "2:32 PM" */
 export const formatTime = (value, language) => {
   if (!value) return '';
-  return new Intl.DateTimeFormat(toLocale(language), { hour: 'numeric', minute: '2-digit' }).format(toDate(value));
+  const d = toDate(value);
+  if (isNaN(d.getTime())) return '';
+  return safeFormat(
+    toLocale(language),
+    { hour: 'numeric', minute: '2-digit' },
+    { hour: 'numeric', minute: '2-digit' },
+    d
+  );
 };
 
 /** "3 abr 2026, 14:32" / "Apr 3, 2026, 2:32 PM" */
 export const formatDateTime = (value, language) => {
   if (!value) return '';
-  return new Intl.DateTimeFormat(toLocale(language), { dateStyle: 'medium', timeStyle: 'short' }).format(toDate(value));
+  const d = toDate(value);
+  if (isNaN(d.getTime())) return '';
+  return safeFormat(
+    toLocale(language),
+    { dateStyle: 'medium', timeStyle: 'short' },
+    { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' },
+    d
+  );
 };
 
 /**
@@ -60,10 +100,18 @@ export const formatRelativeShort = (value, language, now = new Date()) => {
   const startOfWeek = new Date(startOfToday);
   startOfWeek.setDate(startOfWeek.getDate() - 6);
   if (date >= startOfWeek) {
-    return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
+    try {
+      return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
+    } catch (_e) {
+      return date.toLocaleDateString();
+    }
   }
 
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(date);
+  try {
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(date);
+  } catch (_e) {
+    return date.toLocaleDateString();
+  }
 };
 
 /**
@@ -76,19 +124,27 @@ export const formatMessageStamp = (value, language, now = new Date()) => {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (date >= startOfToday) return formatTime(date, language);
   const sameYear = date.getFullYear() === now.getFullYear();
-  return new Intl.DateTimeFormat(toLocale(language), {
-    day: 'numeric',
-    month: 'short',
-    ...(sameYear ? {} : { year: 'numeric' }),
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat(toLocale(language), {
+      day: 'numeric',
+      month: 'short',
+      ...(sameYear ? {} : { year: 'numeric' }),
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  } catch (_e) {
+    return date.toLocaleString();
+  }
 };
 
 /** Nombres de los 12 meses en el idioma de la app: ["enero", ...] / ["January", ...] */
 export const getMonthNames = (language) => {
-  const fmt = new Intl.DateTimeFormat(toLocale(language), { month: 'long', timeZone: 'UTC' });
-  return Array.from({ length: 12 }, (_, i) => fmt.format(new Date(Date.UTC(2026, i, 1))));
+  try {
+    const fmt = new Intl.DateTimeFormat(toLocale(language), { month: 'long', timeZone: 'UTC' });
+    return Array.from({ length: 12 }, (_, i) => fmt.format(new Date(Date.UTC(2026, i, 1))));
+  } catch (_e) {
+    return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  }
 };
 
 /**
@@ -96,11 +152,16 @@ export const getMonthNames = (language) => {
  * selector de fecha siga la convención local: es -> ['day','month','year'],
  * en-US -> ['month','day','year'].
  */
-export const getDatePartOrder = (language) =>
-  new Intl.DateTimeFormat(toLocale(language))
-    .formatToParts(new Date(2026, 3, 3))
-    .map((p) => p.type)
-    .filter((t) => t === 'day' || t === 'month' || t === 'year');
+export const getDatePartOrder = (language) => {
+  try {
+    return new Intl.DateTimeFormat(toLocale(language))
+      .formatToParts(new Date(2026, 3, 3))
+      .map((p) => p.type)
+      .filter((t) => t === 'day' || t === 'month' || t === 'year');
+  } catch (_e) {
+    return ['day', 'month', 'year'];
+  }
+};
 
 /**
  * Tiempo relativo para publicaciones del feed, estilo Instagram:
@@ -130,4 +191,3 @@ export const formatTimeAgo = (value, language, now = new Date()) => {
   }
   return formatDate(date, language);
 };
-

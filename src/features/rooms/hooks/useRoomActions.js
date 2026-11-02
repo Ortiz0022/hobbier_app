@@ -22,6 +22,7 @@ export const useRoomActions = () => {
   const createRoom = (roomData) => executeAction(() => roomsService.createRoom(roomData));
   const closeRoom = (roomId) => executeAction(() => roomsService.closeRoom(roomId));
   const deleteRoom = (roomId) => executeAction(() => roomsService.deleteRoom(roomId));
+  const leaveRoom = (roomId) => executeAction(() => roomsService.leaveRoom(roomId));
   
   const inviteFriend = (roomId, receiverId) => executeAction(() => roomsService.inviteFriendToRoom(roomId, receiverId));
   
@@ -37,6 +38,7 @@ export const useRoomActions = () => {
     createRoom,
     closeRoom,
     deleteRoom,
+    leaveRoom,
     inviteFriend,
     uploadCover,
     loading,

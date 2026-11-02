@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  BackHandler,
 } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
@@ -35,6 +36,7 @@ import { AdRequestModal } from '../recommendations/components/AdRequestModal';
 import { getMyAdRequests } from '../../services/adsService';
 import { formatDateTime } from '../../utils/dateFormat';
 import { getCategoryStyle, getCategoryLabel } from '../../utils/category';
+import { AjustarFotoModal } from '../../components/AjustarFotoModal';
 
 // Mismos tokens exactos que usan PendingActivityScreen, ActivitiesHeader,
 // ActivityCard e InlineEvidenceUploader (pantalla "Actividad").
@@ -51,6 +53,8 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   const [languageModalOpen, setLanguageModalOpen] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [newImageUri, setNewImageUri] = useState(null);
+  // Foto recién elegida, a la espera de que se encuadre.
+  const [fotoPorAjustar, setFotoPorAjustar] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const [createActivityOpen, setCreateActivityOpen] = useState(false);
@@ -81,6 +85,48 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   const [legalDoc, setLegalDoc] = useState(null);
   const [expandedActivityId, setExpandedActivityId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Retroceso físico / gestual en pantalla de perfil
+  useEffect(() => {
+    const onBackPress = () => {
+      if (viewerImage) {
+        setViewerImage(null);
+        return true;
+      }
+      if (legalDoc) {
+        setLegalDoc(null);
+        return true;
+      }
+      if (languageModalOpen) {
+        setLanguageModalOpen(false);
+        return true;
+      }
+      if (createActivityOpen) {
+        setCreateActivityOpen(false);
+        return true;
+      }
+      if (myAdRequestsOpen) {
+        setMyAdRequestsOpen(false);
+        return true;
+      }
+      if (adRequestOpen) {
+        setAdRequestOpen(false);
+        return true;
+      }
+      if (editing) {
+        setEditing(false);
+        setNewImageUri(null);
+        return true;
+      }
+      if (subScreen !== 'profile') {
+        setSubScreen('profile');
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [viewerImage, legalDoc, languageModalOpen, createActivityOpen, myAdRequestsOpen, adRequestOpen, editing, subScreen]);
 
   const [activeTab, setActiveTab] = useState('fotos');
 
@@ -164,13 +210,13 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
+        // El encuadre lo hace AjustarFotoModal, no el recortador del sistema.
+        allowsEditing: false,
+        quality: 0.9,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setNewImageUri(result.assets[0].uri);
+        setFotoPorAjustar(result.assets[0].uri);
       }
     } catch (err) {
       console.error('Error al seleccionar avatar:', err);
@@ -451,6 +497,15 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
           visible={adRequestOpen}
           onClose={() => setAdRequestOpen(false)}
           onSent={loadMyAdRequests}
+        />
+
+        <AjustarFotoModal
+          visible={!!fotoPorAjustar}
+          uri={fotoPorAjustar}
+          aspecto={1}
+          circular
+          onCancelar={() => setFotoPorAjustar(null)}
+          onListo={(recortada) => { setNewImageUri(recortada); setFotoPorAjustar(null); }}
         />
 
         <Modal

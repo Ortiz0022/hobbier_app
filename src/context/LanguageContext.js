@@ -81,9 +81,23 @@ export const LanguageProvider = ({ children }) => {
 
       // 4. Interpolate variables like {name}
       if (params && typeof params === 'object') {
-        Object.keys(params).forEach((paramKey) => {
-          text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
+        const resolvedParams = { ...params };
+        // Normalizar alias frecuentes como name <-> username
+        if (resolvedParams.username && !resolvedParams.name) {
+          resolvedParams.name = resolvedParams.username;
+        }
+        if (resolvedParams.name && !resolvedParams.username) {
+          resolvedParams.username = resolvedParams.name;
+        }
+
+        Object.keys(resolvedParams).forEach((paramKey) => {
+          const val = resolvedParams[paramKey];
+          const replacement = val !== undefined && val !== null ? String(val) : '';
+          text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), replacement);
         });
+
+        // Limpiar cualquier variable no resuelta restante (ej. {name}) para no mostrar llaves rotas
+        text = text.replace(/\{[a-zA-Z0-9_]+\}/g, '').replace(/@@+/g, '@').trim();
       }
 
       return text;

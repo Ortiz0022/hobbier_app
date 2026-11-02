@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  BackHandler,
 } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
@@ -34,9 +35,10 @@ import { CreateActivityModal } from '../../components/CreateActivityModal';
 
 const pickerOptions = {
   mediaTypes: ['images'],
-  allowsEditing: true,
-  aspect: [4, 3],
-  quality: 0.8,
+  // Quien sube la foto la encuadra en AjustarFotoModal, con el mismo
+  // resultado en Android, iOS y web.
+  allowsEditing: false,
+  quality: 0.9,
 };
 
 export const PendingActivityScreen = ({
@@ -62,10 +64,42 @@ export const PendingActivityScreen = ({
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [evidenceTarget, setEvidenceTarget] = useState(null);
   const [evidenceImageUri, setEvidenceImageUri] = useState(null);
+  // Foto recién elegida, a la espera de que se encuadre.
+  const [fotoPorAjustar, setFotoPorAjustar] = useState(null);
   const [isRepeating, setIsRepeating] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [createActivityOpen, setCreateActivityOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Retroceso físico / gestual en pantalla de misiones
+  useEffect(() => {
+    const onBackPress = () => {
+      if (celebration) {
+        setCelebration(null);
+        return true;
+      }
+      if (evidenceTarget) {
+        setEvidenceTarget(null);
+        setEvidenceImageUri(null);
+        return true;
+      }
+      if (createActivityOpen) {
+        setCreateActivityOpen(false);
+        return true;
+      }
+      if (showFilterDropdown) {
+        setShowFilterDropdown(false);
+        return true;
+      }
+      if (activeTab !== 'now') {
+        setActiveTab('now');
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [celebration, evidenceTarget, createActivityOpen, showFilterDropdown, activeTab]);
 
   useEffect(() => {
     loadUserActivities();
@@ -102,7 +136,7 @@ export const PendingActivityScreen = ({
 
   const setSelectedEvidence = (result) => {
     if (!result.canceled && result.assets?.length > 0) {
-      setEvidenceImageUri(result.assets[0].uri);
+      setFotoPorAjustar(result.assets[0].uri);
     }
   };
 
@@ -390,6 +424,9 @@ export const PendingActivityScreen = ({
         onTakePhoto={handleTakePhoto}
         onComplete={handleCompleteActivity}
         onClose={closeEvidenceFlow}
+        fotoPorAjustar={fotoPorAjustar}
+        onAjusteCancelado={() => setFotoPorAjustar(null)}
+        onAjusteListo={(recortada) => { setEvidenceImageUri(recortada); setFotoPorAjustar(null); }}
       />
       <CompletionCelebrationModal
         visible={Boolean(celebration)}

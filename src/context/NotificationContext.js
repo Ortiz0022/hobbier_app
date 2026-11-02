@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -232,7 +233,11 @@ const toastStyles = StyleSheet.create({
   },
   stack: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 12 : 4,
+    // En Android la app se dibuja por debajo de la barra de estado y
+    // SafeAreaView no aparta nada (solo hace algo en iOS), así que el aviso
+    // salía pisando el reloj y la batería. Se baja lo que mide esa barra,
+    // igual que hace la pantalla principal en App.js.
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 4,
     gap: 8,
   },
   card: {
@@ -314,7 +319,9 @@ const confirmStyles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.color('#FFF5F5', 'card'),
+    // En oscuro la ranura "card" es justo el color de la tarjeta, así que el
+    // círculo desaparecía; "selected" es el tono que sí se despega del fondo.
+    backgroundColor: theme.color('#FFF5F5', 'selected'),
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -343,7 +350,7 @@ const confirmStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: theme.color('#F1F3F5', 'card'),
+    backgroundColor: theme.color('#F1F3F5', 'selected'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -362,7 +369,9 @@ const confirmStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmBtnDestructive: {
-    backgroundColor: theme.color('#E53E3E', 'dangerSurface'),
+    // "dangerSurface" es un fondo de tarjeta, del color de la tarjeta: de
+    // relleno dejaba el botón invisible. El rojo de verdad es "danger".
+    backgroundColor: theme.color('#E53E3E', 'danger'),
   },
   confirmText: {
     color: theme.color('#FFFFFF', 'onAccent'),

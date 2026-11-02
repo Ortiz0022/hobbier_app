@@ -12,7 +12,8 @@ import {
   FlatList,
   Platform,
   Modal,
-  Pressable
+  Pressable,
+  BackHandler,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
@@ -43,7 +44,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const { room, ranking, loading: detailsLoading, error: detailsError, refetch } = useRoomDetails(roomId);
   const { messages, loading: chatLoading, hasMore, fetchMoreMessages, sendMessage, retryMessage, discardMessage } = useRoomChat(roomId);
   const { submitEvidence, uploading: evidenceUploading } = useEvidenceUploader(roomId);
-  const { closeRoom, deleteRoom, uploadCover, loading: actionLoading } = useRoomActions();
+  const { closeRoom, deleteRoom, leaveRoom, uploadCover, loading: actionLoading } = useRoomActions();
 
   const { url: coverUrl } = useSignedUrl('room-images', room?.image_path);
 
@@ -76,7 +77,35 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const isActiveWithoutDeadline = room.status === 'ACTIVE' && !room.end_at;
   // Invitar solo tiene sentido mientras el reto sigue abierto (el RPC también lo exige)
   const canInvite = isOwner && !isClosed;
+  // Cualquier miembro que no sea el anfitrión puede salirse de la sala cuando quiera o si terminó.
+  const canLeave = !isOwner;
+  const hayMenu = isOwner || canLeave;
   const memberIds = (room.members || []).map((m) => m.profile?.id).filter(Boolean);
+
+  // Retroceso físico / gestual en detalle de sala
+  React.useEffect(() => {
+    const onBackPress = () => {
+      if (adminModalVisible) {
+        setAdminModalVisible(false);
+        return true;
+      }
+      if (inviteModalVisible) {
+        setInviteModalVisible(false);
+        return true;
+      }
+      if (activeTab !== 'Reto') {
+        setActiveTab('Reto');
+        return true;
+      }
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [adminModalVisible, inviteModalVisible, activeTab, onBack]);
 
   const getStatusText = () => {
     if (isClosed) return t('rooms.status_closed') || 'Reto finalizado';
@@ -140,6 +169,26 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   };
 
   const alert = (msg) => notify(msg, { type: 'error', title: 'Aviso' });
+
+  const confirmLeave = async () => {
+    const ok = await confirm({
+      title: t('rooms.leave_room_title') || 'Salir de la sala',
+      message: isClosed
+        ? (t('rooms.leave_room_msg_closed') || 'El reto ya terminó. Al salir, la sala se eliminará de tu lista para ahorrar espacio.')
+        : (t('rooms.leave_room_msg_active') || '¿Deseas salir de esta sala? La sala desaparecerá de tu lista y dejarás de ver su chat y ranking.'),
+      confirmLabel: isClosed
+        ? (t('rooms.leave_room_btn') || 'Salir y borrar')
+        : (t('rooms.leave_room_btn_active') || 'Salir de la sala'),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await leaveRoom(roomId);
+      onBack();
+    } catch (err) {
+      alert(err.message || 'No se pudo salir de la sala.');
+    }
+  };
 
   const tabs = [
     { key: 'Reto', label: t('rooms.tab_challenge') || 'Reto' },
@@ -322,7 +371,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{t('rooms.room_title') || 'Sala de Reto'}</Text>
-        {isOwner ? (
+        {hayMenu ? (
           <TouchableOpacity onPress={() => setAdminModalVisible(true)} style={{ width: 24, alignItems: 'center' }}>
             <Feather name="more-horizontal" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -348,7 +397,11 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
         <Pressable style={styles.modalOverlay} onPress={() => setAdminModalVisible(false)}>
           <Pressable style={styles.modalContent}>
             <View style={styles.modalGrabber} />
-            <Text style={styles.modalTitle}>{t('rooms.room_admin') || 'Administración de Sala'}</Text>
+            <Text style={styles.modalTitle}>
+              {isOwner
+                ? t('rooms.room_admin') || 'Administración de Sala'
+                : t('rooms.room_options') || 'Opciones de la sala'}
+            </Text>
 
             {canInvite && (
               <TouchableOpacity
@@ -360,7 +413,7 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
               </TouchableOpacity>
             )}
 
-            {!isClosed && (
+            {isOwner && !isClosed && (
               <TouchableOpacity
                 style={styles.modalActionBtn}
                 onPress={() => { setAdminModalVisible(false); confirmClose(); }}
@@ -371,14 +424,27 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={[styles.modalActionBtn, styles.modalDeleteBtn]}
-              onPress={() => { setAdminModalVisible(false); confirmDelete(); }}
-              disabled={actionLoading}
-            >
-              <Feather name="trash-2" size={18} color={colors.danger} style={{ marginRight: 10 }} />
-              <Text style={styles.modalDeleteText}>{t('rooms.delete_room') || 'Eliminar Sala'}</Text>
-            </TouchableOpacity>
+            {isOwner && (
+              <TouchableOpacity
+                style={[styles.modalActionBtn, styles.modalDeleteBtn]}
+                onPress={() => { setAdminModalVisible(false); confirmDelete(); }}
+                disabled={actionLoading}
+              >
+                <Feather name="trash-2" size={18} color={colors.danger} style={{ marginRight: 10 }} />
+                <Text style={styles.modalDeleteText}>{t('rooms.delete_room') || 'Eliminar Sala'}</Text>
+              </TouchableOpacity>
+            )}
+
+            {canLeave && (
+              <TouchableOpacity
+                style={[styles.modalActionBtn, styles.modalDeleteBtn]}
+                onPress={() => { setAdminModalVisible(false); confirmLeave(); }}
+                disabled={actionLoading}
+              >
+                <Feather name="log-out" size={18} color={colors.danger} style={{ marginRight: 10 }} />
+                <Text style={styles.modalDeleteText}>{t('rooms.leave_room') || 'Salir de la sala'}</Text>
+              </TouchableOpacity>
+            )}
           </Pressable>
         </Pressable>
       </Modal>

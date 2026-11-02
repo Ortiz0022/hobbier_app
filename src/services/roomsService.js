@@ -1,5 +1,6 @@
 import { fetchQuery, queryKeys, invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 export const roomsService = {
   // ----------------------------------------------------
@@ -35,6 +36,25 @@ export const roomsService = {
     return data;
   },
 
+  // Salirse de una sala que ya terminó. room_members solo tiene política de
+  // SELECT, así que un DELETE desde aquí no borraría nada (la RLS lo descarta
+  // sin avisar): el borrado tiene que pasar por la RPC.
+  async leaveRoom(roomId) {
+    const { error } = await supabase.rpc('leave_room', {
+      p_room_id: roomId,
+    });
+    if (error) {
+      if (error.code === 'PGRST202') {
+        console.warn(
+          'La base no tiene leave_room. Aplica supabase/salir_de_sala.sql en el SQL Editor.'
+        );
+      }
+      throw error;
+    }
+    invalidateQueries('rooms', 'activities', 'social', 'feed');
+    return true;
+  },
+
   async setRoomImagePath(roomId, imagePath) {
     const { data, error } = await supabase.rpc('set_room_image_path', {
       p_room_id: roomId,
@@ -55,6 +75,7 @@ export const roomsService = {
     });
     if (error) throw error;
     invalidateQueries('rooms', 'activities', 'social', 'feed');
+    avisar(AVISO.SALA_INVITACION, { para: receiverId, salaId: roomId });
     return data; // Retorna invitation_id
   },
 
@@ -284,6 +305,8 @@ export const roomsService = {
 
     if (error) throw error;
 
+    // A los demás miembros de la sala; el nombre lo pone el servidor.
+    avisar(AVISO.MENSAJE_SALA, { salaId: roomId, texto: trimmedContent });
     return data;
   },
 

@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   Platform,
   useWindowDimensions,
+  BackHandler,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -154,6 +155,27 @@ export const AuthScreen = () => {
     return () => clearTimeout(temporizador);
   }, [username, isRegister, isForgot]);
 
+  // Retroceso físico / gestual en pantalla de autenticación
+  useEffect(() => {
+    const onBack = () => {
+      if (legalDoc) {
+        setLegalDoc(null);
+        return true;
+      }
+      if (isForgot) {
+        setIsForgot(false);
+        return true;
+      }
+      if (isRegister) {
+        setIsRegister(false);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [legalDoc, isForgot, isRegister]);
+
   // Live password confirmation validation
   useEffect(() => {
     if (!isRegister || isForgot) return;
@@ -178,7 +200,9 @@ export const AuthScreen = () => {
     }
   }, [password, passwordConfirm, isRegister, isForgot]);
 
-  const animatedStyle = {
+  const animatedStyle = Platform.OS === 'android' ? {
+    opacity: enter,
+  } : {
     opacity: enter,
     transform: [
       { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },

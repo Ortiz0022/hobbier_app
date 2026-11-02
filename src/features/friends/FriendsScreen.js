@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  BackHandler,
 } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
 import { RefreshControl } from '../../components/refrescoArrastrando';
@@ -89,6 +90,42 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   // Salas navegación interna
   const [roomScreen, setRoomScreen] = useState('LIST'); // 'LIST', 'CREATE', 'DETAIL'
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+
+  // Manejo de retroceso físico / gestual en pantalla de comunidad
+  useEffect(() => {
+    const onBackPress = () => {
+      if (friendViewerImage) {
+        setFriendViewerImage(null);
+        return true;
+      }
+      if (selectedFriend) {
+        setSelectedFriend(null);
+        return true;
+      }
+      if (directChatFriend) {
+        setDirectChatFriend(null);
+        return true;
+      }
+      if (activeTab === 'rooms') {
+        if (roomScreen !== 'LIST') {
+          setRoomScreen('LIST');
+          return true;
+        }
+      }
+      const initialTab = isProfileView ? 'friends' : 'search';
+      if (activeTab !== initialTab) {
+        setActiveTab(initialTab);
+        return true;
+      }
+      if (isProfileView && onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [friendViewerImage, selectedFriend, directChatFriend, activeTab, roomScreen, isProfileView, onBack]);
 
   useEffect(() => {
     if (!user?.id) return;

@@ -1,7 +1,7 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { Text } from '../../../components/scaledText';
@@ -35,6 +35,19 @@ export const DirectChatScreen = ({ conversationId: initialConversationId, friend
       .catch((err) => { if (mounted) setOpenError(err); });
     return () => { mounted = false; };
   }, [conversationId, friend?.id]);
+
+  // Retroceso físico / gestual en chat directo
+  useEffect(() => {
+    const onBackPress = () => {
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [onBack]);
 
   // Se marca como leída al abrir y con cada mensaje del AMIGO que llega mientras
   // está abierta. Los propios no: el trigger de la base de datos ya los deja leídos,

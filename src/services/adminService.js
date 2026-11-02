@@ -1,5 +1,6 @@
 import { invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 export const getReportedPostsAdmin = async () => {
   try {
@@ -369,6 +370,7 @@ export const suspendProfileAdmin = async (profileId, motivo) => {
     });
     if (!error) {
       invalidateQueries('activities', 'social', 'feed', 'rooms');
+      avisar(AVISO.CUENTA_SANCIONADA, { para: profileId, motivo: texto });
       return { error: null, motivoGuardado: true };
     }
 

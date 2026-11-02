@@ -65,7 +65,11 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
               <View style={styles.invitationInfo}>
                 <Text style={styles.invitationRoomName}>{inv.room_name}</Text>
                 <Text style={styles.invitationSender}>
-                  {t('rooms.invited_by', { username: inv.sender_username, name: inv.sender_username ? `@${inv.sender_username}` : '' }) || `Invitado por @${inv.sender_username}`}
+                  {(() => {
+                    const cleanUsername = (inv.sender_username || '').replace(/^@/, '');
+                    const displayUser = cleanUsername ? `@${cleanUsername}` : (t('common.friend') || 'un amigo');
+                    return t('rooms.invited_by', { username: cleanUsername || displayUser, name: displayUser }) || `Invitado por ${displayUser}`;
+                  })()}
                 </Text>
                 <Text style={styles.invitationChallenge}>
                   {t('rooms.challenge', { title: inv.challenge_title || '' }) || `Reto: ${inv.challenge_title}`}

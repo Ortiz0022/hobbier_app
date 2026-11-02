@@ -522,16 +522,6 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
 
           {/* PIE DE NAVEGACIÓN ENTRE PASOS */}
           <View style={estilos.pie}>
-            <TouchableOpacity
-              style={estilos.btnCancelar}
-              onPress={retrocederPaso}
-              activeOpacity={0.85}
-            >
-              <Text style={estilos.btnCancelarTexto}>
-                {step === 1 ? t('ad_request.cancel') : 'Atrás'}
-              </Text>
-            </TouchableOpacity>
-
             {step < 3 ? (
               <TouchableOpacity
                 style={estilos.btnEnviar}
@@ -553,6 +543,15 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
                 </Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              style={estilos.btnCancelar}
+              onPress={retrocederPaso}
+              activeOpacity={0.85}
+            >
+              <Text style={estilos.btnCancelarTexto}>
+                {step === 1 ? t('ad_request.cancel') : 'Atrás'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </Pressable>
       </Pressable>
