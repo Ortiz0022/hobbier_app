@@ -20,7 +20,7 @@ El desarrollo siguió una metodología iterativa, priorizando la experiencia del
 | **4** | **Integración con IA**                    | **En producción.** Tres Edge Functions con **Groq**: elegir o inventar la actividad recomendada, y moderar el contenido que escriben los usuarios (actividades y mensajes).                                  |
 | **5** | **Comunidad**                             | Feed con reacciones, amistades, mensajes directos, salas grupales con retos y evidencias, y anuncios patrocinados segmentados por gustos y ciudad.                                                           |
 | **6** | **Moderación y administración**           | Panel de administración con seis secciones, sanciones con motivo obligatorio, chat de apelación con soporte y tema claro/oscuro.                                                                             |
-| **7** | **Avisos y pulido para el teléfono**      | Notificaciones push para todo lo que la app ya avisaba dentro, más las del panel. Encuadre de fotos propio, salida de salas, botón de retroceso de Android y fundido al cambiar de tema.                      |
+| **7** | **Avisos y pulido para el teléfono**      | Notificaciones push para todo lo que la app ya avisaba dentro, más las del panel. Encuadre de fotos propio, salida de salas y botón de retroceso de Android.                                                  |
 
 ## 🎨 Paleta de colores
 
@@ -79,7 +79,7 @@ Un segundo juego, anterior, que todavía usan el onboarding, el selector de cat�
 
 ### Al cambiar de tema
 
-Cambiar de claro a oscuro repinta la app entera de golpe, y el salto se ve como un fogonazo. `ThemeProvider` tapa ese momento: un velo del color del fondo cubre la pantalla, pasa del color viejo al nuevo y se retira en 320 ms (`DURACION_FUNDIDO`). No se come ningún toque, no lo leen los lectores de pantalla y al abrir la app no se anima — el tema guardado aparece ya puesto.
+El cambio es seco a propósito: la app se repinta de una vez y ya está. Hubo un intento de fundido y se quitó, porque tapar el repintado con un velo deja ver el velo antes que la app — al pasar a oscuro se veía un fogonazo blanco por encima de la pantalla ya negra. Un velo montado en un efecto siempre llega tarde: para cuando aparece, el tema nuevo ya está pintado.
 
 ## 📋 Características principales
 
@@ -93,7 +93,7 @@ Cambiar de claro a oscuro repinta la app entera de golpe, y el salto se ve como 
 8. **Panel de administración**: barra inferior propia con seis secciones — Resumen, Soporte, Usuarios, Posts, Catálogo y Anuncios — paginación en todas las listas y salida a la app en cada pantalla.
 9. **Moderación**: reportes de publicaciones y de perfiles, sanciones con motivo obligatorio y chat de apelación.
 10. **Notificaciones push**: trece tipos de aviso, redactados en el servidor (ver más abajo).
-11. **Interfaz**: tema claro y oscuro con fundido al cambiar, español e inglés (`src/i18n/locales/`), tope de escalado de texto para accesibilidad y botón de retroceso de Android en todas las pantallas.
+11. **Interfaz**: tema claro y oscuro, español e inglés (`src/i18n/locales/`), tope de escalado de texto para accesibilidad y botón de retroceso de Android en todas las pantallas.
 
 ## 🎯 Cómo se eligen las recomendaciones
 
