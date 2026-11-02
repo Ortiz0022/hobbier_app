@@ -29,7 +29,11 @@ const toValue = (date) =>
   `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-const sameDay = (a, b) => a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+// Devuelven booleano de verdad, no null: estos valores van a
+// accessibilityState, y Android cierra la app si ahí llega otra cosa.
+const sameDay = (a, b) =>
+  !!(a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate());
 
 /**
  * Campo de fecha con calendario. Funciona igual en web, Android e iOS.
@@ -80,7 +84,7 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
   const canGoPrev = !min || new Date(viewYear, viewMonth, 0) >= min;
   const canGoNext = !max || new Date(viewYear, viewMonth + 1, 1) <= max;
 
-  const isDisabled = (date) => (min && date < min) || (max && date > max);
+  const isDisabled = (date) => !!((min && date < min) || (max && date > max));
 
   const pickDay = (day) => {
     const date = new Date(viewYear, viewMonth, day);
