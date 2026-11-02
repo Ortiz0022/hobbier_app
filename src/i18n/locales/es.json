@@ -921,6 +921,14 @@
     "confirm_rejection": "Confirmar rechazo",
     "reject_placeholder": "Motivo del rechazo (opcional)",
     "messages": "Mensajes"
+  },
+  "photo": {
+    "adjust_title": "Ajusta tu foto",
+    "adjust_hint": "Arrastra la foto y usa los botones para acercarla. Se guardará lo que se vea dentro del marco.",
+    "adjust_error": "No se pudo abrir esta foto.",
+    "use_photo": "Usar esta foto",
+    "zoom_in": "Acercar",
+    "zoom_out": "Alejar"
   }
 }
 

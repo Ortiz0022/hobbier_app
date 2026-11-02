@@ -921,6 +921,14 @@
     "confirm_rejection": "Confirm rejection",
     "reject_placeholder": "Reason for rejection (optional)",
     "messages": "Messages"
+  },
+  "photo": {
+    "adjust_title": "Adjust your photo",
+    "adjust_hint": "Drag the photo and use the buttons to zoom in. Whatever shows inside the frame is what gets saved.",
+    "adjust_error": "This photo could not be opened.",
+    "use_photo": "Use this photo",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out"
   }
 }
 
