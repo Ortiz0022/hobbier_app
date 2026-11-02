@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   Image,
   Platform,
-  Switch
+  Switch,
+  BackHandler,
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
@@ -54,6 +55,19 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Retroceso físico / gestual en creación de sala
+  useEffect(() => {
+    const onBackPress = () => {
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [onBack]);
 
   const loadData = async () => {
     try {

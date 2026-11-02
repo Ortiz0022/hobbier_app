@@ -633,6 +633,9 @@
     "close_room_btn": "Close room",
     "delete_room_title": "Delete room",
     "delete_room_msg": "Delete the room? This action cannot be undone.",
+    "leave_room_title": "Leave room",
+    "leave_room_msg": "The challenge is over. If you leave, the room disappears from your list and you stop seeing its chat and ranking.",
+    "leave_room_btn": "Leave and remove",
     "host": "Host",
     "hobbiers_in_room": "Hobbiers in room",
     "invite": "Invite",
@@ -646,6 +649,8 @@
     "room_admin": "Room Administration",
     "close_challenge": "Close Challenge",
     "delete_room": "Delete Room",
+    "leave_room": "Leave room",
+    "room_options": "Room options",
     "group_challenge": "Group challenge"
   },
   "messages": {
@@ -916,6 +921,14 @@
     "confirm_rejection": "Confirm rejection",
     "reject_placeholder": "Reason for rejection (optional)",
     "messages": "Messages"
+  },
+  "photo": {
+    "adjust_title": "Adjust your photo",
+    "adjust_hint": "Drag the photo to move it and pinch to zoom in. Whatever stays inside the frame is what gets saved.",
+    "adjust_error": "This photo could not be opened.",
+    "use_photo": "Done",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out"
   }
 }
 

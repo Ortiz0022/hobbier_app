@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { InlineEvidenceUploader } from './InlineEvidenceUploader';
 import { useLanguage } from '../../../context/LanguageContext';
+import { AjustarFotoModal } from '../../../components/AjustarFotoModal';
 
 export const ActivityEvidenceModal = ({
   visible,
@@ -17,6 +18,9 @@ export const ActivityEvidenceModal = ({
   onTakePhoto,
   onComplete,
   onClose,
+  fotoPorAjustar,
+  onAjusteCancelado,
+  onAjusteListo,
 }) => {
   const { theme, colors, styles } = useThemeValues(getActivityEvidenceModalTheme);
 
@@ -74,6 +78,14 @@ export const ActivityEvidenceModal = ({
             />
           </ScrollView>
         </View>
+
+        <AjustarFotoModal
+          visible={!!fotoPorAjustar}
+          uri={fotoPorAjustar}
+          aspecto={4 / 3}
+          onCancelar={onAjusteCancelado}
+          onListo={onAjusteListo}
+        />
       </View>
     </Modal>
   );

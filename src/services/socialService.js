@@ -1,5 +1,6 @@
 import { fetchQuery, queryKeys, invalidateQueries } from './queryCache';
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 export const searchUsersByUsername = async (query, currentUserId) => {
   try {
@@ -70,6 +71,7 @@ export const sendFriendRequest = async (requesterId, addresseeId) => {
 
     if (error) throw error;
     invalidateQueries('activities', 'social', 'feed', 'rooms');
+    avisar(AVISO.AMISTAD_SOLICITUD, { para: addresseeId });
     return { friendship: data, error: null };
   } catch (error) {
     console.error('Error enviando solicitud de amistad:', error.message);
@@ -137,6 +139,10 @@ export const respondToFriendRequest = async (friendshipId, status) => {
 
     if (error) throw error;
     invalidateQueries('activities', 'social', 'feed', 'rooms');
+    // Solo se avisa de lo que es buena noticia: un rechazo no se notifica.
+    if (status === 'ACCEPTED' && data?.requester_id) {
+      avisar(AVISO.AMISTAD_ACEPTADA, { para: data.requester_id });
+    }
     return { friendship: data, error: null };
   } catch (error) {
     console.error('Error al responder solicitud:', error.message);
@@ -407,6 +413,7 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
 
     if (!rpcError) {
       invalidateQueries('activities', 'social', 'feed', 'rooms');
+      avisar(AVISO.ADMIN_REPORTE, { clase: 'post', motivo: reason });
       return { report: rpcData, error: null };
     }
 
@@ -424,6 +431,7 @@ export const reportPost = async (postId, reporterId, reason, details = '') => {
 
     if (error) throw rpcError || error;
     invalidateQueries('activities', 'social', 'feed', 'rooms');
+    avisar(AVISO.ADMIN_REPORTE, { clase: 'post', motivo: reason });
     return { report: data, error: null };
   } catch (error) {
     console.error('Error al reportar publicación:', error.message);
@@ -447,6 +455,7 @@ export const reportProfile = async (reportedProfileId, reporterId, reason, detai
 
     if (error) throw error;
     invalidateQueries('activities', 'social', 'feed', 'rooms');
+    avisar(AVISO.ADMIN_REPORTE, { clase: 'perfil', motivo: reason });
     return { report: data, error: null };
   } catch (error) {
     console.error('Error al reportar perfil:', error.message);

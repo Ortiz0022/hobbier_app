@@ -29,7 +29,11 @@ const toValue = (date) =>
   `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-const sameDay = (a, b) => a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+// Devuelven booleano de verdad, no null: estos valores van a
+// accessibilityState, y Android cierra la app si ahí llega otra cosa.
+const sameDay = (a, b) =>
+  !!(a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate());
 
 /**
  * Campo de fecha con calendario. Funciona igual en web, Android e iOS.
@@ -57,8 +61,9 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
 
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('days'); // 'days' | 'years'
-  const [viewYear, setViewYear] = useState(0);
-  const [viewMonth, setViewMonth] = useState(0);
+  const baseInitial = selected || initialDate || new Date();
+  const [viewYear, setViewYear] = useState(() => (selected || initialDate || new Date()).getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => (selected || initialDate || new Date()).getMonth());
   const yearsScrollRef = useRef(null);
 
   const openCalendar = () => {
@@ -79,7 +84,7 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
   const canGoPrev = !min || new Date(viewYear, viewMonth, 0) >= min;
   const canGoNext = !max || new Date(viewYear, viewMonth + 1, 1) <= max;
 
-  const isDisabled = (date) => (min && date < min) || (max && date > max);
+  const isDisabled = (date) => !!((min && date < min) || (max && date > max));
 
   const pickDay = (day) => {
     const date = new Date(viewYear, viewMonth, day);
@@ -90,16 +95,24 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
 
   // ---- Encabezado: "abril 2000" ----
   // Solo la primera letra en mayúscula: "Enero de 2006", no "Enero De 2006".
-  const rawMonthYear = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' })
-    .format(new Date(viewYear, viewMonth, 1));
-  const monthYearLabel = rawMonthYear.charAt(0).toUpperCase() + rawMonthYear.slice(1);
+  let monthYearLabel = '';
+  try {
+    const rawMonthYear = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' })
+      .format(new Date(viewYear, viewMonth, 1));
+    monthYearLabel = rawMonthYear.charAt(0).toUpperCase() + rawMonthYear.slice(1);
+  } catch (_e) {
+    monthYearLabel = `${viewMonth + 1}/${viewYear}`;
+  }
 
   // ---- Cuadrícula de días ----
-  const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
-  // 4 de enero de 2026 es domingo: base para generar los nombres en orden.
-  const weekdays = Array.from({ length: 7 }, (_, i) =>
-    weekdayFmt.format(new Date(2026, 0, 4 + ((i + firstDay) % 7)))
-  );
+  let weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  try {
+    const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+    // 4 de enero de 2026 es domingo: base para generar los nombres en orden.
+    weekdays = Array.from({ length: 7 }, (_, i) =>
+      weekdayFmt.format(new Date(2026, 0, 4 + ((i + firstDay) % 7)))
+    );
+  } catch (_e) {}
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const leadingBlanks = (new Date(viewYear, viewMonth, 1).getDay() - firstDay + 7) % 7;
   const cells = [
@@ -137,122 +150,124 @@ export const CalendarDateField = ({ value, onChange, minDate, maxDate, initialDa
         <Feather name="chevron-down" size={16} color={theme.color("#8A908B", 'muted')} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-          <Pressable style={styles.card} onPress={() => {}}>
-            {/* Encabezado: mes anterior · "abril 2000" · mes siguiente */}
-            <View style={styles.header}>
-              {mode === 'days' ? (
+      {open && (
+        <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+          <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+            <Pressable style={styles.card} onPress={() => {}}>
+              {/* Encabezado: mes anterior · "abril 2000" · mes siguiente */}
+              <View style={styles.header}>
+                {mode === 'days' ? (
+                  <TouchableOpacity
+                    onPress={() => shiftMonth(-1)}
+                    disabled={!canGoPrev}
+                    style={styles.navBtn}
+                    accessibilityLabel={labels.prev}
+                  >
+                    <Feather name="chevron-left" size={22} color={canGoPrev ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.navBtn} />
+                )}
+
                 <TouchableOpacity
-                  onPress={() => shiftMonth(-1)}
-                  disabled={!canGoPrev}
-                  style={styles.navBtn}
-                  accessibilityLabel={labels.prev}
+                  style={styles.titleBtn}
+                  onPress={() => setMode(mode === 'days' ? 'years' : 'days')}
+                  accessibilityRole="button"
+                  accessibilityLabel={labels.pickYear}
                 >
-                  <Feather name="chevron-left" size={22} color={canGoPrev ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
+                  <Text style={styles.title}>{monthYearLabel}</Text>
+                  <Feather name={mode === 'years' ? 'chevron-up' : 'chevron-down'} size={16} color={theme.color("#0C8AA6", 'primary')} />
                 </TouchableOpacity>
+
+                {mode === 'days' ? (
+                  <TouchableOpacity
+                    onPress={() => shiftMonth(1)}
+                    disabled={!canGoNext}
+                    style={styles.navBtn}
+                    accessibilityLabel={labels.next}
+                  >
+                    <Feather name="chevron-right" size={22} color={canGoNext ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.navBtn} />
+                )}
+              </View>
+
+              {mode === 'days' ? (
+                <>
+                  <View style={styles.weekRow}>
+                    {weekdays.map((w, i) => (
+                      <Text key={i} style={styles.weekday}>{w.toUpperCase()}</Text>
+                    ))}
+                  </View>
+                  <View style={styles.grid}>
+                    {cells.map((day, i) => {
+                      if (!day) return <View key={`b${i}`} style={styles.cell} />;
+                      const date = new Date(viewYear, viewMonth, day);
+                      const disabled = isDisabled(date);
+                      const isSel = sameDay(date, selected);
+                      const isToday = sameDay(date, today);
+                      return (
+                        <TouchableOpacity
+                          key={day}
+                          style={styles.cell}
+                          onPress={() => pickDay(day)}
+                          disabled={disabled}
+                          accessibilityRole="button"
+                          accessibilityLabel={formatLongDate(date, language)}
+                          accessibilityState={{ selected: isSel, disabled }}
+                        >
+                          <View style={[styles.dayCircle, isSel && styles.daySelected, !isSel && isToday && styles.dayToday]}>
+                            <Text style={[styles.dayText, disabled && styles.dayDisabled, isSel && styles.dayTextSelected]}>
+                              {day}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
               ) : (
-                <View style={styles.navBtn} />
+                <ScrollView
+                  ref={yearsScrollRef}
+                  style={styles.yearsScroll}
+                  onLayout={scrollToViewYear}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.yearsGrid}>
+                    {years.map((y) => {
+                      const isSel = y === viewYear;
+                      return (
+                        <TouchableOpacity
+                          key={y}
+                          style={styles.yearCell}
+                          onPress={() => {
+                            // Si el mes visto queda fuera del rango en ese año, se ajusta.
+                            let m = viewMonth;
+                            if (max && y === max.getFullYear() && m > max.getMonth()) m = max.getMonth();
+                            if (min && y === min.getFullYear() && m < min.getMonth()) m = min.getMonth();
+                            setViewYear(y);
+                            setViewMonth(m);
+                            setMode('days');
+                          }}
+                        >
+                          <View style={[styles.yearPill, isSel && styles.yearPillSelected]}>
+                            <Text style={[styles.yearText, isSel && styles.yearTextSelected]}>{y}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
               )}
 
-              <TouchableOpacity
-                style={styles.titleBtn}
-                onPress={() => setMode(mode === 'days' ? 'years' : 'days')}
-                accessibilityRole="button"
-                accessibilityLabel={labels.pickYear}
-              >
-                <Text style={styles.title}>{monthYearLabel}</Text>
-                <Feather name={mode === 'years' ? 'chevron-up' : 'chevron-down'} size={16} color={theme.color("#0C8AA6", 'primary')} />
+              <TouchableOpacity style={styles.closeBtn} onPress={() => setOpen(false)}>
+                <Text style={styles.closeText}>{labels.close}</Text>
               </TouchableOpacity>
-
-              {mode === 'days' ? (
-                <TouchableOpacity
-                  onPress={() => shiftMonth(1)}
-                  disabled={!canGoNext}
-                  style={styles.navBtn}
-                  accessibilityLabel={labels.next}
-                >
-                  <Feather name="chevron-right" size={22} color={canGoNext ? theme.color('#121B22', 'text') : theme.color('#D0D5D9', 'muted')} />
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.navBtn} />
-              )}
-            </View>
-
-            {mode === 'days' ? (
-              <>
-                <View style={styles.weekRow}>
-                  {weekdays.map((w, i) => (
-                    <Text key={i} style={styles.weekday}>{w.toUpperCase()}</Text>
-                  ))}
-                </View>
-                <View style={styles.grid}>
-                  {cells.map((day, i) => {
-                    if (!day) return <View key={`b${i}`} style={styles.cell} />;
-                    const date = new Date(viewYear, viewMonth, day);
-                    const disabled = isDisabled(date);
-                    const isSel = sameDay(date, selected);
-                    const isToday = sameDay(date, today);
-                    return (
-                      <TouchableOpacity
-                        key={day}
-                        style={styles.cell}
-                        onPress={() => pickDay(day)}
-                        disabled={disabled}
-                        accessibilityRole="button"
-                        accessibilityLabel={formatLongDate(date, language)}
-                        accessibilityState={{ selected: isSel, disabled }}
-                      >
-                        <View style={[styles.dayCircle, isSel && styles.daySelected, !isSel && isToday && styles.dayToday]}>
-                          <Text style={[styles.dayText, disabled && styles.dayDisabled, isSel && styles.dayTextSelected]}>
-                            {day}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            ) : (
-              <ScrollView
-                ref={yearsScrollRef}
-                style={styles.yearsScroll}
-                onLayout={scrollToViewYear}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.yearsGrid}>
-                  {years.map((y) => {
-                    const isSel = y === viewYear;
-                    return (
-                      <TouchableOpacity
-                        key={y}
-                        style={styles.yearCell}
-                        onPress={() => {
-                          // Si el mes visto queda fuera del rango en ese año, se ajusta.
-                          let m = viewMonth;
-                          if (max && y === max.getFullYear() && m > max.getMonth()) m = max.getMonth();
-                          if (min && y === min.getFullYear() && m < min.getMonth()) m = min.getMonth();
-                          setViewYear(y);
-                          setViewMonth(m);
-                          setMode('days');
-                        }}
-                      >
-                        <View style={[styles.yearPill, isSel && styles.yearPillSelected]}>
-                          <Text style={[styles.yearText, isSel && styles.yearTextSelected]}>{y}</Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            )}
-
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setOpen(false)}>
-              <Text style={styles.closeText}>{labels.close}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
     </>
   );
 };

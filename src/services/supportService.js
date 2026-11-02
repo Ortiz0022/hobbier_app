@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 const uniqueChannelName = (base) => `${base}_${Math.random().toString(36).slice(2, 10)}`;
 
@@ -155,6 +156,14 @@ export const supportService = {
       .single();
 
     if (error) throw error;
+
+    // Hacia el panel si escribe la persona sancionada, y hacia ella si
+    // responde un administrador.
+    avisar(
+      senderRole === 'ADMIN' ? AVISO.SOPORTE_RESPUESTA : AVISO.ADMIN_SOPORTE,
+      { ticketId, texto: cleanContent }
+    );
+
     return data;
   },
 
@@ -215,7 +224,10 @@ export const supportService = {
         p_ticket_id: ticketId,
       });
 
-      if (!error) return { success: true };
+      if (!error) {
+        avisar(AVISO.CUENTA_REACTIVADA, { para: userId });
+        return { success: true };
+      }
     } catch (e) {
       console.warn('RPC admin_reactivate_account no disponible, ejecutando actualización directa:', e);
     }
@@ -303,6 +315,7 @@ export const supportService = {
         });
       }
 
+      avisar(AVISO.CUENTA_SANCIONADA, { para: userId, motivo: reason });
       return { success: true, error: null };
     } catch (err) {
       console.error('Error al actualizar ticket tras sanción:', err);

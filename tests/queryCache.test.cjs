@@ -165,6 +165,7 @@ function services() {
       if (name === './queryCache') return cache;
       if (name === '../config/supabase') return { supabase: backend };
       if (name === 'react-native') return { Platform: { OS: 'web' } };
+      if (name === './pushService') return { avisar: () => {}, AVISO: new Proxy({}, { get: (_t, kind) => String(kind) }) };
       return {};
     } });
     return out;

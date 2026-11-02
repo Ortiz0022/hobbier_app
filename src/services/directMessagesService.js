@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { avisar, AVISO } from './pushService';
 
 // Misma forma que un mensaje de sala, para que RoomMessageBubble lo pinte igual.
 const MESSAGE_SELECT = `
@@ -124,6 +125,8 @@ export const directMessagesService = {
 
     if (error) throw error;
 
+    // El servidor averigua a quién va: es el otro de la conversación.
+    avisar(AVISO.MENSAJE_DIRECTO, { conversacionId: conversationId, texto: trimmedContent });
     return data;
   },
 
