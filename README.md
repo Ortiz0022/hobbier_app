@@ -6,7 +6,7 @@
 
 Hobbier es una aplicación móvil diseñada para combatir el sedentarismo y el aburrimiento, especialmente entre jóvenes y adultos con limitaciones de movilidad. Su objetivo principal es recomendar actividades personalizadas basadas en las capacidades físicas del usuario, sus intereses y el contexto circundante (clima, ubicación, objetos disponibles), facilitando un estilo de vida más activo y conectado.
 
-**Tecnologías:** Expo SDK 57 · React Native 0.86 · React 19 · Supabase (Postgres, Auth, Storage, Realtime y Edge Functions) · Groq para la parte de IA. El código es JavaScript, con algunos archivos TypeScript sueltos (`designTokens.ts`, `SelectableCard.tsx`, `scaledText.tsx`).
+**Tecnologías:** Expo SDK 58 · React Native 0.88 · React 19.3 · Supabase (Postgres, Auth, Storage, Realtime y Edge Functions) · Groq para la parte de IA. El código es JavaScript, con algunos archivos TypeScript sueltos (`designTokens.ts`, `SelectableCard.tsx`, `scaledText.tsx`).
 
 ## 🔄 Evolución del proyecto (hitos)
 
@@ -20,6 +20,7 @@ El desarrollo siguió una metodología iterativa, priorizando la experiencia del
 | **4** | **Integración con IA**                    | **En producción.** Tres Edge Functions con **Groq**: elegir o inventar la actividad recomendada, y moderar el contenido que escriben los usuarios (actividades y mensajes).                                  |
 | **5** | **Comunidad**                             | Feed con reacciones, amistades, mensajes directos, salas grupales con retos y evidencias, y anuncios patrocinados segmentados por gustos y ciudad.                                                           |
 | **6** | **Moderación y administración**           | Panel de administración con seis secciones, sanciones con motivo obligatorio, chat de apelación con soporte y tema claro/oscuro.                                                                             |
+| **7** | **Avisos y pulido para el teléfono**      | Notificaciones push para todo lo que la app ya avisaba dentro, más las del panel. Encuadre de fotos propio, salida de salas, botón de retroceso de Android y fundido al cambiar de tema.                      |
 
 ## 🎨 Paleta de colores
 
@@ -76,18 +77,23 @@ Un segundo juego, anterior, que todavía usan el onboarding, el selector de cat�
 
 **Regla para el equipo:** nada de hex sueltos en una pantalla nueva. Si falta un color, se añade al tema; si hace falta que cambie en oscuro, se envuelve con `theme.color(...)`.
 
+### Al cambiar de tema
+
+Cambiar de claro a oscuro repinta la app entera de golpe, y el salto se ve como un fogonazo. `ThemeProvider` tapa ese momento: un velo del color del fondo cubre la pantalla, pasa del color viejo al nuevo y se retira en 320 ms (`DURACION_FUNDIDO`). No se come ningún toque, no lo leen los lectores de pantalla y al abrir la app no se anima — el tema guardado aparece ya puesto.
+
 ## 📋 Características principales
 
 1. **Autenticación**: registro e inicio de sesión con correo y contraseña (Supabase Auth). Los errores se traducen al español (`describeAuthError`) y se muestran dentro del formulario, sin recargar la pantalla ni borrar lo escrito. El registro valida que el usuario esté libre y pide la contraseña dos veces.
 2. **Preferencias**: gustos, objetivos y recursos con buscador contra Postgres, más la fecha de nacimiento. Una cuenta nueva pasa por el asistente **antes** de entrar a la app.
 3. **Recomendaciones**: "Sorpréndeme" resuelve en el servidor (ver más abajo), con sistema de puntos por actividad (`points_awarded`).
-4. **Actividades y evidencias**: aceptar un reto, completarlo con una foto y acumular puntos. Se puede repetir una actividad: el historial guarda cada vuelta.
+4. **Actividades y evidencias**: aceptar un reto, completarlo con una foto y acumular puntos. La foto se encuadra dentro de la app antes de subirla (ver más abajo). Se puede repetir una actividad: el historial guarda cada vuelta.
 5. **Feed y comunidad**: publicaciones con reacciones, amistades con solicitudes, perfiles visibles solo entre amigos y mensajes directos con respuesta a un mensaje concreto.
-6. **Salas grupales**: retos compartidos con invitaciones, chat propio, evidencias y ranking. Las invitaciones a salas ya terminadas se muestran como aviso, no como solicitud.
+6. **Salas grupales**: retos compartidos con invitaciones, chat propio, evidencias y ranking. Las invitaciones a salas ya terminadas se muestran como aviso, no como solicitud. Quien no es anfitrión puede salirse de una sala y quitársela de la lista; el anfitrión la elimina para todos.
 7. **Anuncios patrocinados**: tarjetas en el feed segmentadas por gustos y ciudad, con solicitudes de anuncio gestionadas desde el panel.
 8. **Panel de administración**: barra inferior propia con seis secciones — Resumen, Soporte, Usuarios, Posts, Catálogo y Anuncios — paginación en todas las listas y salida a la app en cada pantalla.
 9. **Moderación**: reportes de publicaciones y de perfiles, sanciones con motivo obligatorio y chat de apelación.
-10. **Interfaz**: tema claro y oscuro, español e inglés (`src/i18n/locales/`), y tope de escalado de texto para accesibilidad.
+10. **Notificaciones push**: trece tipos de aviso, redactados en el servidor (ver más abajo).
+11. **Interfaz**: tema claro y oscuro con fundido al cambiar, español e inglés (`src/i18n/locales/`), tope de escalado de texto para accesibilidad y botón de retroceso de Android en todas las pantallas.
 
 ## 🎯 Cómo se eligen las recomendaciones
 
@@ -126,7 +132,7 @@ Las completadas no se excluyen del todo **a propósito**: repetir una actividad 
 
 ## 🤖 Qué hace la IA (Groq)
 
-Tres Edge Functions en `supabase/functions/`, todas contra la API de Groq con tiempo límite de 8 segundos:
+Tres de las cuatro Edge Functions de `supabase/functions/` hablan con la API de Groq, todas con tiempo límite de 8 segundos (la cuarta, `send-push`, es la de los avisos):
 
 | Función | Para qué |
 | --- | --- |
@@ -194,6 +200,7 @@ Los despliegues de Supabase de este proyecto son **manuales**: no hay CLI enlaza
 | `suspension_cuentas.sql` | Columnas y funciones de la suspensión de cuentas |
 | `sancion_con_motivo.sql` | Motivo obligatorio al sancionar y su entrega en el chat de apelación |
 | `invitaciones_salas_estado.sql` | Que la RPC de invitaciones diga el estado de la sala (opcional) |
+| `salir_de_sala.sql` | `leave_room`: quitarse de una sala sin ser el anfitrión |
 | `rpc_preferencias.sql` | Guardado transaccional de gustos, objetivos y recursos |
 | `unificar_regla_gusto_categoria.sql` | Normaliza nombres para casar gusto y categoría |
 | `import_gustos_wikidata.sql`, `import_categorias_wikidata.sql`, `import_metas.sql` | Catálogos |
@@ -221,6 +228,28 @@ Las pantallas con lista (feed, comunidad, perfil, inicio, misiones, mensajes y e
 
 - El `contentContainerStyle` de cada una lleva `flexGrow: 1`. En Android, un `ScrollView` cuyo contenido no llega a desbordar no se deja arrastrar, y el gesto no se dispara nunca.
 - En web el `RefreshControl` de `react-native-web` descarta `onRefresh` y no hace nada, así que esas pantallas importan el de `src/components/refrescoArrastrando.js`, que implementa el gesto con dedo y con ratón. En iOS y Android reexporta el de React Native sin tocar nada.
+
+## 📸 Fotos: el encuadre se hace dentro de la app
+
+La foto de perfil y la evidencia de una actividad pasan por `AjustarFotoModal` antes de subirse. El editor ocupa la pantalla entera en negro, como el de cualquier app de fotos: la foto se ve completa, el encuadre va marcado con un borde claro y **el resto queda apagado alrededor**, así que se ve qué se está dejando fuera mientras se arrastra o se pellizca. El hueco es cuadrado para la evidencia (4:3) y **redondo de verdad** en el perfil, que es como se verá después.
+
+El apagado de alrededor no son cuatro rectángulos: es el borde interior de un marco gigantesco (`GROSOR_SOMBRA`), que es la forma de conseguir un hueco redondo con una sola vista.
+
+En esos dos sitios el recorte del sistema (`allowsEditing`) se queda apagado a propósito: decide por su cuenta y no se comporta igual en Android, iOS y web. En salas, anuncios y el panel sigue usándose, porque ahí basta.
+
+El recorte lo hace `expo-image-manipulator` sobre los píxeles de la foto original, así que no se pierde calidad por el camino; si la foto viene enorme se encoge **después** de recortar, para que la subida no pese de más. Si el recorte fallara, se sube la foto tal cual se eligió antes que dejar a alguien sin poder completar su actividad.
+
+> Es un módulo nativo: en una build vieja no aparece hasta recompilar.
+
+## 🔘 Orden de los botones
+
+En una fila de acciones va **primero lo que la persona vino a hacer** y después la salida: `Guardar` / `Cancelar`, `Siguiente` / `Atrás`, `Listo` / `Cancelar`. Es la regla en toda la app: en una fila, el botón que se escribe antes es el que se ve a la izquierda.
+
+## ↩️ Botón de retroceso en Android
+
+El retroceso físico o gestual no debe cerrar la app desde cualquier pantalla. Cada pantalla con estado propio registra su `BackHandler` —cerrar lo que esté abierto, volver a la pestaña anterior, salir del subnivel— y `App.js` guarda el historial de pestañas para el resto. Solo se sale de la app desde el inicio y con el historial vacío.
+
+Los modales no necesitan nada: todos pasan su `onRequestClose`, que en Android es lo que recoge ese botón mientras hay un modal abierto.
 
 ## ♿ Accesibilidad: tamaño de letra del sistema
 
@@ -278,7 +307,7 @@ Recorre login, registro, preferencias, el panel de administración y el modal de
 ```
 App.js                  Navegación: pestañas de usuario y, en modo admin, las del panel
 src/
-  components/           Piezas compartidas (scaledText, modales, refrescoArrastrando)
+  components/           Piezas compartidas (scaledText, AjustarFotoModal, refrescoArrastrando)
   context/              Auth, idioma, tema, notificaciones y presencia
   features/
     admin/              Panel: secciones, modales y estilos propios
@@ -295,7 +324,7 @@ src/
 supabase/
   schema.sql            Esquema base, políticas RLS y funciones
   migrations/           Cambios posteriores, por fecha
-  functions/            Edge Functions (Groq)
+  functions/            Edge Functions: tres de Groq y send-push
 ```
 
 ## ▶️ Cómo ejecutarlo
@@ -314,5 +343,7 @@ EXPO_PUBLIC_APP_URL=...
 ```
 
 `GROQ_API_KEY` no va aquí: es un secreto de las Edge Functions, en Supabase.
+
+Para las pruebas rápidas basta con Expo Go, pero **los avisos push y el encuadre de fotos son módulos nativos**: solo aparecen en una build propia (`npx expo run:android` o EAS). Si acabas de añadir uno, hay que recompilar; no llega con reiniciar el bundler.
 
 > Si al arrancar aparece `PluginError: Failed to resolve plugin for module "expo-location"`, es que falta `npm install` después de traer cambios del repositorio.
