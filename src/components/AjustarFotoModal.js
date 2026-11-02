@@ -7,6 +7,8 @@ import {
   Image,
   Modal,
   PanResponder,
+  Platform,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -22,6 +24,14 @@ const ESCALA_MAXIMA = 4;
 const PASO_ZOOM = 0.25;
 // Más allá de esto no se gana nitidez y las subidas pesan de más.
 const LADO_MAXIMO = 1440;
+// El apagado de alrededor es el borde de un marco gigante: con uno así de
+// ancho, su esquina redondeada tapa la pantalla entera por grande que sea.
+const GROSOR_SOMBRA = 1200;
+const NEGRO = '#000000';
+const BLANCO = '#FFFFFF';
+const TENUE = 'rgba(255, 255, 255, 0.66)';
+const SOMBRA = 'rgba(0, 0, 0, 0.62)';
+const BORDE = 'rgba(255, 255, 255, 0.92)';
 
 const acotar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), maximo);
 
@@ -59,9 +69,11 @@ export const AjustarFotoModal = ({
   const posicion = useRef({ x: 0, y: 0 });
   const gesto = useRef({ x: 0, y: 0, distancia: 0, escala: 1 });
 
+  // El encuadre manda en la pantalla, como en cualquier editor de fotos: se
+  // come el ancho que haya y solo cede si no cabe de alto.
   const marco = useMemo(() => {
-    const ancho = Math.min(anchoVentana - spacing.xxl * 2, 340);
-    const alto = Math.min(ancho / aspecto, altoVentana * 0.5);
+    const ancho = Math.min(anchoVentana - spacing.xl * 2, 480);
+    const alto = Math.min(ancho / aspecto, altoVentana * 0.52);
     return { ancho: alto * aspecto, alto };
   }, [anchoVentana, altoVentana, aspecto]);
 
@@ -198,31 +210,36 @@ export const AjustarFotoModal = ({
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onCancelar}
     >
-      <View style={styles.overlay}>
-        <View style={styles.hoja}>
-          <Text style={styles.titulo}>{t('photo.adjust_title') || 'Ajusta tu foto'}</Text>
-          <Text style={styles.ayuda}>
-            {t('photo.adjust_hint') || 'Arrastra la foto y usa los botones para acercarla. Se guardará lo que se vea dentro del marco.'}
-          </Text>
-
-          <View
-            style={[
-              styles.marco,
-              { width: marco.ancho, height: marco.alto, borderRadius: circular ? marco.alto / 2 : radii.card },
-            ]}
-            {...pan.panHandlers}
+      <StatusBar barStyle="light-content" backgroundColor={NEGRO} />
+      <View style={styles.editor}>
+        <View style={styles.barraSuperior}>
+          <TouchableOpacity
+            style={styles.cerrar}
+            onPress={onCancelar}
+            disabled={procesando}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close') || 'Cerrar'}
           >
-            {medidas && !error ? (
+            <Feather name="x" size={24} color={BLANCO} />
+          </TouchableOpacity>
+          <Text style={styles.titulo}>{t('photo.adjust_title') || 'Ajusta tu foto'}</Text>
+          <View style={styles.cerrar} />
+        </View>
+
+        <View style={styles.lienzo} {...pan.panHandlers}>
+          {medidas && !error ? (
+            <>
               <Animated.Image
                 source={{ uri }}
                 style={{
                   width: mostrada.ancho,
                   height: mostrada.alto,
+                  flexShrink: 0,
                   transform: [
                     { translateX: desplazamiento.x },
                     { translateY: desplazamiento.y },
@@ -230,18 +247,47 @@ export const AjustarFotoModal = ({
                 }}
                 resizeMode="cover"
               />
-            ) : (
-              <View style={styles.cargando}>
-                {error ? (
-                  <Text style={styles.errorTexto}>
-                    {t('photo.adjust_error') || 'No se pudo abrir esta foto.'}
-                  </Text>
-                ) : (
-                  <ActivityIndicator color={colors.primary} />
-                )}
+
+              {/* El resto de la foto se sigue viendo, apagado, para saber qué
+                  queda fuera. El hueco es el borde interior de un marco enorme:
+                  así sale redondo de verdad cuando toca. */}
+              <View pointerEvents="none" style={styles.capa}>
+                <View
+                  style={{
+                    width: marco.ancho + GROSOR_SOMBRA * 2,
+                    height: marco.alto + GROSOR_SOMBRA * 2,
+                    borderWidth: GROSOR_SOMBRA,
+                    borderColor: SOMBRA,
+                    borderRadius: GROSOR_SOMBRA + (circular ? marco.alto / 2 : radii.card),
+                  }}
+                />
               </View>
-            )}
-          </View>
+
+              <View pointerEvents="none" style={styles.capa}>
+                <View
+                  style={{
+                    width: marco.ancho,
+                    height: marco.alto,
+                    borderWidth: 1.5,
+                    borderColor: BORDE,
+                    borderRadius: circular ? marco.alto / 2 : radii.card,
+                  }}
+                />
+              </View>
+            </>
+          ) : error ? (
+            <Text style={styles.errorTexto}>
+              {t('photo.adjust_error') || 'No se pudo abrir esta foto.'}
+            </Text>
+          ) : (
+            <ActivityIndicator color={BLANCO} />
+          )}
+        </View>
+
+        <View style={styles.barraInferior}>
+          <Text style={styles.ayuda}>
+            {t('photo.adjust_hint') || 'Arrastra la foto para moverla y pellizca para acercarla.'}
+          </Text>
 
           <View style={styles.zoomFila}>
             <TouchableOpacity
@@ -251,13 +297,13 @@ export const AjustarFotoModal = ({
               accessibilityRole="button"
               accessibilityLabel={t('photo.zoom_out') || 'Alejar'}
             >
-              <Feather name="zoom-out" size={18} color={colors.text} />
+              <Feather name="zoom-out" size={18} color={BLANCO} />
             </TouchableOpacity>
             <View style={styles.zoomBarra}>
               <View
                 style={[
                   styles.zoomRelleno,
-                  { width: `${((escala - 1) / (ESCALA_MAXIMA - 1)) * 100}%` },
+                  { width: ((escala - 1) / (ESCALA_MAXIMA - 1)) * 100 + '%' },
                 ]}
               />
             </View>
@@ -268,11 +314,24 @@ export const AjustarFotoModal = ({
               accessibilityRole="button"
               accessibilityLabel={t('photo.zoom_in') || 'Acercar'}
             >
-              <Feather name="zoom-in" size={18} color={colors.text} />
+              <Feather name="zoom-in" size={18} color={BLANCO} />
             </TouchableOpacity>
           </View>
 
+          {/* Lo que se viene a hacer aquí va primero; irse, después. */}
           <View style={styles.acciones}>
+            <TouchableOpacity
+              style={[styles.listo, (procesando || !medidas) && styles.listoApagado]}
+              onPress={confirmar}
+              disabled={procesando || !medidas}
+              accessibilityRole="button"
+            >
+              {procesando ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <Text style={styles.listoTexto}>{t('photo.use_photo') || 'Listo'}</Text>
+              )}
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.cancelar}
               onPress={onCancelar}
@@ -281,18 +340,6 @@ export const AjustarFotoModal = ({
             >
               <Text style={styles.cancelarTexto}>{t('common.cancel') || 'Cancelar'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.usar, (procesando || !medidas) && styles.usarApagado]}
-              onPress={confirmar}
-              disabled={procesando || !medidas}
-              accessibilityRole="button"
-            >
-              {procesando ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <Text style={styles.usarTexto}>{t('photo.use_photo') || 'Usar esta foto'}</Text>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -300,54 +347,61 @@ export const AjustarFotoModal = ({
   );
 };
 
-// Los valores claros originales se conservan; solo se resuelven colores según el tema.
+// El editor va en negro a propósito, como el de cualquier app de fotos: así la
+// foto manda y se ve bien qué queda dentro del encuadre. Es la única pantalla
+// que no sigue el tema; de él solo toma el color del botón principal.
 export const getAjustarFotoModalTheme = createThemeStyles((theme) => {
   const { colors } = theme;
   const styles = StyleSheet.create({
-    overlay: {
+    editor: {
       flex: 1,
-      backgroundColor: theme.color('rgba(5, 31, 37, 0.58)', 'scrim'),
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: spacing.lg,
+      backgroundColor: NEGRO,
     },
-    hoja: {
-      width: '100%',
-      maxWidth: 420,
+    barraSuperior: {
+      flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderRadius: radii.card,
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.xl,
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + spacing.md : spacing.xl,
+      paddingBottom: spacing.md,
+    },
+    cerrar: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     titulo: {
-      color: colors.text,
-      fontSize: 19,
+      color: BLANCO,
+      fontSize: 16,
       fontWeight: '600',
-      letterSpacing: -0.3,
     },
-    ayuda: {
-      color: colors.textMuted,
-      fontSize: 13,
-      lineHeight: 19,
-      textAlign: 'center',
-      marginTop: spacing.xs,
-      marginBottom: spacing.lg,
-    },
-    marco: {
+    lienzo: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
       overflow: 'hidden',
-      backgroundColor: colors.surfaceMuted,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
-    cargando: {
+    capa: {
+      ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: spacing.lg,
     },
     errorTexto: {
-      color: colors.textMuted,
+      color: BLANCO,
+      fontSize: 14,
+      textAlign: 'center',
+      paddingHorizontal: spacing.xl,
+    },
+    barraInferior: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxl,
+    },
+    ayuda: {
+      color: TENUE,
       fontSize: 13,
+      lineHeight: 19,
       textAlign: 'center',
     },
     zoomFila: {
@@ -355,7 +409,6 @@ export const getAjustarFotoModalTheme = createThemeStyles((theme) => {
       alignItems: 'center',
       gap: spacing.md,
       marginTop: spacing.lg,
-      alignSelf: 'stretch',
     },
     zoomBoton: {
       width: 38,
@@ -363,16 +416,16 @@ export const getAjustarFotoModalTheme = createThemeStyles((theme) => {
       borderRadius: 19,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surfaceMuted,
+      backgroundColor: 'rgba(255, 255, 255, 0.14)',
     },
     zoomBotonApagado: {
-      opacity: 0.45,
+      opacity: 0.4,
     },
     zoomBarra: {
       flex: 1,
       height: 4,
       borderRadius: 2,
-      backgroundColor: colors.surfaceMuted,
+      backgroundColor: 'rgba(255, 255, 255, 0.18)',
       overflow: 'hidden',
     },
     zoomRelleno: {
@@ -385,35 +438,34 @@ export const getAjustarFotoModalTheme = createThemeStyles((theme) => {
       alignItems: 'center',
       gap: spacing.md,
       marginTop: spacing.xl,
-      alignSelf: 'stretch',
     },
-    cancelar: {
-      flex: 1,
-      height: 46,
-      borderRadius: radii.round,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surfaceMuted,
-    },
-    cancelarTexto: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    usar: {
+    listo: {
       flex: 1.4,
-      height: 46,
+      height: 48,
       borderRadius: radii.round,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.primary,
     },
-    usarApagado: {
-      opacity: 0.6,
+    listoApagado: {
+      opacity: 0.5,
     },
-    usarTexto: {
+    listoTexto: {
       color: colors.onPrimary,
-      fontSize: 14,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    cancelar: {
+      flex: 1,
+      height: 48,
+      borderRadius: radii.round,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    },
+    cancelarTexto: {
+      color: BLANCO,
+      fontSize: 15,
       fontWeight: '600',
     },
   });

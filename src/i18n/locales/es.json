@@ -924,9 +924,9 @@
   },
   "photo": {
     "adjust_title": "Ajusta tu foto",
-    "adjust_hint": "Arrastra la foto y usa los botones para acercarla. Se guardará lo que se vea dentro del marco.",
+    "adjust_hint": "Arrastra la foto para moverla y pellizca para acercarla. Se guardará lo que quede dentro del marco.",
     "adjust_error": "No se pudo abrir esta foto.",
-    "use_photo": "Usar esta foto",
+    "use_photo": "Listo",
     "zoom_in": "Acercar",
     "zoom_out": "Alejar"
   }
