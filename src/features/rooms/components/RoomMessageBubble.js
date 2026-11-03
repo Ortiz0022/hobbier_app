@@ -313,7 +313,10 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    lineHeight: 20,
+    // Sin lineHeight a propósito: en Android, el LineHeightSpan que aplica RN
+    // cuando se fija lineHeight hace que los emojis del texto no se dibujen
+    // (bug de larga data de react-native en Android). La cita de respuesta y la
+    // notificación push, que no lo llevan, siempre los enseñaron bien.
   },
   messageTextMe: {
     color: theme.color(colors.onPrimary, 'text'),
