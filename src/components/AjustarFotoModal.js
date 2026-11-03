@@ -12,7 +12,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Feather from '@expo/vector-icons/Feather';
@@ -24,9 +23,6 @@ const ESCALA_MAXIMA = 4;
 const PASO_ZOOM = 0.25;
 // Más allá de esto no se gana nitidez y las subidas pesan de más.
 const LADO_MAXIMO = 1440;
-// El apagado de alrededor es el borde de un marco gigante: con uno así de
-// ancho, su esquina redondeada tapa la pantalla entera por grande que sea.
-const GROSOR_SOMBRA = 1200;
 const NEGRO = '#000000';
 const BLANCO = '#FFFFFF';
 const TENUE = 'rgba(255, 255, 255, 0.66)';
@@ -56,7 +52,18 @@ export const AjustarFotoModal = ({
 }) => {
   const { colors, styles } = useThemeValues(getAjustarFotoModalTheme);
   const { t } = useLanguage();
-  const { width: anchoVentana, height: altoVentana } = useWindowDimensions();
+  // El tamaño del lienzo se MIDE, no se deduce de la ventana.
+  //
+  // Antes esto salía de useWindowDimensions(), y dentro de este Modal en
+  // Android llegaba sin valores útiles: el marco salía de cero (o negativo), y
+  // con él la foto y el recuadro. El editor se veía completamente negro —ni
+  // foto ni marco— aunque la foto se hubiera leído bien, y al recortar salían
+  // medidas imposibles, así que se subía la original sin encuadrar.
+  //
+  // onLayout informa de lo que el sistema ha maquetado de verdad, que es
+  // justo el hueco en el que hay que dibujar. Funciona igual dentro de un
+  // modal, en pantalla partida y al girar.
+  const [lienzo, setLienzo] = useState({ ancho: 0, alto: 0 });
 
   const [medidas, setMedidas] = useState(null);
   const [escala, setEscala] = useState(1);
@@ -72,10 +79,24 @@ export const AjustarFotoModal = ({
   // El encuadre manda en la pantalla, como en cualquier editor de fotos: se
   // come el ancho que haya y solo cede si no cabe de alto.
   const marco = useMemo(() => {
-    const ancho = Math.min(anchoVentana - spacing.xl * 2, 480);
-    const alto = Math.min(ancho / aspecto, altoVentana * 0.52);
+    if (!lienzo.ancho || !lienzo.alto) return { ancho: 0, alto: 0 };
+    const ancho = Math.min(lienzo.ancho - spacing.xl * 2, 480);
+    const alto = Math.min(ancho / aspecto, lienzo.alto - spacing.xl * 2);
     return { ancho: alto * aspecto, alto };
-  }, [anchoVentana, altoVentana, aspecto]);
+  }, [lienzo.ancho, lienzo.alto, aspecto]);
+
+  // El apagado de alrededor es el borde de un marco con el hueco en el medio.
+  // Se calcula justo lo que hace falta para llegar a los bordes del lienzo, en
+  // vez de un número gigante fijo: así la vista nunca mide miles de píxeles,
+  // que es tamaño de sobra para que Android deje de dibujarla.
+  const grosorSombra = Math.max(
+    0,
+    Math.ceil(Math.max((lienzo.ancho - marco.ancho) / 2, (lienzo.alto - marco.alto) / 2)) + 2
+  );
+
+  // Hasta que no se sabe el tamaño del hueco no se dibuja: pintar con medidas
+  // de cero es exactamente el fallo que se está arreglando.
+  const listoParaPintar = !!medidas && !error && marco.alto > 0;
 
   // Tamaño de la foto cuando apenas cubre el marco: el punto de partida.
   const base = medidas ? Math.max(marco.ancho / medidas.ancho, marco.alto / medidas.alto) : 1;
@@ -115,7 +136,7 @@ export const AjustarFotoModal = ({
   useEffect(() => {
     colocar(posicion.current.x, posicion.current.y);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [escala, medidas]);
+  }, [escala, medidas, marco.ancho, marco.alto]);
 
   const distanciaEntre = (toques) => {
     const [a, b] = toques;
@@ -158,7 +179,9 @@ export const AjustarFotoModal = ({
   const cambiarZoom = (paso) => setEscala((previa) => acotar(previa + paso, 1, ESCALA_MAXIMA));
 
   const confirmar = async () => {
-    if (!medidas || procesando) return;
+    // Sin marco medido no se recorta: saldrían anchos de cero o negativos, el
+    // recorte fallaría y se subiría la foto sin encuadrar.
+    if (!listoParaPintar || procesando) return;
     setProcesando(true);
     try {
       // De píxeles de pantalla a píxeles de la foto original.
@@ -231,8 +254,19 @@ export const AjustarFotoModal = ({
           <View style={styles.cerrar} />
         </View>
 
-        <View style={styles.lienzo} {...pan.panHandlers}>
-          {medidas && !error ? (
+        <View
+          style={styles.lienzo}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setLienzo((previo) =>
+              previo.ancho === width && previo.alto === height
+                ? previo
+                : { ancho: width, alto: height }
+            );
+          }}
+          {...pan.panHandlers}
+        >
+          {listoParaPintar ? (
             <>
               <Animated.Image
                 source={{ uri }}
@@ -254,11 +288,11 @@ export const AjustarFotoModal = ({
               <View pointerEvents="none" style={styles.capa}>
                 <View
                   style={{
-                    width: marco.ancho + GROSOR_SOMBRA * 2,
-                    height: marco.alto + GROSOR_SOMBRA * 2,
-                    borderWidth: GROSOR_SOMBRA,
+                    width: marco.ancho + grosorSombra * 2,
+                    height: marco.alto + grosorSombra * 2,
+                    borderWidth: grosorSombra,
                     borderColor: SOMBRA,
-                    borderRadius: GROSOR_SOMBRA + (circular ? marco.alto / 2 : radii.card),
+                    borderRadius: grosorSombra + (circular ? marco.alto / 2 : radii.card),
                   }}
                 />
               </View>
@@ -321,9 +355,9 @@ export const AjustarFotoModal = ({
           {/* Lo que se viene a hacer aquí va primero; irse, después. */}
           <View style={styles.acciones}>
             <TouchableOpacity
-              style={[styles.listo, (procesando || !medidas) && styles.listoApagado]}
+              style={[styles.listo, (procesando || !listoParaPintar) && styles.listoApagado]}
               onPress={confirmar}
-              disabled={procesando || !medidas}
+              disabled={procesando || !listoParaPintar}
               accessibilityRole="button"
             >
               {procesando ? (
