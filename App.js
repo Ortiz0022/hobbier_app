@@ -38,10 +38,21 @@ import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
 import { pushService } from './src/services/pushService';
+// Se importa con otro nombre a propósito: `SplashScreen` ya es la bienvenida
+// de la propia app (la de los iconos), y esta es la del sistema operativo, la
+// que se ve antes de que exista una sola vista de React.
+import * as ArranqueNativo from 'expo-splash-screen';
 
 // Con la app abierta, un aviso que llega se enseña igual; sin esto no se ve
 // nada y parece que no llegó.
 pushService.configurarAvisosEnPrimerPlano();
+
+// El arranque del sistema se queda puesto hasta que la app tenga algo que
+// enseñar. Sin esto se descubre en cuanto React monta la primera vista, que
+// todavía es el "cargando" en blanco de las fuentes: justo el parpadeo blanco
+// que no queremos. Se esconde a mano más abajo, cuando ya se sabe si hay
+// sesión.
+ArranqueNativo.preventAutoHideAsync().catch(() => {});
 
 const MainApp = () => {
   const { theme, styles } = useThemeValues(getAppTheme);
@@ -126,6 +137,13 @@ const MainApp = () => {
     if (!user?.id) return;
     pushService.registrarDispositivo();
   }, [user?.id]);
+
+  // Se destapa la app cuando ya se sabe si hay sesión. Así lo primero que se
+  // ve tras el logo es una pantalla de verdad (la bienvenida o el inicio) y no
+  // un rueda girando sobre blanco.
+  useEffect(() => {
+    if (!loading) ArranqueNativo.hideAsync().catch(() => {});
+  }, [loading]);
   const { notify } = useNotify();
 
   // Escuchar notificaciones de soporte para administradores en tiempo real
@@ -394,20 +412,28 @@ const MainApp = () => {
 };
 
 function AppContent() {
-  const { theme, styles } = useThemeValues(getAppTheme);
-
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, errorDeFuentes] = useFonts({
     'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
     Poppins_700Bold,
     Poppins_800ExtraBold,
   });
 
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.color('#ffffff', 'background'), justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
-      </View>
-    );
+  // Red de seguridad: si algo se atasca al arrancar, el logo no se puede
+  // quedar puesto para siempre. Pasados unos segundos se destapa pase lo que
+  // pase, aunque sea para enseñar el "cargando".
+  useEffect(() => {
+    const reloj = setTimeout(() => {
+      ArranqueNativo.hideAsync().catch(() => {});
+    }, 8000);
+    return () => clearTimeout(reloj);
+  }, []);
+
+  // Mientras cargan las fuentes no se pinta nada: encima sigue el logo del
+  // sistema, y poner aquí un fondo blanco con una rueda sería cambiar el logo
+  // por una pantalla en blanco durante medio segundo. Si las fuentes fallan se
+  // sigue igualmente, con las del sistema.
+  if (!fontsLoaded && !errorDeFuentes) {
+    return null;
   }
 
   return (

@@ -9,3 +9,12 @@ entrypoint = "./functions/moderate-message/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/moderate-message/*.html" ]
+
+# Las push salen solo de aquí. verify_jwt se queda en true: la función necesita
+# saber QUIÉN pide el envío (comprueba el perfil para los avisos que solo puede
+# mandar un administrador), así que una llamada sin sesión no tiene nada que
+# hacer. Dentro se vuelve a comprobar con auth.getUser().
+[functions.send-push]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-push/index.ts"
