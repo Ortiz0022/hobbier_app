@@ -34,7 +34,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:cache": "node --test tests/queryCache.test.cjs tests/navigationLoading.test.cjs"
+    "test:cache": "node --test tests/queryCache.test.cjs tests/navigationLoading.test.cjs",
+    "test": "node --test tests/queryCache.test.cjs tests/navigationLoading.test.cjs tests/hookOrder.test.cjs"
   },
   "private": true,
   "devDependencies": {

@@ -52,6 +52,39 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const [adminModalVisible, setAdminModalVisible] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
+  // Retroceso físico / gestual en detalle de sala.
+  //
+  // Va AQUÍ, antes de los `return` de cargando y de error, y no junto al resto
+  // de la pantalla: el primer render siempre sale por el de cargando (la sala
+  // llega de la red), así que un hook colocado más abajo no se llamaría en ese
+  // render y sí en el siguiente. React exige los mismos hooks en el mismo
+  // orden en cada render, y cuando no se cumple lanza "Rendered more hooks
+  // than during the previous render". En el APK eso no es una pantalla roja:
+  // la app se cierra entera al entrar a la sala.
+  React.useEffect(() => {
+    const onBackPress = () => {
+      if (adminModalVisible) {
+        setAdminModalVisible(false);
+        return true;
+      }
+      if (inviteModalVisible) {
+        setInviteModalVisible(false);
+        return true;
+      }
+      if (activeTab !== 'Reto') {
+        setActiveTab('Reto');
+        return true;
+      }
+      if (onBack) {
+        onBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [adminModalVisible, inviteModalVisible, activeTab, onBack]);
+
   if (detailsLoading && !room) {
     return (
       <View style={styles.centerContainer}>
@@ -81,31 +114,6 @@ export const RoomDetailScreen = ({ roomId, onBack }) => {
   const canLeave = !isOwner;
   const hayMenu = isOwner || canLeave;
   const memberIds = (room.members || []).map((m) => m.profile?.id).filter(Boolean);
-
-  // Retroceso físico / gestual en detalle de sala
-  React.useEffect(() => {
-    const onBackPress = () => {
-      if (adminModalVisible) {
-        setAdminModalVisible(false);
-        return true;
-      }
-      if (inviteModalVisible) {
-        setInviteModalVisible(false);
-        return true;
-      }
-      if (activeTab !== 'Reto') {
-        setActiveTab('Reto');
-        return true;
-      }
-      if (onBack) {
-        onBack();
-        return true;
-      }
-      return false;
-    };
-    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => sub.remove();
-  }, [adminModalVisible, inviteModalVisible, activeTab, onBack]);
 
   const getStatusText = () => {
     if (isClosed) return t('rooms.status_closed') || 'Reto finalizado';
