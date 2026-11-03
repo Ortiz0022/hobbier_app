@@ -268,12 +268,20 @@ export const AjustarFotoModal = ({
         >
           {listoParaPintar ? (
             <>
+              {/* Las tres piezas se colocan con coordenadas calculadas desde el
+                  lienzo medido, no con centrado automático ni absoluteFill.
+                  Dentro de este Modal en Android ninguno de los dos hacía lo
+                  suyo: la foto se quedaba pegada arriba y las capas del marco
+                  empezaban justo donde acababa la foto en vez de cubrir el
+                  lienzo. Con números no hay nada que interpretar. */}
               <Animated.Image
                 source={{ uri }}
                 style={{
+                  position: 'absolute',
+                  left: (lienzo.ancho - mostrada.ancho) / 2,
+                  top: (lienzo.alto - mostrada.alto) / 2,
                   width: mostrada.ancho,
                   height: mostrada.alto,
-                  flexShrink: 0,
                   transform: [
                     { translateX: desplazamiento.x },
                     { translateY: desplazamiento.y },
@@ -283,31 +291,36 @@ export const AjustarFotoModal = ({
               />
 
               {/* El resto de la foto se sigue viendo, apagado, para saber qué
-                  queda fuera. El hueco es el borde interior de un marco enorme:
-                  así sale redondo de verdad cuando toca. */}
-              <View pointerEvents="none" style={styles.capa}>
-                <View
-                  style={{
-                    width: marco.ancho + grosorSombra * 2,
-                    height: marco.alto + grosorSombra * 2,
-                    borderWidth: grosorSombra,
-                    borderColor: SOMBRA,
-                    borderRadius: grosorSombra + (circular ? marco.alto / 2 : radii.card),
-                  }}
-                />
-              </View>
+                  queda fuera. El hueco es el borde interior de un marco: con
+                  un borde así de ancho, su esquina redondeada tapa el lienzo
+                  entero y deja el hueco limpio, redondo cuando toca. */}
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: (lienzo.ancho - (marco.ancho + grosorSombra * 2)) / 2,
+                  top: (lienzo.alto - (marco.alto + grosorSombra * 2)) / 2,
+                  width: marco.ancho + grosorSombra * 2,
+                  height: marco.alto + grosorSombra * 2,
+                  borderWidth: grosorSombra,
+                  borderColor: SOMBRA,
+                  borderRadius: grosorSombra + (circular ? marco.alto / 2 : radii.card),
+                }}
+              />
 
-              <View pointerEvents="none" style={styles.capa}>
-                <View
-                  style={{
-                    width: marco.ancho,
-                    height: marco.alto,
-                    borderWidth: 1.5,
-                    borderColor: BORDE,
-                    borderRadius: circular ? marco.alto / 2 : radii.card,
-                  }}
-                />
-              </View>
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: (lienzo.ancho - marco.ancho) / 2,
+                  top: (lienzo.alto - marco.alto) / 2,
+                  width: marco.ancho,
+                  height: marco.alto,
+                  borderWidth: 1.5,
+                  borderColor: BORDE,
+                  borderRadius: circular ? marco.alto / 2 : radii.card,
+                }}
+              />
             </>
           ) : error ? (
             <Text style={styles.errorTexto}>
@@ -415,11 +428,6 @@ export const getAjustarFotoModalTheme = createThemeStyles((theme) => {
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
-    },
-    capa: {
-      ...StyleSheet.absoluteFillObject,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     errorTexto: {
       color: BLANCO,
