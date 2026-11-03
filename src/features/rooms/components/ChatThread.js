@@ -54,9 +54,21 @@ export const ChatThread = ({
   const finalReadOnlyText = readOnlyText || t('messages.readonly_chat') || 'Chat en modo solo lectura.';
   const finalEmptyText = emptyText || t('messages.no_messages') || 'No hay mensajes aún.';
 
-  const [textMessage, setTextMessage] = useState('');
-  // El texto también vive en una ref: Enter y el botón pueden disparar dos envíos
-  // en el mismo instante, y ambos leerían el mismo estado antes de que se vacíe.
+  // La caja de escribir NO va controlada por estado, a propósito.
+  //
+  // Con `value={estado}`, cada tecla da la vuelta por React y vuelve al campo.
+  // En Android eso corta la "región de composición" del teclado, y al meter un
+  // emoji teniendo ya texto escrito, la inserción se pierde: el emoji no sale.
+  // Un emoji solo sí entra, porque entonces no hay nada componiéndose; de ahí
+  // que pareciera que fallaba solo al mezclarlo con texto.
+  //
+  // El texto vive en una ref y el estado guarda únicamente SI hay algo escrito,
+  // para encender el botón de enviar. Así se repinta al pasar de vacío a lleno
+  // y no en cada tecla.
+  const [hayTexto, setHayTexto] = useState(false);
+  const entradaRef = useRef(null);
+  // La ref también evita el doble envío: Enter y el botón pueden dispararse en
+  // el mismo instante y ambos leerían el mismo estado antes de que se vacíe.
   const textRef = useRef('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
@@ -91,7 +103,8 @@ export const ChatThread = ({
 
   const handleChangeText = (text) => {
     textRef.current = text;
-    setTextMessage(text);
+    const lleno = text.trim().length > 0;
+    setHayTexto((previo) => (previo === lleno ? previo : lleno));
   };
 
   // No se espera al servidor: el mensaje aparece al momento en la lista (envío
@@ -101,7 +114,9 @@ export const ChatThread = ({
     const content = textRef.current;
     if (!content.trim() || readOnly) return;
     textRef.current = '';
-    setTextMessage('');
+    // Se vacía el campo por la ref, no por el estado: el campo no va controlado.
+    entradaRef.current?.clear();
+    setHayTexto(false);
     setReplyingTo(null);
     scrollToEndPendingRef.current = true;
     onSend(content, replyingTo);
@@ -214,17 +229,18 @@ export const ChatThread = ({
 
           <View style={styles.chatInputContainer}>
             <TextInput {...theme.textInputProps}
+              ref={entradaRef}
               style={styles.chatInput}
               placeholder={t('messages.type_message') || "Escribe un mensaje..."}
-              value={textMessage}
+              defaultValue=""
               onChangeText={handleChangeText}
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={handleSendText}
             />
             <TouchableOpacity
-              style={[styles.sendBtn, !textMessage.trim() && { opacity: 0.5 }]}
+              style={[styles.sendBtn, !hayTexto && { opacity: 0.5 }]}
               onPress={handleSendText}
-              disabled={!textMessage.trim()}
+              disabled={!hayTexto}
             >
               <Feather name="send" size={20} color={colors.onPrimary} />
             </TouchableOpacity>
@@ -326,6 +342,8 @@ const styles = StyleSheet.create({
   chatInput: {
     flex: 1,
     height: 44,
+    // Sin esto, en oscuro se escribe en casi negro sobre fondo oscuro.
+    color: colors.text,
     backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
     borderRadius: 22,
     paddingHorizontal: spacing.md,

@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '../config/supabase';
+import { destinoDeAviso, anotarDestino } from './avisoDestino';
 
 /**
  * Notificaciones push.
@@ -56,6 +57,36 @@ export const configurarAvisosEnPrimerPlano = () => {
       shouldSetBadge: false,
     }),
   });
+};
+
+/**
+ * Empieza a escuchar los toques en las notificaciones.
+ *
+ * Son dos caminos distintos y hacen falta los dos:
+ *   - La app está abierta o en segundo plano: llega por el escuchador.
+ *   - La app estaba CERRADA y se abrió desde el aviso: entonces no hay
+ *     escuchador que valga, porque el toque ocurrió antes de que existiera.
+ *     Para ese caso se pregunta por el último al arrancar.
+ *
+ * Aquí no se navega: solo se anota a dónde hay que ir. Quien navega es App.js,
+ * que para entonces ya tiene pantallas donde hacerlo.
+ */
+export const escucharToquesDeAviso = () => {
+  if (!hayNotificaciones()) return () => {};
+
+  const anotar = (respuesta) => {
+    const data = respuesta?.notification?.request?.content?.data;
+    const destino = destinoDeAviso(data);
+    if (destino) anotarDestino(destino);
+  };
+
+  // El aviso que abrió la app, si se abrió desde uno.
+  Notifications.getLastNotificationResponseAsync()
+    .then((respuesta) => { if (respuesta) anotar(respuesta); })
+    .catch(() => {});
+
+  const suscripcion = Notifications.addNotificationResponseReceivedListener(anotar);
+  return () => suscripcion?.remove?.();
 };
 
 /**
@@ -177,6 +208,7 @@ export const avisar = (tipo, contexto = {}) => {
 
 export const pushService = {
   configurarAvisosEnPrimerPlano,
+  escucharToquesDeAviso,
   registrarDispositivo,
   olvidarDispositivo,
   avisar,

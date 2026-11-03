@@ -1,6 +1,6 @@
 import { ThemeProvider, useThemeValues } from './src/context/ThemeContext';
 import { createThemeStyles } from './src/theme/themeRuntime';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -38,6 +38,7 @@ import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
 import { pushService } from './src/services/pushService';
+import { escucharDestino, recogerDestino } from './src/services/avisoDestino';
 // Se importa con otro nombre a propósito: `SplashScreen` ya es la bienvenida
 // de la propia app (la de los iconos), y esta es la del sistema operativo, la
 // que se ve antes de que exista una sola vista de React.
@@ -75,6 +76,12 @@ const MainApp = () => {
   const [adminSection, setAdminSection] = useState('overview');
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
+  // A dónde lleva la notificación que se acaba de tocar, mientras la pantalla
+  // de destino no lo haya atendido.
+  const [destinoAviso, setDestinoAviso] = useState(null);
+  // Lo que el escuchador de avisos necesita, siempre al día, sin que eso le
+  // obligue a volver a suscribirse.
+  const navegacionRef = useRef({ navegarA: () => {}, isAdmin: false });
   const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
 
   const navegarA = useCallback((nuevaPantalla) => {
@@ -136,6 +143,38 @@ const MainApp = () => {
   useEffect(() => {
     if (!user?.id) return;
     pushService.registrarDispositivo();
+  }, [user?.id]);
+
+  navegacionRef.current = { navegarA, isAdmin };
+
+  // Tocar una notificación lleva a su sitio: un mensaje abre esa conversación,
+  // uno de sala abre esa sala, una solicitud abre la pestaña de solicitudes.
+  //
+  // Aquí solo se cambia de sección. Lo fino —qué chat o qué sala— lo hace la
+  // pantalla de Comunidad, que es quien sabe abrirlos; se le pasa el destino y
+  // ella avisa cuando lo ha atendido.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+
+    const atender = () => {
+      const pendiente = recogerDestino();
+      if (!pendiente) return;
+      // El panel es solo para administradores; si no lo es, se queda donde está.
+      if (pendiente.seccion === 'admin' && !navegacionRef.current.isAdmin) return;
+      setDestinoAviso(pendiente);
+      if (pendiente.panel) setAdminSection(pendiente.panel);
+      navegacionRef.current.navegarA(pendiente.seccion);
+    };
+
+    // Por si el toque llegó antes de que esta pantalla existiera (app cerrada).
+    atender();
+    const dejarDeEscuchar = escucharDestino(atender);
+    const dejarDeEscucharToques = pushService.escucharToquesDeAviso();
+    return () => { dejarDeEscuchar(); dejarDeEscucharToques(); };
+    // Se registra UNA vez por sesión. Si dependiera de `navegarA` —que cambia
+    // con cada pantalla— se volvería a suscribir sin parar, y al hacerlo se
+    // volvería a preguntar por el último aviso tocado: la app saltaría sola.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   // Se destapa la app cuando ya se sabe si hay sesión. Así lo primero que se
@@ -260,7 +299,12 @@ const MainApp = () => {
           />
         );
       case 'friends':
-        return <FriendsScreen />;
+        return (
+          <FriendsScreen
+            destinoDeAviso={destinoAviso}
+            onDestinoAtendido={() => setDestinoAviso(null)}
+          />
+        );
       case 'profile_friends':
         return <FriendsScreen isProfileView={true} onBack={() => {
           setNavHistory((prev) => prev.slice(0, -1));
