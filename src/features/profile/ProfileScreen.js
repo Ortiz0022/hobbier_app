@@ -158,13 +158,14 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   }, [profile?.id]);
 
   useEffect(() => {
+    refreshProfile();
     loadExtras();
     return () => { extrasRequest.current += 1; };
   }, [loadExtras]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadExtras(true);
+    await Promise.all([refreshProfile(), loadExtras(true)]);
     setRefreshing(false);
   };
 
@@ -177,7 +178,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
     const ok = await confirm({
       title: 'Eliminar publicación',
-      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil.',
+      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil, y se descontarán los puntos que otorgó.',
       confirmLabel: 'Eliminar',
       destructive: true,
     });
@@ -197,6 +198,7 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
     setCompletedActivities((prev) =>
       prev.map((a) => ({ ...a, posts: (a.posts || []).filter((p) => p.id !== postId) }))
     );
+    await Promise.all([refreshProfile(), loadExtras(true)]);
     notify('Publicación eliminada.', { type: 'success', title: 'Listo' });
   };
 

@@ -70,6 +70,17 @@
     "completed_count": "Has completado este reto {count} veces",
     "no_photos_uploaded": "Todavía no subiste fotos de tus actividades."
   },
+  "received_likes": {
+    "title": "Tus likes",
+    "subtitle": "Las estrellas que recibió lo que compartiste.",
+    "liked_post": "Le dio una estrella a tu publicación.",
+    "empty_title": "Tus primeras estrellas están por llegar",
+    "empty_hint": "Cuando alguien le dé like a una de tus publicaciones, aparecerá aquí.",
+    "load_error": "No pudimos cargar tus likes. Inténtalo de nuevo.",
+    "more_error": "No pudimos cargar más likes.",
+    "view_post": "Ver tu publicación",
+    "unknown_user": "Usuario no disponible"
+  },
   "feed": {
     "title": "Feed",
     "loading": "Cargando feed de amigos...",
@@ -648,10 +659,10 @@
     "restore": "Restaurar",
     "hide": "Ocultar",
     "hide_post_title": "¿Ocultar la publicación?",
-    "hide_post_msg": "Dejará de verse en el feed. Podrás restaurarla desde \"Ocultas\".",
+    "hide_post_msg": "Dejará de verse en el feed y se descontarán sus puntos al autor. Si la restauras desde \"Ocultas\", se devolverán esos puntos.",
     "hide_post_btn": "Sí, ocultar",
     "delete_post_title": "¿Eliminar la publicación?",
-    "delete_post_msg": "Dejará de verse en el feed y el autor perderá su evidencia. Podrás restaurarla desde \"Ocultas\".",
+    "delete_post_msg": "Dejará de verse en el feed y en el perfil del autor, y se descontarán los puntos que otorgó. Si la restauras desde \"Ocultas\", se devolverán esos puntos.",
     "delete_post_btn": "Sí, eliminar",
     "view_photo": "Ver la foto en grande",
     "unknown_user": "desconocido",

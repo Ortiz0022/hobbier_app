@@ -70,6 +70,17 @@
     "completed_count": "You have completed this challenge {count} times",
     "no_photos_uploaded": "You haven't uploaded photos of your activities yet."
   },
+  "received_likes": {
+    "title": "Your likes",
+    "subtitle": "Stars received on the moments you shared.",
+    "liked_post": "Gave your post a star.",
+    "empty_title": "Your first stars are on their way",
+    "empty_hint": "When someone likes one of your posts, they will appear here.",
+    "load_error": "We couldn't load your likes. Please try again.",
+    "more_error": "We couldn't load more likes.",
+    "view_post": "View your post",
+    "unknown_user": "User unavailable"
+  },
   "feed": {
     "title": "Feed",
     "loading": "Loading friends feed...",
@@ -648,10 +659,10 @@
     "restore": "Restore",
     "hide": "Hide",
     "hide_post_title": "Hide post?",
-    "hide_post_msg": "It will no longer appear in the feed. You can restore it from \"Hidden\".",
+    "hide_post_msg": "It will leave the feed and its points will be deducted from the author. Restoring it from \"Hidden\" will return those points.",
     "hide_post_btn": "Yes, hide",
     "delete_post_title": "Delete post?",
-    "delete_post_msg": "It will no longer appear in the feed and the author will lose their evidence. You can restore it from \"Hidden\".",
+    "delete_post_msg": "It will leave the feed and the author's profile, and the points it awarded will be deducted. Restoring it from \"Hidden\" will return those points.",
     "delete_post_btn": "Yes, delete",
     "view_photo": "View full photo",
     "unknown_user": "unknown",

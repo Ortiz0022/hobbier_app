@@ -437,12 +437,17 @@ const MainApp = () => {
               return (
                 <TouchableOpacity
                   key={item.key}
-                  style={styles.navItem}
+                  style={[styles.navItem, enPanelAdmin && styles.navItemAdmin]}
                   onPress={() => irA(item.key)}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
                 >
                   <Feather name={item.icon} size={20} color={iconColor} />
-                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                  <Text
+                    style={[styles.navLabel, enPanelAdmin && styles.navLabelAdmin, isActive && styles.navLabelActive]}
+                    numberOfLines={enPanelAdmin ? 2 : undefined}
+                  >
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -625,11 +630,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
+  navItemAdmin: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 2,
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+  },
   navLabel: {
     fontSize: 11,
     color: theme.color('#121B22', 'text'),
     fontWeight: '500',
     marginTop: 3,
+  },
+  navLabelAdmin: {
+    width: '100%',
+    fontSize: 10,
+    lineHeight: 14,
+    minHeight: 28,
+    textAlign: 'center',
   },
   navLabelActive: {
     color: theme.color('#0C8AA6', 'primary'),

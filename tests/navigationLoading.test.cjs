@@ -150,3 +150,55 @@ test('community manual refresh forces requests and starts suggestions, sent requ
   pending.resolve();
   await done;
 });
+
+test('profile deletion reloads the server balance and activity totals only after success', async () => {
+  const started = [];
+  let photos = [{ id: 'p1' }, { id: 'p2' }];
+  let activities = [{ posts: [{ id: 'p1' }, { id: 'p2' }] }];
+  const remove = loader('profile', 'handleDeleteViewerPost', {
+    viewerImage: { postId: 'p1' }, deletingPost: false,
+    confirm: async () => true,
+    deleteOwnPost: async (id) => { started.push('delete:' + id); return { error: null }; },
+    setDeletingPost() {}, setViewerImage() {},
+    setPosts: (update) => { photos = update(photos); },
+    setCompletedActivities: (update) => { activities = update(activities); },
+    refreshProfile: async () => { started.push('balance'); },
+    loadExtras: async (force) => { assert.equal(force, true); started.push('activities'); },
+    notify() {},
+  });
+  await remove();
+  assert.deepEqual(started, ['delete:p1', 'balance', 'activities']);
+  assert.deepEqual(photos, [{ id: 'p2' }]);
+  assert.deepEqual(activities[0].posts, [{ id: 'p2' }]);
+});
+
+test('failed or cancelled profile deletions retain the displayed points and photos', async () => {
+  for (const accepted of [false, true]) {
+    let changed = false;
+    const remove = loader('profile', 'handleDeleteViewerPost', {
+      viewerImage: { postId: 'p1' }, deletingPost: false,
+      confirm: async () => accepted,
+      deleteOwnPost: async () => ({ error: Error('offline') }),
+      setDeletingPost() {}, notify() {},
+      setViewerImage: () => { changed = true; }, setPosts: () => { changed = true; },
+      setCompletedActivities: () => { changed = true; },
+      refreshProfile: () => { changed = true; }, loadExtras: () => { changed = true; },
+    });
+    await remove();
+    assert.equal(changed, false);
+  }
+});
+
+test('feed deletion refreshes the server points without subtracting client-side guesses', async () => {
+  for (const error of [null, Error('offline')]) {
+    let updated = 0, refreshed = 0;
+    const remove = loader('feed', 'handleDeletePost', {
+      confirm: async () => true, deleteOwnPost: async () => ({ error }),
+      setPosts: (update) => { updated++; assert.deepEqual(update([{ id: 'p1' }]), []); },
+      refreshProfile: async () => { refreshed++; }, notify() {}, t: (key) => key,
+    });
+    await remove({ id: 'p1' });
+    assert.equal(updated, error ? 0 : 1);
+    assert.equal(refreshed, error ? 0 : 1);
+  }
+});
