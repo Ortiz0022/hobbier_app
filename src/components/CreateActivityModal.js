@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal,
   Platform,
+  Pressable,
 } from 'react-native';
 import { Text, TextInput } from './scaledText';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
@@ -184,14 +185,17 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        {/* Desplazable y con alto máximo: al abrir el desplegable el formulario
-            crece y en pantallas cortas los botones quedaban fuera de vista. */}
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentInner}
-          keyboardShouldPersistTaps="handled"
-        >
+      <Pressable style={styles.overlay} onPress={handleClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <View style={styles.grabber} />
+          {/* Desplazable y con alto máximo: al abrir el desplegable el formulario
+              crece y en pantallas cortas los botones quedaban fuera de vista. */}
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentInner}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
           {moderationError ? (
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerTitle}>
@@ -334,8 +338,9 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </View>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
@@ -349,32 +354,33 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? 16 : 0,
   },
-  content: {
+  sheet: {
     backgroundColor: theme.color(colors.surface, 'background'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderBottomLeftRadius: Platform.OS === 'web' ? 24 : 0,
-    borderBottomRightRadius: Platform.OS === 'web' ? 24 : 0,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 640,
     alignSelf: 'center',
-    flexGrow: 0,
     maxHeight: '88%',
-    borderWidth: Platform.OS === 'web' ? 1 : 0,
-    borderColor: theme.color(colors.surfaceMuted, 'border'),
-    ...Platform.select({
-      web: {
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
-      },
-      default: {},
-    }),
+    paddingTop: 12,
+  },
+  grabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.surfaceMuted,
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  content: {
+    flexGrow: 0,
   },
   contentInner: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   errorBanner: {

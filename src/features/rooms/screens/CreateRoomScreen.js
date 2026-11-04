@@ -59,6 +59,7 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
   
   const [friends, setFriends] = useState([]);
   const [selectedFriends, setSelectedFriends] = useState(new Set());
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
   
   const [hasDeadline, setHasDeadline] = useState(false);
   // daysToAdd can be 7, 14, 30, or 'custom'
@@ -180,6 +181,16 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
     else newSet.add(friendId);
     setSelectedFriends(newSet);
   };
+
+  const filteredFriends = useMemo(() => {
+    const q = friendSearchQuery.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter((item) => {
+      const fname = (item.profile?.full_name || '').toLowerCase();
+      const uname = (item.profile?.username || '').toLowerCase();
+      return fname.includes(q) || uname.includes(q);
+    });
+  }, [friends, friendSearchQuery]);
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert(t('rooms.name_required') || 'Debes ingresar un nombre para la sala.');
@@ -639,10 +650,39 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
 
         {/* Amigos */}
         <Text style={styles.sectionTitle}>{t('rooms.invite_friends') || 'Invitar Amigos'}</Text>
+        {friends.length > 0 && (
+          <View style={[styles.challengeInputWrapper, { marginBottom: spacing.sm }]}>
+            <Feather
+              name="search"
+              size={18}
+              color={colors.textMuted}
+              style={styles.challengeInputIcon}
+            />
+            <TextInput
+              {...theme.textInputProps}
+              style={styles.challengeTextInput}
+              placeholder={t('friends.search_friends_placeholder') || 'Buscar amigos...'}
+              value={friendSearchQuery}
+              onChangeText={setFriendSearchQuery}
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+            />
+            {friendSearchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setFriendSearchQuery('')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         {friends.length === 0 ? (
           <Text style={styles.emptyText}>{t('rooms.no_friends_yet') || 'No tienes amigos agregados aún.'}</Text>
+        ) : filteredFriends.length === 0 ? (
+          <Text style={styles.emptyText}>{t('friends.no_matches') || 'Ningún amigo coincide con la búsqueda.'}</Text>
         ) : (
-          friends.map((item, index) => {
+          filteredFriends.map((item, index) => {
             const friend = item.profile;
             if (!friend) return null;
             const isSelected = selectedFriends.has(friend.id);
@@ -661,7 +701,12 @@ export const CreateRoomScreen = ({ onBack, onRoomCreated }) => {
                     </Text>
                   </View>
                 )}
-                <Text style={styles.friendName}>{friend.full_name || friend.username}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.friendName}>{friend.full_name || friend.username}</Text>
+                  {!!friend.username && (
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>@{friend.username}</Text>
+                  )}
+                </View>
                 {isSelected && <Feather name="check-circle" size={20} color={colors.primary} />}
               </TouchableOpacity>
             );

@@ -1,9 +1,10 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -18,6 +19,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { roomsService } from '../../../services/roomsService';
 import { getFriendsList } from '../../../services/socialService';
 import { useNotify } from '../../../context/NotificationContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { spacing, fonts, radii } from "../../../theme";
 
 /**
@@ -29,16 +31,19 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
   const { theme, colors, primaryButton, styles } = useThemeValues(getInviteFriendsModalTheme);
 
   const { notify } = useNotify();
+  const { t } = useLanguage();
 
   const [friends, setFriends] = useState([]);
   const [pendingIds, setPendingIds] = useState(new Set());
   const [selectedFriends, setSelectedFriends] = useState(new Set());
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setSelectedFriends(new Set());
+      setFriendSearchQuery('');
       loadData();
     }
   }, [visible]);
@@ -63,6 +68,16 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
     else newSet.add(friendId);
     setSelectedFriends(newSet);
   };
+
+  const filteredFriends = useMemo(() => {
+    const q = friendSearchQuery.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter((item) => {
+      const name = (item.profile?.full_name || '').toLowerCase();
+      const uname = (item.profile?.username || '').toLowerCase();
+      return name.includes(q) || uname.includes(q);
+    });
+  }, [friends, friendSearchQuery]);
 
   const handleSend = async () => {
     if (selectedFriends.size === 0 || sending) return;
@@ -128,13 +143,20 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
             </Text>
           </View>
         )}
-        <Text style={[styles.friendName, isDisabled && styles.friendNameDisabled]} numberOfLines={1}>
-          {friend.full_name || friend.username}
-        </Text>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={[styles.friendName, isDisabled && styles.friendNameDisabled]} numberOfLines={1}>
+            {friend.full_name || friend.username}
+          </Text>
+          {!!friend.username && (
+            <Text style={styles.friendHandle} numberOfLines={1}>
+              @{friend.username}
+            </Text>
+          )}
+        </View>
         {isMember ? (
-          <Text style={styles.statusTag}>En la sala</Text>
+          <Text style={styles.statusTag}>{t('rooms.in_room_tag') || 'En la sala'}</Text>
         ) : isPending ? (
-          <Text style={styles.statusTag}>Invitado</Text>
+          <Text style={styles.statusTag}>{t('rooms.invited_tag') || 'Invitado'}</Text>
         ) : isSelected ? (
           <Feather name="check-circle" size={20} color={colors.primary} />
         ) : (
@@ -149,24 +171,59 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.content}>
+        <Pressable style={styles.content} onPress={() => {}}>
           <View style={styles.grabber} />
 
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Invitar amigos</Text>
+            <Text style={styles.title}>{t('rooms.invite_friends') || 'Invitar amigos'}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Feather name="x" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.subtitle}>Recibirán una invitación para unirse a la sala.</Text>
+          <Text style={styles.subtitle}>
+            {t('rooms.invite_friends_subtitle') || 'Recibirán una invitación para unirse a la sala.'}
+          </Text>
+
+          {!loading && friends.length > 0 && (
+            <View style={styles.searchBar}>
+              <Feather name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
+              <TextInput
+                {...theme.textInputProps}
+                style={styles.searchInput}
+                placeholder={t('friends.search_friends_placeholder') || 'Buscar amigos...'}
+                placeholderTextColor={colors.textMuted}
+                value={friendSearchQuery}
+                onChangeText={setFriendSearchQuery}
+                autoCapitalize="none"
+              />
+              {friendSearchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setFriendSearchQuery('')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather name="x" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {loading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : friends.length === 0 ? (
-            <Text style={styles.emptyText}>No tienes amigos agregados aún.</Text>
+            <Text style={styles.emptyText}>
+              {t('rooms.no_friends_yet') || 'No tienes amigos agregados aún.'}
+            </Text>
+          ) : filteredFriends.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {t('friends.no_matches') || 'Ningún amigo coincide con la búsqueda.'}
+            </Text>
           ) : (
-            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {friends.map(renderFriend)}
+            <ScrollView
+              style={styles.list}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {filteredFriends.map(renderFriend)}
             </ScrollView>
           )}
 
@@ -181,8 +238,11 @@ export const InviteFriendsModal = ({ visible, onClose, roomId, userId, memberIds
             ) : (
               <Text style={[styles.sendBtnText, !hasSelection && styles.sendBtnTextDisabled]}>
                 {hasSelection
-                  ? `Enviar ${selectedFriends.size === 1 ? 'invitación' : `${selectedFriends.size} invitaciones`}`
-                  : 'Selecciona amigos'}
+                  ? selectedFriends.size === 1
+                    ? t('rooms.send_invitations_one') || 'Enviar invitación'
+                    : t('rooms.send_invitations_other', { count: selectedFriends.size }) ||
+                      `Enviar ${selectedFriends.size} invitaciones`
+                  : t('rooms.select_friends_btn') || 'Selecciona amigos'}
               </Text>
             )}
           </TouchableOpacity>
@@ -202,6 +262,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   content: {
     backgroundColor: theme.color(colors.surface, 'background'),
@@ -209,6 +270,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    width: '100%',
+    maxWidth: 640,
     maxHeight: '80%',
   },
   grabber: {
@@ -234,6 +297,26 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
     marginBottom: spacing.md,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.input,
+    paddingHorizontal: spacing.md,
+    height: 44,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    height: '100%',
   },
   loader: {
     marginVertical: spacing.xl,
@@ -281,10 +364,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   friendName: {
-    flex: 1,
     fontSize: 16,
     fontWeight: '500',
     color: colors.text,
+  },
+  friendHandle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 1,
   },
   friendNameDisabled: {
     color: colors.textMuted,
@@ -301,7 +388,6 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     ...primaryButton,
-    borderRadius: radii.round,
   },
   sendBtnDisabled: {
     backgroundColor: colors.surfaceMuted,

@@ -526,7 +526,13 @@
     "matching_activities": "Retos sugeridos del catálogo",
     "custom_challenge_badge": "Nuevo reto personalizado",
     "catalog_challenge_badge": "Reto del catálogo seleccionado",
-    "change_challenge": "Cambiar"
+    "change_challenge": "Cambiar",
+    "invite_friends_subtitle": "Recibirán una invitación para unirse a la sala.",
+    "select_friends_btn": "Selecciona amigos",
+    "send_invitations_one": "Enviar invitación",
+    "send_invitations_other": "Enviar {count} invitaciones",
+    "in_room_tag": "En la sala",
+    "invited_tag": "Invitado"
   },
   "messages": {
     "title": "Mensajes",

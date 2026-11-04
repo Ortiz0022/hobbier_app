@@ -526,7 +526,13 @@
     "matching_activities": "Suggested challenges from catalog",
     "custom_challenge_badge": "New custom challenge",
     "catalog_challenge_badge": "Catalog challenge selected",
-    "change_challenge": "Change"
+    "change_challenge": "Change",
+    "invite_friends_subtitle": "They will receive an invitation to join the room.",
+    "select_friends_btn": "Select friends",
+    "send_invitations_one": "Send invitation",
+    "send_invitations_other": "Send {count} invitations",
+    "in_room_tag": "In room",
+    "invited_tag": "Invited"
   },
   "messages": {
     "title": "Messages",
