@@ -521,7 +521,12 @@
     "expired_invite": "te invitó a esta sala, pero ya finalizó: la invitación venció.",
     "leave_room_msg_active": "Dejarás de ver su chat y su ranking, y tus avances dejarán de contar. Para volver tendrían que invitarte otra vez.",
     "leave_room_msg_closed": "El reto ya terminó. Al salir, la sala desaparece de tu lista; para los demás se queda igual.",
-    "leave_room_btn_active": "Salir de la sala"
+    "leave_room_btn_active": "Salir de la sala",
+    "challenge_input_placeholder": "Escribe tu propio reto o busca uno existente...",
+    "matching_activities": "Retos sugeridos del catálogo",
+    "custom_challenge_badge": "Nuevo reto personalizado",
+    "catalog_challenge_badge": "Reto del catálogo seleccionado",
+    "change_challenge": "Cambiar"
   },
   "messages": {
     "title": "Mensajes",

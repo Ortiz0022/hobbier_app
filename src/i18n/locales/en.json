@@ -521,7 +521,12 @@
     "expired_invite": "invited you to this room, but it has already ended: the invitation expired.",
     "leave_room_msg_active": "You'll stop seeing its chat and ranking, and your progress will no longer count. You would need a new invitation to come back.",
     "leave_room_msg_closed": "The challenge has already ended. If you leave, the room disappears from your list; for everyone else it stays the same.",
-    "leave_room_btn_active": "Leave room"
+    "leave_room_btn_active": "Leave room",
+    "challenge_input_placeholder": "Write your own challenge or search existing ones...",
+    "matching_activities": "Suggested challenges from catalog",
+    "custom_challenge_badge": "New custom challenge",
+    "catalog_challenge_badge": "Catalog challenge selected",
+    "change_challenge": "Change"
   },
   "messages": {
     "title": "Messages",

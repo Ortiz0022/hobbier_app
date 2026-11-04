@@ -25,13 +25,13 @@ import { capitalizarTitulo } from '../utils/titleCase';
  * Opciones cerradas de puntaje según el catálogo oficial de Hobbier (10 a 30 pts).
  * Evita que alguien digite puntajes desproporcionados (ej. 1000 pts).
  */
-const OPCIONES_PUNTOS = ['10', '15', '20', '25', '30'];
+export const OPCIONES_PUNTOS = ['10', '15', '20', '25', '30'];
 
 /**
  * Minúsculas, sin espacios sobrantes y sin tildes, para comparar nombres.
  * Es el gemelo de `public.normalizar_nombre(TEXT)` en la base de datos.
  */
-const normalizarNombre = (texto) =>
+export const normalizarNombre = (texto) =>
   (texto || '').trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 /**
