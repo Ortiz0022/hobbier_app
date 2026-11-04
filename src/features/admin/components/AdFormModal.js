@@ -46,11 +46,14 @@ const enDias = (dias) => {
 };
 
 // Componente para agrupar campos con su etiqueta y mensaje de error
-const CampoBase = ({ etiqueta, ayuda, error, children }) => {
-  const { estilos } = useThemeValues(getAdFormModalTheme);
+const CampoBase = ({ etiqueta, ayuda, error, bloqueado, children }) => {
+  const { estilos, colors } = useThemeValues(getAdFormModalTheme);
   return (
     <View style={estilos.campo}>
-      <Text style={estilos.etiqueta}>{etiqueta}</Text>
+      <View style={estilos.etiquetaFila}>
+        <Text style={estilos.etiqueta}>{etiqueta}</Text>
+        {bloqueado && <Ionicons name="lock-closed" size={13} color={colors.textMuted} />}
+      </View>
       {!!ayuda && <Text style={estilos.ayuda}>{ayuda}</Text>}
       {children}
       {!!error && <Text style={estilos.error}>{error}</Text>}
@@ -59,17 +62,24 @@ const CampoBase = ({ etiqueta, ayuda, error, children }) => {
 };
 
 /**
- * Alta y edición de un anuncio patrocinado con flujo guiado por pasos (Wizard/Stepper),
- * consistente con el diseño de solicitud de anuncios del usuario.
+ * Alta y edición de un anuncio patrocinado con flujo guiado por pasos (Wizard/Stepper).
+ *
+ * Cuando proviene de una solicitud pagada (`fromRequest` o `ad.transaction_id`),
+ * todos los datos contratados y facturados (nombre, ubicación, título, descripción,
+ * imagen, enlace, vigencia, modelo de cobro, cuota, comprobante y monto pagado)
+ * quedan en modo SOLO LECTURA para evitar alteraciones unilaterales sobre lo ya
+ * pagado por el cliente. El administrador solo asigna los gustos de segmentación
+ * y notas internas.
  */
-export const AdFormModal = ({ ad, onClose, onSaved }) => {
+export const AdFormModal = ({ ad, fromRequest = false, onClose, onSaved }) => {
   const { theme, colors, estilos } = useThemeValues(getAdFormModalTheme);
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { notify } = useNotify();
   const editando = !!ad?.id;
+  const bloqueadoPorPago = Boolean(fromRequest || ad?.transaction_id);
 
-  const [step, setStep] = useState(1); // 1 | 2 | 3
+  const [step, setStep] = useState(bloqueadoPorPago ? 3 : 1); // 1 | 2 | 3
   const [erroresPaso, setErroresPaso] = useState({});
 
   const STEPS_INFO = useMemo(
@@ -96,7 +106,6 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
     title: ad?.title || '',
     body: ad?.body || '',
     link_url: ad?.link_url || '',
-    cta_label: ad?.cta_label || '',
     city: ad?.city || '',
     billing_model: ad?.billing_model || 'CPM',
     target_quota: ad?.target_quota != null ? String(ad.target_quota) : (ad?.billing_model === 'CPC' ? '50' : '1000'),
@@ -108,13 +117,14 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
 
   const [desde, setDesde] = useState(desdeInicial);
   const [hasta, setHasta] = useState(hastaInicial);
-  const [precioManual, setPrecioManual] = useState(editando && ad?.price_paid != null);
+  const [precioManual, setPrecioManual] = useState(bloqueadoPorPago || (editando && ad?.price_paid != null));
   const [gustos, setGustos] = useState((ad?.likes || []).map((l) => l.id));
   const [imagenLocal, setImagenLocal] = useState(null);
   const [imagenUrl, setImagenUrl] = useState(ad?.image_url || null);
   const [guardando, setGuardando] = useState(false);
 
   const set = (campo) => (valor) => {
+    if (bloqueadoPorPago && campo !== 'notes') return;
     setForm((f) => ({ ...f, [campo]: valor }));
     if (erroresPaso[campo]) {
       setErroresPaso((prev) => {
@@ -126,6 +136,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
   };
 
   const cambiarFechas = (nuevoDesde, nuevoHasta) => {
+    if (bloqueadoPorPago) return;
     setDesde(nuevoDesde);
     setHasta(nuevoHasta);
     if (erroresPaso.fechas) {
@@ -142,6 +153,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
   };
 
   const elegirImagen = async () => {
+    if (bloqueadoPorPago) return;
     try {
       const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permiso.granted) {
@@ -184,7 +196,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
       if (!form.title.trim()) {
         errs.title = t('admin.error_title') || 'El anuncio necesita un título.';
       }
-      if (!enlaceValido) {
+      if (!bloqueadoPorPago && !enlaceValido) {
         errs.link_url = t('admin.error_link') || 'El enlace debe empezar por https://';
       }
       if (Object.keys(errs).length > 0) {
@@ -224,7 +236,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
 
     setGuardando(true);
     let image_url = imagenUrl;
-    if (imagenLocal) {
+    if (imagenLocal && !bloqueadoPorPago) {
       const { publicUrl, error } = await uploadAdImage(imagenLocal);
       if (error) {
         setGuardando(false);
@@ -239,6 +251,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
     const { ad: guardado, error } = await saveAdAdmin(
       {
         ...form,
+        cta_label: null,
         id: ad?.id,
         image_url,
         starts_on: desdeIso,
@@ -263,18 +276,32 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
     onSaved?.(guardado);
   };
 
-  const entrada = (campo, props = {}) => (
-    <View style={[estilos.input, props.multiline && estilos.inputMulti]}>
-      <TextInput
-        {...theme.textInputProps}
-        style={[estilos.inputTexto, props.multiline && { minHeight: 64, textAlignVertical: 'top' }]}
-        value={form[campo]}
-        onChangeText={set(campo)}
-        placeholderTextColor={colors.textMuted}
-        {...props}
-      />
-    </View>
-  );
+  const entrada = (campo, props = {}) => {
+    const esBloqueado = bloqueadoPorPago && campo !== 'notes';
+    return (
+      <View
+        style={[
+          estilos.input,
+          props.multiline && estilos.inputMulti,
+          esBloqueado && estilos.inputBloqueado,
+        ]}
+      >
+        <TextInput
+          {...theme.textInputProps}
+          style={[
+            estilos.inputTexto,
+            props.multiline && { minHeight: 64, textAlignVertical: 'top' },
+            esBloqueado && estilos.inputTextoBloqueado,
+          ]}
+          value={form[campo]}
+          onChangeText={set(campo)}
+          editable={!esBloqueado}
+          placeholderTextColor={colors.textMuted}
+          {...props}
+        />
+      </View>
+    );
+  };
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -344,12 +371,28 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {bloqueadoPorPago && (
+              <View style={estilos.avisoBloqueo}>
+                <Ionicons name="lock-closed" size={18} color={colors.primary} style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={estilos.avisoBloqueoTitulo}>
+                    {t('admin.locked_ad_banner_title') || 'Datos contratados y facturados (solo lectura)'}
+                  </Text>
+                  <Text style={estilos.avisoBloqueoTexto}>
+                    {t('admin.locked_ad_banner_desc') ||
+                      'El contenido, enlace, ubicación, vigencia y monto pagado ya fueron facturados al anunciante y no pueden modificarse. Solo puedes asignar los gustos de segmentación y notas internas.'}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* ===================== PASO 1: ANUNCIANTE ===================== */}
             {step === 1 && (
               <View style={estilos.stepContainer}>
                 <CampoBase
                   etiqueta={t('admin.field_business') || 'Negocio o actividad *'}
                   error={erroresPaso.advertiser_name}
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('advertiser_name', {
                     placeholder: t('admin.placeholder_business') || 'Ej. Club de Corredores San José',
@@ -357,25 +400,30 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                   })}
                 </CampoBase>
 
-                <CampoBase
-                  etiqueta={t('admin.field_contact') || 'Contacto'}
-                  ayuda={t('admin.help_contact') || 'Solo lo ve el equipo de administración.'}
-                >
-                  {entrada('advertiser_contact', {
-                    placeholder: t('admin.placeholder_contact') || 'Correo o teléfono',
-                    maxLength: 80,
-                  })}
-                </CampoBase>
+                {!bloqueadoPorPago && (
+                  <CampoBase
+                    etiqueta={t('admin.field_contact') || 'Contacto'}
+                    ayuda={t('admin.help_contact') || 'Solo lo ve el equipo de administración.'}
+                  >
+                    {entrada('advertiser_contact', {
+                      placeholder: t('admin.placeholder_contact') || 'Correo o teléfono',
+                      maxLength: 80,
+                    })}
+                  </CampoBase>
+                )}
 
                 <CampoBase
-                  etiqueta={t('admin.field_city') || 'Ciudad'}
+                  etiqueta={t('admin.field_city') || 'Ciudad / Ubicación'}
                   ayuda={
-                    t('admin.help_city') ||
-                    'Vacío = todo el país. Con ciudad (o cantón), solo lo ve quien esté ahí según la ubicación del teléfono, y le sale primero.'
+                    bloqueadoPorPago
+                      ? t('admin.locked_field_note') || 'Bloqueado por comprobante de pago del anunciante'
+                      : t('admin.help_city') ||
+                        'Vacío = todo el país. Con ciudad (o cantón), solo lo ve quien esté ahí según la ubicación del teléfono, y le sale primero.'
                   }
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('city', {
-                    placeholder: t('admin.placeholder_city') || 'Ej. San José',
+                    placeholder: t('admin.placeholder_city') || 'Todo el país',
                     maxLength: 60,
                   })}
                 </CampoBase>
@@ -388,6 +436,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                 <CampoBase
                   etiqueta={t('admin.field_title') || 'Título *'}
                   error={erroresPaso.title}
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('title', {
                     placeholder: t('admin.placeholder_title') || 'Ej. Carrera 10K del Parque La Sabana',
@@ -395,7 +444,10 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                   })}
                 </CampoBase>
 
-                <CampoBase etiqueta={t('admin.field_desc') || 'Descripción'}>
+                <CampoBase
+                  etiqueta={t('admin.field_desc') || 'Descripción'}
+                  bloqueado={bloqueadoPorPago}
+                >
                   {entrada('body', {
                     placeholder:
                       t('admin.placeholder_desc') ||
@@ -405,7 +457,10 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                   })}
                 </CampoBase>
 
-                <CampoBase etiqueta={t('admin.field_image') || 'Imagen'}>
+                <CampoBase
+                  etiqueta={t('admin.field_image') || 'Imagen'}
+                  bloqueado={bloqueadoPorPago}
+                >
                   <View style={estilos.imagenFila}>
                     {imagenLocal || imagenUrl ? (
                       <Image source={{ uri: imagenLocal || imagenUrl }} style={estilos.imagen} />
@@ -414,44 +469,44 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                         <Ionicons name="image-outline" size={24} color={colors.textMuted} />
                       </View>
                     )}
-                    <View style={{ gap: 6 }}>
-                      <TouchableOpacity style={estilos.btnSecundario} onPress={elegirImagen}>
-                        <Text style={estilos.btnSecundarioTexto}>
-                          {imagenLocal || imagenUrl
-                            ? t('admin.change_image') || 'Cambiar'
-                            : t('admin.choose_image') || 'Elegir imagen'}
-                        </Text>
-                      </TouchableOpacity>
-                      {!!(imagenLocal || imagenUrl) && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            setImagenLocal(null);
-                            setImagenUrl(null);
-                          }}
-                        >
-                          <Text style={estilos.quitar}>{t('admin.remove_image') || 'Quitar'}</Text>
+                    {!bloqueadoPorPago && (
+                      <View style={{ gap: 6 }}>
+                        <TouchableOpacity style={estilos.btnSecundario} onPress={elegirImagen}>
+                          <Text style={estilos.btnSecundarioTexto}>
+                            {imagenLocal || imagenUrl
+                              ? t('admin.change_image') || 'Cambiar'
+                              : t('admin.choose_image') || 'Elegir imagen'}
+                          </Text>
                         </TouchableOpacity>
-                      )}
-                    </View>
+                        {!!(imagenLocal || imagenUrl) && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setImagenLocal(null);
+                              setImagenUrl(null);
+                            }}
+                          >
+                            <Text style={estilos.quitar}>{t('admin.remove_image') || 'Quitar'}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </CampoBase>
 
                 <CampoBase
                   etiqueta={t('admin.field_link') || 'Enlace'}
-                  ayuda={t('admin.help_link') || 'Web, Instagram o formulario de inscripción.'}
+                  ayuda={
+                    bloqueadoPorPago
+                      ? t('admin.locked_field_note') || 'Bloqueado por comprobante de pago del anunciante'
+                      : t('admin.help_link') || 'Web, Instagram o formulario de inscripción.'
+                  }
                   error={erroresPaso.link_url}
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('link_url', {
                     placeholder: 'https://',
                     autoCapitalize: 'none',
                     keyboardType: 'url',
-                  })}
-                </CampoBase>
-
-                <CampoBase etiqueta={t('admin.field_cta') || 'Texto del botón'}>
-                  {entrada('cta_label', {
-                    placeholder: t('admin.placeholder_cta') || 'Más información',
-                    maxLength: 24,
                   })}
                 </CampoBase>
               </View>
@@ -476,48 +531,61 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                 <CampoBase
                   etiqueta={t('admin.field_validity') || 'Vigencia *'}
                   error={erroresPaso.fechas}
+                  bloqueado={bloqueadoPorPago}
                 >
-                  <View style={estilos.fechasGrid}>
-                    <View style={estilos.fechaCol}>
-                      <Text style={estilos.ayuda}>{t('admin.date_from') || 'Desde'}</Text>
-                      <CalendarDateField
-                        value={desde}
-                        onChange={(v) => cambiarFechas(v, hasta)}
-                      />
+                  {bloqueadoPorPago ? (
+                    <View style={[estilos.input, estilos.inputBloqueado, { paddingVertical: 12 }]}>
+                      <Text style={estilos.inputTextoBloqueado}>
+                        {desde} → {hasta} ({dias} {dias === 1 ? (t('admin.day_single') || 'día') : (t('admin.day_plural') || 'días')})
+                      </Text>
                     </View>
-                    <View style={estilos.fechaCol}>
-                      <Text style={estilos.ayuda}>{t('admin.date_to') || 'Hasta'}</Text>
-                      <CalendarDateField
-                        value={hasta}
-                        onChange={(v) => cambiarFechas(desde, v)}
-                        minDate={desdeIso ? new Date(`${desdeIso}T12:00:00`) : undefined}
-                      />
-                    </View>
-                  </View>
+                  ) : (
+                    <>
+                      <View style={estilos.fechasGrid}>
+                        <View style={estilos.fechaCol}>
+                          <Text style={estilos.ayuda}>{t('admin.date_from') || 'Desde'}</Text>
+                          <CalendarDateField
+                            value={desde}
+                            onChange={(v) => cambiarFechas(v, hasta)}
+                          />
+                        </View>
+                        <View style={estilos.fechaCol}>
+                          <Text style={estilos.ayuda}>{t('admin.date_to') || 'Hasta'}</Text>
+                          <CalendarDateField
+                            value={hasta}
+                            onChange={(v) => cambiarFechas(desde, v)}
+                            minDate={desdeIso ? new Date(`${desdeIso}T12:00:00`) : undefined}
+                          />
+                        </View>
+                      </View>
 
-                  {dias > 0 && (
-                    <View style={estilos.costo}>
-                      <Text style={estilos.costoEtiqueta}>
-                        {t('admin.total_rate') || 'Total según tarifa'}
-                      </Text>
-                      <Text style={estilos.costoTotal}>{colones(sugerido)}</Text>
-                      <Text style={estilos.costoDetalle}>
-                        {t('admin.rate_detail', {
-                          days: dias,
-                          dayWord: dias === 1 ? (t('admin.day_single') || 'día') : (t('admin.day_plural') || 'días'),
-                          rate: colones(PRECIO_POR_DIA),
-                        }) || `${dias} ${dias === 1 ? 'día' : 'días'} × ${colones(PRECIO_POR_DIA)}`}
-                      </Text>
-                    </View>
+                      {dias > 0 && (
+                        <View style={estilos.costo}>
+                          <Text style={estilos.costoEtiqueta}>
+                            {t('admin.total_rate') || 'Total según tarifa'}
+                          </Text>
+                          <Text style={estilos.costoTotal}>{colones(sugerido)}</Text>
+                          <Text style={estilos.costoDetalle}>
+                            {t('admin.rate_detail', {
+                              days: dias,
+                              dayWord: dias === 1 ? (t('admin.day_single') || 'día') : (t('admin.day_plural') || 'días'),
+                              rate: colones(PRECIO_POR_DIA),
+                            }) || `${dias} ${dias === 1 ? 'día' : 'días'} × ${colones(PRECIO_POR_DIA)}`}
+                          </Text>
+                        </View>
+                      )}
+                    </>
                   )}
                 </CampoBase>
 
                 <CampoBase
                   etiqueta="Modelo publicitario (Meta Ads)"
                   ayuda="Objetivo de cobro y límite de entrega (Delivery Cap)."
+                  bloqueado={bloqueadoPorPago}
                 >
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs }}>
                     <TouchableOpacity
+                      disabled={bloqueadoPorPago}
                       style={[
                         estilos.btnSecundario,
                         { flex: 1, paddingVertical: 10, alignItems: 'center' },
@@ -525,6 +593,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                           backgroundColor: colors.primary,
                           borderColor: colors.primary,
                         },
+                        bloqueadoPorPago && { opacity: 0.75 },
                       ]}
                       onPress={() => set('billing_model')('CPM')}
                     >
@@ -539,6 +608,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                      disabled={bloqueadoPorPago}
                       style={[
                         estilos.btnSecundario,
                         { flex: 1, paddingVertical: 10, alignItems: 'center' },
@@ -546,6 +616,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                           backgroundColor: colors.primary,
                           borderColor: colors.primary,
                         },
+                        bloqueadoPorPago && { opacity: 0.75 },
                       ]}
                       onPress={() => set('billing_model')('CPC')}
                     >
@@ -568,6 +639,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                       : 'Límite de visualizaciones contratadas (Delivery Cap)'
                   }
                   ayuda="El anuncio se detendrá automáticamente cuando alcance esta cifra."
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('target_quota', {
                     placeholder: form.billing_model === 'CPC' ? '50' : '1000',
@@ -577,10 +649,16 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
 
                 <CampoBase
                   etiqueta="Estado y Comprobante de Pago"
-                  ayuda="Detalles emitidos por la pasarela de pagos simulada."
+                  ayuda={
+                    bloqueadoPorPago
+                      ? t('admin.locked_field_note') || 'Bloqueado por comprobante de pago del anunciante'
+                      : 'Detalles emitidos por la pasarela de pagos simulada.'
+                  }
+                  bloqueado={bloqueadoPorPago}
                 >
                   <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                     <TouchableOpacity
+                      disabled={bloqueadoPorPago}
                       style={[
                         estilos.btnSecundario,
                         { flex: 1, paddingVertical: 8, alignItems: 'center' },
@@ -588,6 +666,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                           backgroundColor: '#DCFCE7',
                           borderColor: '#16A34A',
                         },
+                        bloqueadoPorPago && { opacity: 0.75 },
                       ]}
                       onPress={() => set('payment_status')('PAGADO')}
                     >
@@ -602,6 +681,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                      disabled={bloqueadoPorPago}
                       style={[
                         estilos.btnSecundario,
                         { flex: 1, paddingVertical: 8, alignItems: 'center' },
@@ -609,6 +689,7 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                           backgroundColor: '#FEF3C7',
                           borderColor: '#D97706',
                         },
+                        bloqueadoPorPago && { opacity: 0.75 },
                       ]}
                       onPress={() => set('payment_status')('PENDIENTE')}
                     >
@@ -633,23 +714,27 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                 <CampoBase
                   etiqueta={t('admin.field_price_paid') || 'Precio cobrado (₡)'}
                   ayuda={
-                    precioManual
-                      ? t('admin.help_price_custom') ||
-                        'Precio acordado con el negocio. Ya no sigue a las fechas.'
-                      : t('admin.help_price_auto') ||
-                        'Sigue al total según tarifa. Escribe otra cifra si acordaste un descuento.'
+                    bloqueadoPorPago
+                      ? t('admin.locked_field_note') || 'Bloqueado por comprobante de pago del anunciante'
+                      : precioManual
+                        ? t('admin.help_price_custom') ||
+                          'Precio acordado con el negocio. Ya no sigue a las fechas.'
+                        : t('admin.help_price_auto') ||
+                          'Sigue al total según tarifa. Escribe otra cifra si acordaste un descuento.'
                   }
                   error={erroresPaso.price_paid}
+                  bloqueado={bloqueadoPorPago}
                 >
                   {entrada('price_paid', {
                     placeholder: '0',
                     keyboardType: 'decimal-pad',
                     onChangeText: (v) => {
+                      if (bloqueadoPorPago) return;
                       setPrecioManual(true);
                       set('price_paid')(v);
                     },
                   })}
-                  {precioManual && !!dias && String(sugerido) !== form.price_paid && (
+                  {!bloqueadoPorPago && precioManual && !!dias && String(sugerido) !== form.price_paid && (
                     <TouchableOpacity
                       onPress={() => {
                         setPrecioManual(false);
@@ -812,17 +897,44 @@ export const getAdFormModalTheme = createThemeStyles((theme) => {
       paddingBottom: spacing.lg,
       paddingTop: spacing.xs,
     },
+    avisoBloqueo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      backgroundColor: colors.primarySoft,
+      borderColor: theme.color(colors.primary, 'border'),
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    avisoBloqueoTitulo: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 2,
+    },
+    avisoBloqueoTexto: {
+      fontSize: 12,
+      lineHeight: 17,
+      color: colors.textFaint,
+    },
     stepContainer: {
       width: '100%',
     },
     campo: {
       marginBottom: spacing.md,
     },
+    etiquetaFila: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 5,
+    },
     etiqueta: {
       fontSize: 13,
       fontWeight: '600',
       color: colors.text,
-      marginBottom: 5,
     },
     ayuda: {
       fontSize: 11,
@@ -843,12 +955,19 @@ export const getAdFormModalTheme = createThemeStyles((theme) => {
       alignItems: 'flex-start',
       minHeight: 68,
     },
+    inputBloqueado: {
+      backgroundColor: colors.surfaceMuted,
+      opacity: 0.78,
+    },
     inputTexto: {
       flex: 1,
       paddingVertical: Platform.OS === 'web' ? 10 : 8,
       fontSize: 14,
       color: colors.text,
       ...Platform.select({ web: { outlineStyle: 'none' }, default: {} }),
+    },
+    inputTextoBloqueado: {
+      color: colors.textMuted,
     },
     imagenFila: {
       flexDirection: 'row',

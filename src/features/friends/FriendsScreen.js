@@ -737,19 +737,19 @@ export const FriendsScreen = ({
                   </View>
                   <View style={styles.actionGroup}>
                     <TouchableOpacity
+                      style={styles.rejectBtn}
+                      onPress={() => handleResponse(req.id, 'REJECTED')}
+                      activeOpacity={0.8}
+                    >
+                      <Feather name="x" size={14} color={theme.color("#8A908B", 'muted')} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={styles.acceptBtn}
                       onPress={() => handleResponse(req.id, 'ACCEPTED')}
                       activeOpacity={0.8}
                     >
                       <Feather name="check" size={14} color={theme.color("#FFFFFF", 'text')} />
                       <Text style={styles.btnText}>{t('friends.accept')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rejectBtn}
-                      onPress={() => handleResponse(req.id, 'REJECTED')}
-                      activeOpacity={0.8}
-                    >
-                      <Feather name="x" size={14} color={theme.color("#8A908B", 'muted')} />
                     </TouchableOpacity>
                   </View>
                 </View>

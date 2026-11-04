@@ -521,7 +521,18 @@
     "expired_invite": "te invitó a esta sala, pero ya finalizó: la invitación venció.",
     "leave_room_msg_active": "Dejarás de ver su chat y su ranking, y tus avances dejarán de contar. Para volver tendrían que invitarte otra vez.",
     "leave_room_msg_closed": "El reto ya terminó. Al salir, la sala desaparece de tu lista; para los demás se queda igual.",
-    "leave_room_btn_active": "Salir de la sala"
+    "leave_room_btn_active": "Salir de la sala",
+    "challenge_input_placeholder": "Escribe tu propio reto o busca uno existente...",
+    "matching_activities": "Retos sugeridos del catálogo",
+    "custom_challenge_badge": "Nuevo reto personalizado",
+    "catalog_challenge_badge": "Reto del catálogo seleccionado",
+    "change_challenge": "Cambiar",
+    "invite_friends_subtitle": "Recibirán una invitación para unirse a la sala.",
+    "select_friends_btn": "Selecciona amigos",
+    "send_invitations_one": "Enviar invitación",
+    "send_invitations_other": "Enviar {count} invitaciones",
+    "in_room_tag": "En la sala",
+    "invited_tag": "Invitado"
   },
   "messages": {
     "title": "Mensajes",
@@ -773,7 +784,10 @@
     "confirm_rejection": "Confirmar rechazo",
     "reject_placeholder": "Motivo del rechazo (opcional)",
     "messages": "Mensajes",
-    "error_change_ad_status": "No se pudo cambiar el estado del anuncio."
+    "error_change_ad_status": "No se pudo cambiar el estado del anuncio.",
+    "locked_ad_banner_title": "Datos contratados y facturados (solo lectura)",
+    "locked_ad_banner_desc": "El contenido, enlace, ubicación, vigencia y monto pagado ya fueron facturados al anunciante y no pueden modificarse. Solo puedes asignar los gustos de segmentación y notas internas.",
+    "locked_field_note": "Bloqueado por comprobante de pago del anunciante"
   },
   "report": {
     "title": "Reportar publicación",
@@ -848,7 +862,13 @@
     "deportes": "Deportes",
     "lectura": "Lectura",
     "música": "Música",
-    "naturaleza": "Naturaleza"
+    "naturaleza": "Naturaleza",
+    "coleccionismo": "Coleccionismo",
+    "manualidades": "Manualidades",
+    "modelismo": "Modelismo",
+    "programación": "Programación",
+    "programacion": "Programación",
+    "musica": "Música"
   },
   "legal": {
     "privacy_policy": "Política de Privacidad",
@@ -873,7 +893,8 @@
     "why_reason_nearby": "Es de tu zona, según el permiso de ubicación del teléfono.",
     "why_privacy": "De tu ubicación solo guardamos el nombre de tu cantón o ciudad. El anunciante nunca recibe ningún dato tuyo.",
     "why_ok": "Entendido",
-    "why_generic": "Es un anuncio dirigido a todos los usuarios, no se eligió por tus datos. Gracias a los anuncios Hobbier sigue siendo gratis."
+    "why_generic": "Es un anuncio dirigido a todos los usuarios, no se eligió por tus datos. Gracias a los anuncios Hobbier sigue siendo gratis.",
+    "featured_badge": "Destacado para ti"
   },
   "location_ask": {
     "title": "Descubre lo que pasa cerca de ti",

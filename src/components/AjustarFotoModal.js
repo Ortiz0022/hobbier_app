@@ -365,8 +365,15 @@ export const AjustarFotoModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Lo que se viene a hacer aquí va primero; irse, después. */}
           <View style={styles.acciones}>
+            <TouchableOpacity
+              style={styles.cancelar}
+              onPress={onCancelar}
+              disabled={procesando}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelarTexto}>{t('common.cancel') || 'Cancelar'}</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.listo, (procesando || !listoParaPintar) && styles.listoApagado]}
               onPress={confirmar}
@@ -378,14 +385,6 @@ export const AjustarFotoModal = ({
               ) : (
                 <Text style={styles.listoTexto}>{t('photo.use_photo') || 'Listo'}</Text>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cancelar}
-              onPress={onCancelar}
-              disabled={procesando}
-              accessibilityRole="button"
-            >
-              <Text style={styles.cancelarTexto}>{t('common.cancel') || 'Cancelar'}</Text>
             </TouchableOpacity>
           </View>
         </View>

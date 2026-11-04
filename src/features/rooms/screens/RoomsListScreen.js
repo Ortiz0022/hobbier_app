@@ -77,16 +77,16 @@ export const RoomsListScreen = ({ onNavigateToCreate, onNavigateToRoom }) => {
               </View>
               <View style={styles.invitationActions}>
                 <TouchableOpacity
-                  style={styles.invAcceptBtn}
-                  onPress={() => acceptInvitation(inv.invitation_id).then(handleRefresh)}
-                >
-                  <Feather name="check" size={16} color={colors.onPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity
                   style={styles.invRejectBtn}
                   onPress={() => rejectInvitation(inv.invitation_id)}
                 >
                   <Feather name="x" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.invAcceptBtn}
+                  onPress={() => acceptInvitation(inv.invitation_id).then(handleRefresh)}
+                >
+                  <Feather name="check" size={16} color={colors.onPrimary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -305,7 +305,6 @@ export const getRoomsListScreenTheme = createThemeStyles((theme) => {
       backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: spacing.sm,
     },
     invRejectBtn: {
       width: 36,
@@ -314,6 +313,7 @@ export const getRoomsListScreenTheme = createThemeStyles((theme) => {
       backgroundColor: colors.surfaceMuted,
       justifyContent: 'center',
       alignItems: 'center',
+      marginRight: spacing.sm,
     },
     finishedCard: {
       ...card,

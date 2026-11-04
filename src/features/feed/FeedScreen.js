@@ -105,6 +105,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [ads, setAds] = useState([]);
   const [adInfo, setAdInfo] = useState(null);
+  const [visibleAdIds, setVisibleAdIds] = useState(() => new Set());
   const [pedirUbicacion, setPedirUbicacion] = useState(false);
   // Una impresión por anuncio y carga del feed: volver a pasar por encima al
   // hacer scroll no la cuenta otra vez.
@@ -464,11 +465,15 @@ export const FeedScreen = ({ onActivityAccepted }) => {
 
   // Impresión = el anuncio llegó a verse en pantalla, no solo a cargarse.
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    const actuales = new Set();
     viewableItems.forEach(({ item }) => {
-      if (!item?.__ad || adsVistosRef.current.has(item.ad.id)) return;
+      if (!item?.__ad) return;
+      actuales.add(item.ad.id);
+      if (adsVistosRef.current.has(item.ad.id)) return;
       adsVistosRef.current.add(item.ad.id);
       logAdEvent(item.ad.id, 'IMPRESSION');
     });
+    setVisibleAdIds(actuales);
   }).current;
 
   const handleAdPress = (ad) => {
@@ -528,7 +533,9 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     if (post.__ad) {
       return (
         <SponsoredCard
+          key={post.ad.id}
           ad={post.ad}
+          isVisible={visibleAdIds.has(post.ad.id)}
           onPress={() => handleAdPress(post.ad)}
           onInfo={() => handleAdInfo(post.ad)}
         />
@@ -715,7 +722,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }}
         // renderPost depende del usuario actual y de las traducciones activas
-        extraData={[user?.id, translations, translatingIds, language]}
+        extraData={[user?.id, translations, translatingIds, language, visibleAdIds]}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>

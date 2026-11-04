@@ -94,6 +94,9 @@ export const SancionModal = ({ perfil, onCancelar, onConfirmar }) => {
           </View>
 
           <View style={estilos.pie}>
+            <TouchableOpacity style={estilos.btnCancelar} onPress={onCancelar} activeOpacity={0.85}>
+              <Text style={estilos.btnCancelarTexto}>Cancelar</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[estilos.btnSancionar, !puedeEnviar && estilos.btnApagado]}
               onPress={confirmar}
@@ -105,9 +108,6 @@ export const SancionModal = ({ perfil, onCancelar, onConfirmar }) => {
               ) : (
                 <Text style={estilos.btnSancionarTexto}>Sancionar</Text>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity style={estilos.btnCancelar} onPress={onCancelar} activeOpacity={0.85}>
-              <Text style={estilos.btnCancelarTexto}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

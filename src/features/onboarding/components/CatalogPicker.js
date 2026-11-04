@@ -136,10 +136,19 @@ export const CatalogPicker = ({ tabla, selectedIds, onChange, initialCount = 5, 
     );
   };
 
+  const nombreVisible = (nombre) => {
+    if (tabla === 'likes') {
+      const clave = `likes.${(nombre || '').toLowerCase()}`;
+      const traducido = t(clave);
+      return traducido === clave ? nombre : traducido;
+    }
+    return nombre;
+  };
+
   const pintarOpcion = (item) => (
     <SelectableCard
       key={item.id}
-      label={item.name}
+      label={nombreVisible(item.name)}
       icon={getCatalogIcon(item.name)}
       tint={getCatalogTint(item.name)}
       isSelected={selectedIds.includes(item.id)}

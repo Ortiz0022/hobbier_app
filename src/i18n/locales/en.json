@@ -521,7 +521,18 @@
     "expired_invite": "invited you to this room, but it has already ended: the invitation expired.",
     "leave_room_msg_active": "You'll stop seeing its chat and ranking, and your progress will no longer count. You would need a new invitation to come back.",
     "leave_room_msg_closed": "The challenge has already ended. If you leave, the room disappears from your list; for everyone else it stays the same.",
-    "leave_room_btn_active": "Leave room"
+    "leave_room_btn_active": "Leave room",
+    "challenge_input_placeholder": "Write your own challenge or search existing ones...",
+    "matching_activities": "Suggested challenges from catalog",
+    "custom_challenge_badge": "New custom challenge",
+    "catalog_challenge_badge": "Catalog challenge selected",
+    "change_challenge": "Change",
+    "invite_friends_subtitle": "They will receive an invitation to join the room.",
+    "select_friends_btn": "Select friends",
+    "send_invitations_one": "Send invitation",
+    "send_invitations_other": "Send {count} invitations",
+    "in_room_tag": "In room",
+    "invited_tag": "Invited"
   },
   "messages": {
     "title": "Messages",
@@ -773,7 +784,10 @@
     "confirm_rejection": "Confirm rejection",
     "reject_placeholder": "Reason for rejection (optional)",
     "messages": "Messages",
-    "error_change_ad_status": "The ad status could not be changed."
+    "error_change_ad_status": "The ad status could not be changed.",
+    "locked_ad_banner_title": "Contracted and billed data (read-only)",
+    "locked_ad_banner_desc": "The content, link, location, dates, and paid amount were already billed to the advertiser and cannot be modified. You can only assign target tastes and internal notes.",
+    "locked_field_note": "Locked by advertiser payment receipt"
   },
   "report": {
     "title": "Report post",
@@ -848,7 +862,13 @@
     "deportes": "Sports",
     "lectura": "Reading",
     "música": "Music",
-    "naturaleza": "Nature"
+    "naturaleza": "Nature",
+    "coleccionismo": "Collecting",
+    "manualidades": "Crafts",
+    "modelismo": "Scale Modeling",
+    "programación": "Programming",
+    "programacion": "Programming",
+    "musica": "Music"
   },
   "legal": {
     "privacy_policy": "Privacy Policy",
@@ -873,7 +893,8 @@
     "why_reason_nearby": "It is from your area, based on your phone's location permission.",
     "why_privacy": "From your location we only store the name of your canton or city. The advertiser never receives any of your data.",
     "why_ok": "Got it",
-    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free."
+    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free.",
+    "featured_badge": "Featured for you"
   },
   "location_ask": {
     "title": "Discover what is happening near you",
