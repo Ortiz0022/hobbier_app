@@ -848,7 +848,13 @@
     "deportes": "Sports",
     "lectura": "Reading",
     "música": "Music",
-    "naturaleza": "Nature"
+    "naturaleza": "Nature",
+    "coleccionismo": "Collecting",
+    "manualidades": "Crafts",
+    "modelismo": "Scale Modeling",
+    "programación": "Programming",
+    "programacion": "Programming",
+    "musica": "Music"
   },
   "legal": {
     "privacy_policy": "Privacy Policy",

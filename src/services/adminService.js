@@ -122,7 +122,7 @@ export const createActivityAdmin = async ({
         category_id: categoryId || null,
         min_age: minAge ? parseInt(minAge, 10) : null,
         max_age: maxAge ? parseInt(maxAge, 10) : null,
-        points_awarded: parseInt(pointsAwarded, 10) || 10,
+        points_awarded: [10, 15, 20, 25, 30].includes(parseInt(pointsAwarded, 10)) ? parseInt(pointsAwarded, 10) : 20,
         is_active: true,
         created_by: createdBy || null,
       })

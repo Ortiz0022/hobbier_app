@@ -686,6 +686,16 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
 
             <View style={styles.editActions}>
               <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setEditing(false);
+                  setNewImageUri(null);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.saveBtn}
                 onPress={handleSaveProfile}
                 disabled={saving}
@@ -695,16 +705,6 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
                 ) : (
                   <Text style={styles.saveBtnText}>{t('profile.save_changes')}</Text>
                 )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => {
-                  setEditing(false);
-                  setNewImageUri(null);
-                }}
-              >
-                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>

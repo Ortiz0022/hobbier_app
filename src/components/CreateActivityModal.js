@@ -22,6 +22,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { capitalizarTitulo } from '../utils/titleCase';
 
 /**
+ * Opciones cerradas de puntaje según el catálogo oficial de Hobbier (10 a 30 pts).
+ * Evita que alguien digite puntajes desproporcionados (ej. 1000 pts).
+ */
+const OPCIONES_PUNTOS = ['10', '15', '20', '25', '30'];
+
+/**
  * Minúsculas, sin espacios sobrantes y sin tildes, para comparar nombres.
  * Es el gemelo de `public.normalizar_nombre(TEXT)` en la base de datos.
  */
@@ -269,56 +275,63 @@ export const CreateActivityModal = ({ visible, onClose, onCreated, forCatalog = 
             </Text>
           )}
 
-
-          <View style={styles.formRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t('create_activity.points') || 'Puntos'}</Text>
-              <TextInput {...theme.textInputProps}
-                style={styles.input}
-                keyboardType="number-pad"
-                value={points}
-                onChangeText={setPoints}
-              />
-            </View>
-            {forCatalog && (
-              <>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>{t('create_activity.min_age') || 'Edad Mínima'}</Text>
-                  <TextInput {...theme.textInputProps}
-                    style={styles.input}
-                    placeholder={t('create_activity.placeholder_min_age') || "Ej. 12"}
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="number-pad"
-                    value={minAge}
-                    onChangeText={setMinAge}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>{t('create_activity.max_age') || 'Edad Máxima'}</Text>
-                  <TextInput {...theme.textInputProps}
-                    style={styles.input}
-                    placeholder={t('create_activity.placeholder_max_age') || "Sin límite"}
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="number-pad"
-                    value={maxAge}
-                    onChangeText={setMaxAge}
-                  />
-                </View>
-              </>
-            )}
+          <Text style={styles.label}>{t('create_activity.points') || 'Puntos'}</Text>
+          <View style={styles.pointsOptionsRow}>
+            {OPCIONES_PUNTOS.map((opcion) => {
+              const activo = points === opcion;
+              return (
+                <TouchableOpacity
+                  key={opcion}
+                  style={[styles.pointChip, activo && styles.pointChipActive]}
+                  onPress={() => setPoints(opcion)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.pointChipText, activo && styles.pointChipTextActive]}>
+                    {opcion} {t('common.points_abbr') || 'pts'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
+          {forCatalog && (
+            <View style={styles.formRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>{t('create_activity.min_age') || 'Edad Mínima'}</Text>
+                <TextInput {...theme.textInputProps}
+                  style={styles.input}
+                  placeholder={t('create_activity.placeholder_min_age') || "Ej. 12"}
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  value={minAge}
+                  onChangeText={setMinAge}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>{t('create_activity.max_age') || 'Edad Máxima'}</Text>
+                <TextInput {...theme.textInputProps}
+                  style={styles.input}
+                  placeholder={t('create_activity.placeholder_max_age') || "Sin límite"}
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  value={maxAge}
+                  onChangeText={setMaxAge}
+                />
+              </View>
+            </View>
+          )}
+
           <View style={styles.actions}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} disabled={creating}>
+              <Text style={styles.cancelBtnText}>{t('create_activity.cancel') || 'Cancelar'}</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreate} disabled={creating}>
               {creating ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={styles.saveBtnText}>{t('create_activity.save_activity') || 'Guardar Actividad'}</Text>
               )}
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} disabled={creating}>
-              <Text style={styles.cancelBtnText}>{t('create_activity.cancel') || 'Cancelar'}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -335,17 +348,30 @@ const { colors } = theme;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
     alignItems: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 0,
   },
   content: {
     backgroundColor: theme.color(colors.surface, 'background'),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderBottomLeftRadius: Platform.OS === 'web' ? 24 : 0,
+    borderBottomRightRadius: Platform.OS === 'web' ? 24 : 0,
     width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
     flexGrow: 0,
-    maxHeight: '85%',
+    maxHeight: '88%',
+    borderWidth: Platform.OS === 'web' ? 1 : 0,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
+    ...Platform.select({
+      web: {
+        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
+      },
+      default: {},
+    }),
   },
   contentInner: {
     padding: 24,
@@ -442,6 +468,36 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 16,
     marginTop: 6,
+  },
+  pointsOptionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pointChip: {
+    flex: 1,
+    minWidth: 56,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
+    borderWidth: 1.5,
+    borderColor: theme.color(colors.surfaceMuted, 'border'),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pointChipActive: {
+    backgroundColor: theme.color(colors.primarySoft, 'card'),
+    borderColor: theme.color(colors.primary, 'primary'),
+  },
+  pointChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  pointChipTextActive: {
+    color: theme.color(colors.primaryDark, 'primary'),
+    fontWeight: '700',
   },
   formRow: {
     flexDirection: 'row',

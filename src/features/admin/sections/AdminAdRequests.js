@@ -207,7 +207,6 @@ export const AdminAdRequests = ({ onAdCreated }) => {
 
               {sol.status === 'PENDIENTE' && rechazando !== sol.id && (
                 <View style={estilos.acciones}>
-                  <BotonAccion texto={t('admin.approve') || 'Aprobar'} icono="checkmark" tono="marca" onPress={() => setAprobando(sol)} />
                   <BotonAccion texto={t('admin.messages') || 'Mensajes'} icono="chatbubbles-outline" onPress={() => setChat(sol)} />
                   <BotonAccion
                     texto={t('admin.reject') || 'Rechazar'}
@@ -218,6 +217,7 @@ export const AdminAdRequests = ({ onAdCreated }) => {
                       setMotivo('');
                     }}
                   />
+                  <BotonAccion texto={t('admin.approve') || 'Aprobar'} icono="checkmark" tono="marca" onPress={() => setAprobando(sol)} />
                 </View>
               )}
 
@@ -235,8 +235,8 @@ export const AdminAdRequests = ({ onAdCreated }) => {
                     />
                   </View>
                   <View style={estilos.acciones}>
-                    <BotonAccion texto={t('admin.confirm_rejection') || 'Confirmar rechazo'} icono="close" tono="rojo" onPress={() => confirmarRechazo(sol)} />
                     <BotonAccion texto={t('common.cancel') || 'Cancelar'} icono="arrow-undo-outline" onPress={() => setRechazando(null)} />
+                    <BotonAccion texto={t('admin.confirm_rejection') || 'Confirmar rechazo'} icono="close" tono="rojo" onPress={() => confirmarRechazo(sol)} />
                   </View>
                 </View>
               )}
