@@ -19,6 +19,8 @@ import {
   CircleCheckBig,
   Check,
   Wifi,
+  Mail,
+  FileText,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, {
@@ -35,6 +37,10 @@ import { useThemeValues } from '../context/ThemeContext';
 import { createThemeStyles } from '../theme/themeRuntime';
 import { radii, spacing, fonts } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  enviarFacturaPorCorreo,
+  abrirFacturaImprimible,
+} from '../services/invoiceEmailService';
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
 
@@ -83,8 +89,11 @@ export const SimulatedPaymentModal = ({
   const [titular, setTitular] = useState('');
   const [expiracion, setExpiracion] = useState('');
   const [cvv, setCvv] = useState('');
+  const [emailFactura, setEmailFactura] = useState('');
   const [transactionId, setTransactionId] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [fechaPago, setFechaPago] = useState(/** @type {Date | null} */ (null));
+  const [estadoCorreo, setEstadoCorreo] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'fallback'
 
   // Reiniciar estado al abrir el modal
   useEffect(() => {
@@ -94,15 +103,18 @@ export const SimulatedPaymentModal = ({
       setTitular('');
       setExpiracion('');
       setCvv('');
+      setEmailFactura(orderSummary.customerEmail || '');
       setTransactionId('');
+      setInvoiceNumber('');
       setFechaPago(null);
+      setEstadoCorreo('idle');
       setMensajeProceso(
         language === 'en'
           ? 'Contacting secure banking institution...'
           : 'Contactando entidad bancaria segura...'
       );
     }
-  }, [visible, language]);
+  }, [visible, language, orderSummary.customerEmail]);
 
   const marca = useMemo(() => detectarMarca(numero), [numero]);
   const digitosLimpios = numero.replace(/\D/g, '');
@@ -120,6 +132,34 @@ export const SimulatedPaymentModal = ({
     setTitular('Juanito Pérez');
     setExpiracion('12/28');
     setCvv('123');
+    if (!emailFactura && orderSummary.customerEmail) {
+      setEmailFactura(orderSummary.customerEmail);
+    }
+  };
+
+  const construirDatosFactura = (txnId, numFac, fecha) => ({
+    invoiceNumber: numFac,
+    transactionId: txnId,
+    paidAt: (fecha || fechaPago || new Date()).toISOString(),
+    advertiserName: orderSummary.advertiserName || titular.trim(),
+    customerEmail: (emailFactura || orderSummary.customerEmail || '').trim(),
+    campaignTitle: orderSummary.title || 'Anuncio en Hobbier',
+    billingModel: orderSummary.billingModel || 'CPM',
+    targetQuota: orderSummary.targetQuota || 1000,
+    amount: orderSummary.amount || 0,
+    cardBrand: marca,
+    cardLast4: digitosLimpios.slice(-4) || '4242',
+    startDate: orderSummary.startDate || '',
+    endDate: orderSummary.endDate || '',
+    language,
+  });
+
+  const dispararEnvioFactura = async (txnId, numFac, fecha) => {
+    const correoDestino = (emailFactura || orderSummary.customerEmail || '').trim();
+    if (!correoDestino || !correoDestino.includes('@')) return;
+    setEstadoCorreo('sending');
+    const res = await enviarFacturaPorCorreo(construirDatosFactura(txnId, numFac, fecha));
+    setEstadoCorreo(res.ok ? 'sent' : 'fallback');
   };
 
   const handlePagar = () => {
@@ -142,17 +182,21 @@ export const SimulatedPaymentModal = ({
     setTimeout(() => {
       setMensajeProceso(
         language === 'en'
-          ? 'Generating payment receipt...'
-          : 'Generando comprobante de pago...'
+          ? 'Generating electronic invoice & receipt...'
+          : 'Generando factura electrónica y comprobante...'
       );
     }, 1400);
 
     setTimeout(() => {
-      const nuevoTxn = `TXN-HBR-${Math.floor(100000 + Math.random() * 900000)}`;
+      const codigoRandom = Math.floor(100000 + Math.random() * 900000);
+      const nuevoTxn = `TXN-HBR-${codigoRandom}`;
+      const nuevaFac = `FAC-HBR-${codigoRandom}`;
       const ahora = new Date();
       setTransactionId(nuevoTxn);
+      setInvoiceNumber(nuevaFac);
       setFechaPago(ahora);
       setPaso('success');
+      dispararEnvioFactura(nuevoTxn, nuevaFac, ahora);
     }, 2000);
   };
 
@@ -484,6 +528,30 @@ export const SimulatedPaymentModal = ({
                       </View>
                     </View>
                   </View>
+
+                  <View style={estilos.inputGroup}>
+                    <Text style={estilos.inputLabel}>
+                      {language === 'en'
+                        ? 'Email for electronic invoice'
+                        : 'Correo para envío de factura'}
+                    </Text>
+                    <View style={estilos.inputWrapper}>
+                      <Mail size={17} color={colors.textMuted} style={estilos.inputIcon} />
+                      <TextInput
+                        {...theme.textInputProps}
+                        style={estilos.textInput}
+                        placeholder={
+                          language === 'en'
+                            ? 'billing@company.com'
+                            : 'correo@ejemplo.com'
+                        }
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={emailFactura}
+                        onChangeText={setEmailFactura}
+                      />
+                    </View>
+                  </View>
                 </View>
 
                 {/* Badge de seguridad */}
@@ -608,6 +676,51 @@ export const SimulatedPaymentModal = ({
                       {colones(orderSummary.amount || 0)}
                     </Text>
                   </View>
+                </View>
+
+                {/* Estado de envío de factura por correo y vista previa ejecutiva */}
+                <View style={estilos.invoiceActionsBox}>
+                  {Boolean(emailFactura.trim()) && (
+                    <View style={estilos.invoiceEmailStatusRow}>
+                      <Mail size={15} color={colors.primary} />
+                      <Text style={estilos.invoiceEmailStatusText} numberOfLines={2}>
+                        {estadoCorreo === 'sending'
+                          ? language === 'en'
+                            ? `Sending electronic invoice to ${emailFactura.trim()}...`
+                            : `Enviando factura electrónica a ${emailFactura.trim()}...`
+                          : estadoCorreo === 'sent'
+                            ? language === 'en'
+                              ? `Electronic invoice sent to ${emailFactura.trim()}`
+                              : `Factura electrónica enviada a ${emailFactura.trim()}`
+                            : language === 'en'
+                              ? `Electronic invoice generated for ${emailFactura.trim()}`
+                              : `Factura electrónica generada para ${emailFactura.trim()}`}
+                      </Text>
+                    </View>
+                  )}
+
+                  {Platform.OS === 'web' && (
+                    <TouchableOpacity
+                      style={estilos.viewInvoiceBtn}
+                      onPress={() =>
+                        abrirFacturaImprimible(
+                          construirDatosFactura(
+                            transactionId,
+                            invoiceNumber || `FAC-${transactionId.replace(/^TXN-/, '')}`,
+                            fechaPago
+                          )
+                        )
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <FileText size={16} color={colors.primary} />
+                      <Text style={estilos.viewInvoiceBtnText}>
+                        {language === 'en'
+                          ? 'View / Download Official Invoice (PDF)'
+                          : 'Ver / Descargar Factura Ejecutiva (PDF)'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Botón para completar solicitud */}
@@ -1205,6 +1318,45 @@ export const getSimulatedPaymentModalTheme = createThemeStyles((theme) => {
       fontFamily: fonts.bold,
       fontSize: 15,
       color: '#FFFFFF',
+    },
+    invoiceActionsBox: {
+      width: '100%',
+      gap: 10,
+      marginBottom: spacing.md,
+    },
+    invoiceEmailStatusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.primarySoft || '#F0F8FA',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.primary + '35',
+    },
+    invoiceEmailStatusText: {
+      flex: 1,
+      fontFamily: fonts.medium,
+      fontSize: 12,
+      color: colors.text,
+    },
+    viewInvoiceBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      width: '100%',
+      height: 44,
+      borderRadius: radii.input || 12,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      backgroundColor: 'transparent',
+    },
+    viewInvoiceBtnText: {
+      fontFamily: fonts.bold,
+      fontSize: 13,
+      color: colors.primary,
     },
   });
   return { theme, colors, estilos };

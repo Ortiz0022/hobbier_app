@@ -41,6 +41,30 @@ export const logAdEvent = async (adId, kind) => {
 export const submitAdRequest = async (userId, solicitud) => {
   try {
     const esEvento = solicitud.kind === 'EVENTO';
+
+    // Normalizar fechas respecto a CURRENT_DATE en UTC del servidor PostgreSQL
+    // (en Costa Rica UTC-6, después de las 6:00 PM el servidor ya está en el día siguiente UTC).
+    const hoyUtc = new Date().toISOString().slice(0, 10);
+    let startsOn = solicitud.starts_on || hoyUtc;
+    if (startsOn < hoyUtc) {
+      startsOn = hoyUtc;
+    }
+
+    let endsOn = solicitud.ends_on || startsOn;
+    if (endsOn < startsOn) {
+      endsOn = startsOn;
+    }
+
+    let eventDate = esEvento ? solicitud.event_date || null : null;
+    if (eventDate && endsOn > eventDate) {
+      // El trigger de BD exige ends_on <= event_date
+      if (eventDate >= startsOn) {
+        endsOn = eventDate;
+      } else {
+        eventDate = endsOn;
+      }
+    }
+
     const { error } = await supabase.from('ad_requests').insert({
       user_id: userId,
       advertiser_name: solicitud.advertiser_name.trim(),
@@ -50,14 +74,14 @@ export const submitAdRequest = async (userId, solicitud) => {
       title: solicitud.title.trim(),
       body: solicitud.body?.trim() || null,
       link_url: solicitud.link_url?.trim() || null,
-      event_date: esEvento ? solicitud.event_date || null : null,
+      event_date: eventDate,
       event_place: esEvento ? solicitud.event_place?.trim() || null : null,
       image_url: solicitud.image_url || null,
-      starts_on: solicitud.starts_on,
-      ends_on: solicitud.ends_on,
+      starts_on: startsOn,
+      ends_on: endsOn,
       billing_model: solicitud.billing_model || 'CPM',
       target_quota: solicitud.target_quota ? Number(solicitud.target_quota) : null,
-      payment_status: solicitud.payment_status || 'PENDIENTE',
+      payment_status: solicitud.payment_status || 'PAGADO',
       transaction_id: solicitud.transaction_id || null,
     });
     if (error) throw error;

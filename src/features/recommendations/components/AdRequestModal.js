@@ -123,8 +123,17 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
   const [pendientesCount, setPendientesCount] = useState(0);
 
   useEffect(() => {
-    if (visible && user?.id) {
-      contarSolicitudesPendientes(user.id).then(setPendientesCount);
+    if (visible) {
+      // Refrescar fechas por defecto al abrir si habían quedado de un día anterior
+      const hoyLocalIso = campoAIso(enDias(0));
+      const actualDesdeIso = campoAIso(desde);
+      if (!actualDesdeIso || (hoyLocalIso && actualDesdeIso < hoyLocalIso)) {
+        setDesde(enDias(0));
+        setHasta(enDias(6));
+      }
+      if (user?.id) {
+        contarSolicitudesPendientes(user.id).then(setPendientesCount);
+      }
     }
   }, [visible, user?.id]);
 
@@ -323,12 +332,21 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
       image_url = subida.publicUrl;
     }
 
+    // Ajustar fechas frente al desfase UTC de Supabase (después de las 6:00 PM en Costa Rica,
+    // CURRENT_DATE en el servidor Postgres ya es el día siguiente en UTC).
+    const hoyUtcIso = new Date().toISOString().slice(0, 10);
+    const startsOnSafe = desdeIso && desdeIso < hoyUtcIso ? hoyUtcIso : desdeIso;
+    const endsOnSafe =
+      hastaIso && startsOnSafe && hastaIso < startsOnSafe ? startsOnSafe : hastaIso;
+    const eventDateSafe =
+      eventoIso && endsOnSafe && eventoIso < endsOnSafe ? endsOnSafe : eventoIso;
+
     const { error, limite } = await submitAdRequest(user.id, {
       ...form,
       image_url,
-      event_date: eventoIso,
-      starts_on: desdeIso,
-      ends_on: hastaIso,
+      event_date: eventDateSafe,
+      starts_on: startsOnSafe,
+      ends_on: endsOnSafe,
       billing_model: billingModel,
       target_quota: Number(targetQuota),
       payment_status: 'PAGADO',
@@ -537,7 +555,17 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
                 {esEvento && (
                   <>
                     <CampoBase etiqueta={t('ad_request.field_event_date')}>
-                      <CalendarDateField value={fechaEvento} onChange={setFechaEvento} minDate={new Date()} />
+                      <CalendarDateField
+                        value={fechaEvento}
+                        onChange={(nuevaFecha) => {
+                          setFechaEvento(nuevaFecha);
+                          const nuevoEvIso = campoAIso(nuevaFecha);
+                          if (nuevoEvIso && hastaIso && hastaIso > nuevoEvIso) {
+                            setHasta(nuevaFecha);
+                          }
+                        }}
+                        minDate={new Date()}
+                      />
                     </CampoBase>
                     <CampoBase etiqueta={t('ad_request.field_event_place')}>
                       {entrada('event_place', {
@@ -893,9 +921,12 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
         orderSummary={{
           title: form.title || 'Anuncio en Hobbier',
           advertiserName: form.advertiser_name,
+          customerEmail: user?.email || '',
           billingModel,
           targetQuota,
           amount: total,
+          startDate: desde,
+          endDate: hasta,
         }}
         onClose={() => setModalPagoVisible(false)}
         onPaymentSuccess={handlePaymentSuccess}

@@ -97,7 +97,8 @@ BEGIN
   IF NEW.starts_on IS NULL OR NEW.ends_on IS NULL THEN
     RAISE EXCEPTION 'FECHAS_SOLICITUD' USING HINT = 'Elige la fecha de inicio y la de fin del anuncio.';
   END IF;
-  IF NEW.starts_on < CURRENT_DATE THEN
+  -- Margen de 1 día para compensar el desfase horario UTC vs América Central (UTC-6)
+  IF NEW.starts_on < (CURRENT_DATE - INTERVAL '1 day') THEN
     RAISE EXCEPTION 'FECHAS_SOLICITUD' USING HINT = 'El anuncio no puede empezar antes de hoy.';
   END IF;
   IF NEW.event_date IS NOT NULL AND NEW.ends_on > NEW.event_date THEN
