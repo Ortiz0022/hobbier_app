@@ -16,7 +16,7 @@ import Svg, { Path } from 'react-native-svg';
 const SPARKLE_PATH = 'M10,0 Q10,10 20,10 Q10,10 10,20 Q10,10 0,10 Q10,10 10,0 Z';
 
 const StarSvg = ({ size = 26, color }) => {
-  const { theme, PARTICLE_COLORS, styles } = useThemeValues(getStarReactionButtonTheme);
+  const { theme } = useThemeValues(getStarReactionButtonTheme);
   return (<Svg width={size} height={size} viewBox="0 0 20 20">
     <Path d={SPARKLE_PATH} fill={color ?? theme.color('#FF8F21', 'accent')} />
   </Svg>);
@@ -24,7 +24,7 @@ const StarSvg = ({ size = 26, color }) => {
 
 // Componente individual para cada estrella animada flotante
 const FloatingStarParticle = ({ particle, onComplete }) => {
-  const { theme, PARTICLE_COLORS, styles } = useThemeValues(getStarReactionButtonTheme);
+  const { styles } = useThemeValues(getStarReactionButtonTheme);
 
   const anim = useRef(new Animated.Value(0)).current;
 

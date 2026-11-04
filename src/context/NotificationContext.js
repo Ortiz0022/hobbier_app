@@ -44,7 +44,7 @@ const DURATIONS = {
 let toastIdSeq = 0;
 
 const ToastItem = ({ toast, onDismiss }) => {
-  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+  const { TYPE_STYLES, toastStyles } = useThemeValues(getNotificationContextTheme);
 
   const translateY = useRef(new Animated.Value(-24)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -111,7 +111,7 @@ const ToastItem = ({ toast, onDismiss }) => {
 };
 
 const ConfirmDialog = ({ state, onResolve }) => {
-  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+  const { theme, confirmStyles } = useThemeValues(getNotificationContextTheme);
 
   if (!state) return null;
   const destructive = !!state.destructive;
@@ -154,7 +154,7 @@ const ConfirmDialog = ({ state, onResolve }) => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { theme, TYPE_STYLES, toastStyles, confirmStyles } = useThemeValues(getNotificationContextTheme);
+  const { toastStyles } = useThemeValues(getNotificationContextTheme);
 
   const [toasts, setToasts] = useState([]);
   const [confirmState, setConfirmState] = useState(null);

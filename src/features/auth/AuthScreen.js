@@ -15,8 +15,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-import { Palette, Heart, Flame } from 'lucide-react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';

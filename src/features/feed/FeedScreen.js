@@ -10,7 +10,6 @@ import {
   Image,
   ActivityIndicator,
   SafeAreaView,
-  Modal,
   Platform,
   Linking,
   BackHandler,

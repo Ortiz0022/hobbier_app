@@ -11,8 +11,6 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
-  Modal,
-  Pressable,
   BackHandler,
 } from 'react-native';
 // En web el RefreshControl de react-native-web no hace nada: este sí.
@@ -39,7 +37,6 @@ import { roomsService } from '../../services/roomsService';
 import { isInvitationFinished } from '../rooms/utils/roomHelpers';
 import { usePresence } from '../../context/PresenceContext';
 import { useLanguage } from '../../context/LanguageContext';
-
 import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
 import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
 import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';

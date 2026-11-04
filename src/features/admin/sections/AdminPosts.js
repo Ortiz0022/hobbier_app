@@ -5,19 +5,12 @@ import { View, Image, ActivityIndicator, TouchableOpacity, StyleSheet } from 're
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing, fonts } from "../../../theme";
-import { useNotify } from '../../../context/NotificationContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { getPostsAdmin, resolveReportedPostAdmin } from '../../../services/adminService';
 import { getCategoryLabel } from '../../../utils/category';
 import { ControlSegmentado, Insignia, TarjetaVacia, BotonAccion, Paginador, fechaCorta, getAdminUITheme } from "../adminUI";
 import { PostViewerModal } from '../components/PostViewerModal';
 import { capitalizarTitulo } from '../../../utils/titleCase';
-
-const ESTADOS = [
-  { key: 'ACTIVE', label: 'Visibles', icono: 'eye' },
-  { key: 'REPORTED', label: 'Reportadas', icono: 'flag' },
-  { key: 'DELETED', label: 'Ocultas', icono: 'eye-off' },
-];
 
 const POR_PAGINA = 10;
 

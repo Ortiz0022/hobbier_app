@@ -1,11 +1,11 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { Camera } from 'lucide-react-native';
 import { useRecyclingState } from '@shopify/flash-list';
-import { radii, spacing, fonts } from "../../../theme";
+import { radii, spacing } from "../../../theme";
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatMessageStamp } from '../../../utils/dateFormat';

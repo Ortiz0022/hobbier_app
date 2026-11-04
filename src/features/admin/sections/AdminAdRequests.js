@@ -22,12 +22,6 @@ import {
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
 
-const TONO_ESTADO = {
-  PENDIENTE: 'acento',
-  APROBADA: 'marca',
-  RECHAZADA: 'alerta',
-};
-
 const fechaLegible = (iso, lang = 'es') =>
   new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 

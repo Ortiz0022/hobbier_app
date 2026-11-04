@@ -18,25 +18,6 @@ import {
   estadoAnuncio,
 } from '../../../services/adsService';
 
-const TONO_ESTADO = {
-  ACTIVO: 'marca',
-  PROGRAMADO: 'acento',
-  PAUSADO: 'neutro',
-  VENCIDO: 'alerta',
-};
-
-const FILTROS = [
-  { key: 'vigentes', label: 'Vigentes', icono: 'radio-outline' },
-  { key: 'todos', label: 'Todos', icono: 'albums-outline' },
-];
-
-// Las solicitudes que llegan desde Descubre se revisan aquí mismo, junto a los
-// anuncios en los que acaban convirtiéndose.
-const VISTAS = [
-  { key: 'anuncios', label: 'Anuncios', icono: 'megaphone-outline' },
-  { key: 'solicitudes', label: 'Solicitudes', icono: 'mail-unread-outline' },
-];
-
 const fechaLegible = (iso, lang = 'es') =>
   new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -48,7 +29,7 @@ const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFra
  * Esas cifras son lo que se le enseña al anunciante para justificar el precio.
  */
 export const AdminAds = () => {
-  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
+  const { colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
   const { t, language } = useLanguage();
 
   const { notify, confirm } = useNotify();
@@ -277,7 +258,7 @@ export const AdminAds = () => {
 };
 
 const Cifra = ({ valor, etiqueta }) => {
-  const { theme, colors, adminStyles, estilos } = useThemeValues(getAdminAdsTheme);
+  const { estilos } = useThemeValues(getAdminAdsTheme);
   return (<View style={estilos.cifra}>
     <Text style={estilos.cifraValor}>{valor}</Text>
     <Text style={estilos.cifraEtiqueta}>{etiqueta}</Text>

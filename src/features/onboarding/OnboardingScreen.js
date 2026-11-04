@@ -14,11 +14,10 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions,
 } from 'react-native';
-import { Text, TextInput } from '../../components/scaledText';
+import { Text } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { SelectableCard } from '../../components/SelectableCard';
 import { StepProgressBar } from '../../components/StepProgressBar';
-
 import { capitalizarTitulo } from '../../utils/titleCase';
 import { getCatalogIcon, getCatalogIconsTheme } from "./catalogIcons";
 import { useAuth } from '../../context/AuthContext';

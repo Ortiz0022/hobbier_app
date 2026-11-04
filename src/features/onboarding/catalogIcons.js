@@ -1,4 +1,3 @@
-import { useThemeValues } from '../../context/ThemeContext';
 import { createThemeStyles } from '../../theme/themeRuntime';
 /**
  * Icono de cada opción de los catálogos (gustos, intereses y recursos).

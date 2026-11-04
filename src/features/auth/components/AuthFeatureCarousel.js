@@ -13,7 +13,6 @@ import {
   Flame,
   Award,
   Layers,
-  MessageSquare,
 } from 'lucide-react-native';
 
 const SLIDES = [

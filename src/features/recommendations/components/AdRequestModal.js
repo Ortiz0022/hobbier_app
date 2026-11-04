@@ -12,9 +12,6 @@ import {
   Image as ImageIcon,
   Check,
   ChevronRight,
-  ExternalLink,
-  MapPin,
-  Clock,
   Eye,
   MousePointerClick,
   Lock,
@@ -31,12 +28,9 @@ import {
   submitAdRequest,
   uploadAdRequestImage,
   diasDeVigencia,
-  precioSugerido,
-  PRECIO_POR_DIA,
   TARIFA_CPC,
   TARIFA_CPM,
   calcularPresupuesto,
-  calcularCuota,
   PRESETS_PRESUPUESTO,
   contarSolicitudesPendientes,
 } from '../../../services/adsService';
@@ -67,12 +61,6 @@ const CampoBase = ({ etiqueta, ayuda, error, children }) => {
     </View>
   );
 };
-
-const STEPS_INFO = [
-  { key: 'info', label: 'Datos del anunciante' },
-  { key: 'content', label: 'Contenido del anuncio' },
-  { key: 'duration', label: 'Objetivo y presupuesto' },
-];
 
 /**
  * Formulario guiado por pasos (Wizard/Stepper) para solicitar un anuncio.

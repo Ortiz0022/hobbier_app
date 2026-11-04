@@ -13,14 +13,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { Text } from '../../components/scaledText';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { supportService, explicarFalloSoporte } from '../../services/supportService';
 import { supabase } from '../../config/supabase';
-import { radii, spacing, fonts, secondaryButton, secondaryButtonText } from "../../theme";
+import { radii, spacing, fonts } from "../../theme";
 
 export const SuspendedScreen = () => {
   const { theme, colors, primaryButton, primaryButtonText, styles } = useThemeValues(getSuspendedScreenTheme);

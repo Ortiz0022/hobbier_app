@@ -9,18 +9,17 @@ import {
   TextInput,
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Text } from '../../../components/scaledText';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { supportService } from '../../../services/supportService';
 import { radii, spacing, fonts } from "../../../theme";
-import { Insignia, BotonAccion, BarraBusqueda, getAdminUITheme } from "../adminUI";
+import { Insignia, BarraBusqueda, getAdminUITheme } from "../adminUI";
 
 export const AdminSupport = ({ initialUserId = null }) => {
   const { theme, colors, adminStyles, styles } = useThemeValues(getAdminSupportTheme);

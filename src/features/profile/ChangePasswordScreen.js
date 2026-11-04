@@ -12,7 +12,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Text, TextInput } from '../../components/scaledText';
-import { ArrowLeft, ChevronRight, Eye, EyeOff, KeyRound, Shield, Check, Info } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, Eye, EyeOff, KeyRound, Shield, Check } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNotify } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';

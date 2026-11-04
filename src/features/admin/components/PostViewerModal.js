@@ -1,7 +1,7 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
 import React from 'react';
-import { View, StyleSheet, Image, Modal, Pressable, TouchableOpacity } from 'react-native';
+import { StyleSheet, Image, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { Text } from '../../../components/scaledText';
 import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing, fonts } from "../../../theme";

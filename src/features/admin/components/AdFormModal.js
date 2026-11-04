@@ -25,11 +25,7 @@ import {
   diasDeVigencia,
   precioSugerido,
   PRECIO_POR_DIA,
-  TARIFA_CPC,
-  TARIFA_CPM,
-  calcularPresupuesto,
 } from '../../../services/adsService';
-
 import { radii, spacing, fonts } from '../../../theme';
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;

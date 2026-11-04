@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
+
 
 import { useRoomDetails } from '../hooks/useRoomDetails';
 import { useRoomChat } from '../hooks/useRoomChat';
@@ -27,7 +27,6 @@ import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { formatDateTime } from '../../../utils/dateFormat';
 import { useNotify } from '../../../context/NotificationContext';
-
 import { ChatThread } from '../components/ChatThread';
 import { RoomRankingItem } from '../components/RoomRankingItem';
 import { InviteFriendsModal } from '../components/InviteFriendsModal';

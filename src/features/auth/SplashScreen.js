@@ -8,7 +8,6 @@ import {
   Platform,
   TouchableOpacity,
   useWindowDimensions,
-  View,
 } from 'react-native';
 import { Text } from '../../components/scaledText';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
