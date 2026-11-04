@@ -44,8 +44,17 @@ import { RoomsListScreen } from '../rooms/screens/RoomsListScreen';
 import { CreateRoomScreen } from '../rooms/screens/CreateRoomScreen';
 import { RoomDetailScreen } from '../rooms/screens/RoomDetailScreen';
 import { DirectChatScreen } from '../messages/screens/DirectChatScreen';
+import { directMessagesService } from '../../services/directMessagesService';
 
-export const FriendsScreen = ({ onBack, isProfileView = false }) => {
+export const FriendsScreen = ({
+  onBack,
+  isProfileView = false,
+  // A dónde llevaba la notificación que se tocó, si llevaba a algún sitio de
+  // aquí. App.js ya cambió de sección; lo que falta —abrir la conversación o
+  // la sala concreta— se hace abajo, y después se avisa de que ya está.
+  destinoDeAviso = null,
+  onDestinoAtendido = () => {},
+}) => {
   const { theme, styles } = useThemeValues(getFriendsScreenTheme);
 
   const { user } = useAuth();
@@ -90,6 +99,53 @@ export const FriendsScreen = ({ onBack, isProfileView = false }) => {
   // Salas navegación interna
   const [roomScreen, setRoomScreen] = useState('LIST'); // 'LIST', 'CREATE', 'DETAIL'
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+
+  // ---- Lo que pidió la notificación que se tocó ----
+  useEffect(() => {
+    if (!destinoDeAviso || isProfileView) return undefined;
+    let vigente = true;
+
+    const abrir = async () => {
+      const { sala, conversacion, pestana } = destinoDeAviso;
+
+      if (sala) {
+        setActiveTab('rooms');
+        setSelectedRoomId(sala);
+        setRoomScreen('DETAIL');
+      } else if (conversacion) {
+        // El aviso trae el id de la CONVERSACIÓN, y la pantalla de chat
+        // necesita a la persona. La bandeja ya relaciona las dos cosas.
+        setActiveTab('friends');
+        try {
+          const bandeja = await directMessagesService.getInbox();
+          if (!vigente) return;
+          const fila = (bandeja || []).find(
+            (c) => String(c.conversation_id) === String(conversacion)
+          );
+          if (fila) {
+            setDirectChatFriend({
+              id: fila.friend_id,
+              username: fila.friend_username,
+              full_name: fila.friend_full_name,
+              avatar_url: fila.friend_avatar_url,
+            });
+          }
+          // Si no aparece (conversación borrada, por ejemplo), se queda en la
+          // lista de amigos en vez de dejar la pantalla en blanco.
+        } catch (error) {
+          console.warn('No se pudo abrir la conversación del aviso:', error.message);
+        }
+      } else if (pestana) {
+        setActiveTab(pestana);
+      }
+
+      if (vigente) onDestinoAtendido();
+    };
+
+    abrir();
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destinoDeAviso, isProfileView]);
 
   // Manejo de retroceso físico / gestual en pantalla de comunidad
   useEffect(() => {

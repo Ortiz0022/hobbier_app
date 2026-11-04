@@ -184,8 +184,23 @@ Cada aparato guarda su token de Expo en `user_push_tokens` al iniciar sesión
 > **Para probarlo hace falta una build de desarrollo.** Desde el SDK 53 las push
 > remotas no funcionan en Expo Go en Android: `npx expo run:android` o una build
 > de EAS. En web no existen y el servicio se queda callado, sin romper nada.
+
+> ⚠️ **`send-push` hay que desplegarla a mano, y sin eso no llega ni un aviso.**
+> Este fallo no se ve desde la app: `avisar()` nunca lanza —un aviso que falla no
+> puede tumbar el envío de un mensaje—, así que con la función sin desplegar todo
+> parece funcionar y simplemente no llega nada.
 >
-> La función hay que desplegarla como las otras (`supabase/functions/send-push`).
+> ```bash
+> node supabase/comprobar_push.mjs      # ¿están las piezas en su sitio?
+>
+> npx supabase login
+> npx supabase functions deploy send-push --project-ref mlmpolewfhxdcntxwllu
+> ```
+>
+> `comprobar_push.mjs` llama a la función con un tipo inventado (no manda nada) y
+> mira qué contesta: **404** es que no está desplegada; **401** es que sí lo está
+> y pide sesión, que es lo correcto. No hacen falta secretos: `SUPABASE_URL`,
+> `SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_ANON_KEY` las pone Supabase sola.
 
 ## 🗄️ Base de datos y despliegues
 
@@ -250,6 +265,20 @@ En una fila de acciones va **primero lo que la persona vino a hacer** y después
 El retroceso físico o gestual no debe cerrar la app desde cualquier pantalla. Cada pantalla con estado propio registra su `BackHandler` —cerrar lo que esté abierto, volver a la pestaña anterior, salir del subnivel— y `App.js` guarda el historial de pestañas para el resto. Solo se sale de la app desde el inicio y con el historial vacío.
 
 Los modales no necesitan nada: todos pasan su `onRequestClose`, que en Android es lo que recoge ese botón mientras hay un modal abierto.
+
+## 🚀 La pantalla de arranque
+
+Lo primero que se ve al abrir la app es el logo de Hobbier sobre `#0E0E14`, el mismo negro del azulejo del logo, hasta que la app sabe si hay sesión.
+
+Antes se veía otra cosa: `app.json` no configuraba ningún arranque, así que **Android 12+ enseñaba el icono del lanzador** —y ese icono declaraba como fondo `assets/android-icon-background.png`, que seguía siendo la plantilla de Expo: papel cuadriculado celeste con círculos concéntricos. Detrás venían dos pantallas blancas más con una rueda girando, la de las fuentes y la de la sesión.
+
+Tres piezas, y las tres hacen falta:
+
+1. **`app.json` declara el arranque** (plugin `expo-splash-screen`): imagen, `resizeMode: 'contain'` para que no se deforme y color de fondo. Sin opciones el plugin vuelve a poner blanco.
+2. **El icono de Android ya no usa plantillas.** Fuera `backgroundImage` (la cuadrícula) y `monochromeImage` (el galón gris de Expo); el fondo pasa a ser el negro del logo.
+3. **`App.js` decide cuándo destaparlo.** `preventAutoHideAsync()` al cargar el módulo y `hideAsync()` cuando `loading` de la sesión ya es `false`. Mientras cargan las fuentes no se pinta nada (`return null`) en lugar del antiguo `View` blanco: encima sigue el logo. Hay un `setTimeout` de 8 s de red de seguridad para que un arranque atascado no deje el logo puesto para siempre.
+
+> `assets/splash-icon.png` **no se usa solo por existir**. Mientras `app.json` no lo nombrara, cambiar ese archivo no cambiaba nada en el APK. Si alguna vez "el logo nuevo no sale", lo primero es mirar si algo lo referencia.
 
 ## ♿ Accesibilidad: tamaño de letra del sistema
 
@@ -325,6 +354,7 @@ supabase/
   schema.sql            Esquema base, políticas RLS y funciones
   migrations/           Cambios posteriores, por fecha
   functions/            Edge Functions: tres de Groq y send-push
+  comprobar_push.mjs    Diagnóstico: ¿están desplegadas las piezas de las push?
 ```
 
 ## ▶️ Cómo ejecutarlo

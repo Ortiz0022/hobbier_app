@@ -86,7 +86,9 @@ const makeTheme = (mode) => {
     // In light mode return exactly the existing values, including alpha colors.
     color: (original, role) => isDark ? darkPalette[role] : original,
     card: isDark ? { ...card, backgroundColor: colors.surface, borderColor: darkPalette.border } : card,
-    input: isDark ? { ...input, backgroundColor: darkPalette.secondary, borderColor: darkPalette.border } : input,
+    input: isDark
+      ? { ...input, color: darkPalette.text, backgroundColor: darkPalette.secondary, borderColor: darkPalette.border }
+      : input,
     sectionTitle: isDark ? { ...sectionTitle, color: colors.text } : sectionTitle,
     primaryButton: isDark ? { ...primaryButton, backgroundColor: colors.primary } : primaryButton,
     primaryButtonText: isDark ? { ...primaryButtonText, color: colors.onPrimary } : primaryButtonText,

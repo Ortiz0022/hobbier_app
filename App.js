@@ -1,6 +1,6 @@
 import { ThemeProvider, useThemeValues } from './src/context/ThemeContext';
 import { createThemeStyles } from './src/theme/themeRuntime';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -38,10 +38,22 @@ import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { AdminScreen } from './src/features/admin/AdminScreen';
 import { CookieBanner } from './src/legal/CookieBanner';
 import { pushService } from './src/services/pushService';
+import { escucharDestino, recogerDestino } from './src/services/avisoDestino';
+// Se importa con otro nombre a propósito: `SplashScreen` ya es la bienvenida
+// de la propia app (la de los iconos), y esta es la del sistema operativo, la
+// que se ve antes de que exista una sola vista de React.
+import * as ArranqueNativo from 'expo-splash-screen';
 
 // Con la app abierta, un aviso que llega se enseña igual; sin esto no se ve
 // nada y parece que no llegó.
 pushService.configurarAvisosEnPrimerPlano();
+
+// El arranque del sistema se queda puesto hasta que la app tenga algo que
+// enseñar. Sin esto se descubre en cuanto React monta la primera vista, que
+// todavía es el "cargando" en blanco de las fuentes: justo el parpadeo blanco
+// que no queremos. Se esconde a mano más abajo, cuando ya se sabe si hay
+// sesión.
+ArranqueNativo.preventAutoHideAsync().catch(() => {});
 
 const MainApp = () => {
   const { theme, styles } = useThemeValues(getAppTheme);
@@ -64,6 +76,12 @@ const MainApp = () => {
   const [adminSection, setAdminSection] = useState('overview');
   // La bienvenida se ve una sola vez por arranque de la app, antes del login.
   const [showSplash, setShowSplash] = useState(true);
+  // A dónde lleva la notificación que se acaba de tocar, mientras la pantalla
+  // de destino no lo haya atendido.
+  const [destinoAviso, setDestinoAviso] = useState(null);
+  // Lo que el escuchador de avisos necesita, siempre al día, sin que eso le
+  // obligue a volver a suscribirse.
+  const navegacionRef = useRef({ navegarA: () => {}, isAdmin: false });
   const { estado: estadoOnboarding, marcarCompletado } = useNeedsOnboarding(user?.id);
 
   const navegarA = useCallback((nuevaPantalla) => {
@@ -126,6 +144,45 @@ const MainApp = () => {
     if (!user?.id) return;
     pushService.registrarDispositivo();
   }, [user?.id]);
+
+  navegacionRef.current = { navegarA, isAdmin };
+
+  // Tocar una notificación lleva a su sitio: un mensaje abre esa conversación,
+  // uno de sala abre esa sala, una solicitud abre la pestaña de solicitudes.
+  //
+  // Aquí solo se cambia de sección. Lo fino —qué chat o qué sala— lo hace la
+  // pantalla de Comunidad, que es quien sabe abrirlos; se le pasa el destino y
+  // ella avisa cuando lo ha atendido.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+
+    const atender = () => {
+      const pendiente = recogerDestino();
+      if (!pendiente) return;
+      // El panel es solo para administradores; si no lo es, se queda donde está.
+      if (pendiente.seccion === 'admin' && !navegacionRef.current.isAdmin) return;
+      setDestinoAviso(pendiente);
+      if (pendiente.panel) setAdminSection(pendiente.panel);
+      navegacionRef.current.navegarA(pendiente.seccion);
+    };
+
+    // Por si el toque llegó antes de que esta pantalla existiera (app cerrada).
+    atender();
+    const dejarDeEscuchar = escucharDestino(atender);
+    const dejarDeEscucharToques = pushService.escucharToquesDeAviso();
+    return () => { dejarDeEscuchar(); dejarDeEscucharToques(); };
+    // Se registra UNA vez por sesión. Si dependiera de `navegarA` —que cambia
+    // con cada pantalla— se volvería a suscribir sin parar, y al hacerlo se
+    // volvería a preguntar por el último aviso tocado: la app saltaría sola.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Se destapa la app cuando ya se sabe si hay sesión. Así lo primero que se
+  // ve tras el logo es una pantalla de verdad (la bienvenida o el inicio) y no
+  // un rueda girando sobre blanco.
+  useEffect(() => {
+    if (!loading) ArranqueNativo.hideAsync().catch(() => {});
+  }, [loading]);
   const { notify } = useNotify();
 
   // Escuchar notificaciones de soporte para administradores en tiempo real
@@ -242,7 +299,12 @@ const MainApp = () => {
           />
         );
       case 'friends':
-        return <FriendsScreen />;
+        return (
+          <FriendsScreen
+            destinoDeAviso={destinoAviso}
+            onDestinoAtendido={() => setDestinoAviso(null)}
+          />
+        );
       case 'profile_friends':
         return <FriendsScreen isProfileView={true} onBack={() => {
           setNavHistory((prev) => prev.slice(0, -1));
@@ -394,20 +456,28 @@ const MainApp = () => {
 };
 
 function AppContent() {
-  const { theme, styles } = useThemeValues(getAppTheme);
-
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, errorDeFuentes] = useFonts({
     'DynaPuff': require('./assets/fonts/DynaPuff.ttf'),
     Poppins_700Bold,
     Poppins_800ExtraBold,
   });
 
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.color('#ffffff', 'background'), justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={theme.color("#386756", 'success')} />
-      </View>
-    );
+  // Red de seguridad: si algo se atasca al arrancar, el logo no se puede
+  // quedar puesto para siempre. Pasados unos segundos se destapa pase lo que
+  // pase, aunque sea para enseñar el "cargando".
+  useEffect(() => {
+    const reloj = setTimeout(() => {
+      ArranqueNativo.hideAsync().catch(() => {});
+    }, 8000);
+    return () => clearTimeout(reloj);
+  }, []);
+
+  // Mientras cargan las fuentes no se pinta nada: encima sigue el logo del
+  // sistema, y poner aquí un fondo blanco con una rueda sería cambiar el logo
+  // por una pantalla en blanco durante medio segundo. Si las fuentes fallan se
+  // sigue igualmente, con las del sistema.
+  if (!fontsLoaded && !errorDeFuentes) {
+    return null;
   }
 
   return (

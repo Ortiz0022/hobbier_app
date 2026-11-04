@@ -1,6 +1,6 @@
-import { useThemeValues } from '../../../context/ThemeContext';
-import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useThemeValues } from "../../../context/ThemeContext";
+import { createThemeStyles } from "../../../theme/themeRuntime";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,15 +10,15 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
-} from 'react-native';
-import Feather from '@expo/vector-icons/Feather';
-import { Camera } from 'lucide-react-native';
-import { FlashList } from '@shopify/flash-list';
+} from "react-native";
+import Feather from "@expo/vector-icons/Feather";
+import { Camera } from "lucide-react-native";
+import { FlashList } from "@shopify/flash-list";
 
-import { RoomMessageBubble } from './RoomMessageBubble';
+import { RoomMessageBubble } from "./RoomMessageBubble";
 import { spacing, fonts, radii } from "../../../theme";
-import { useNotify } from '../../../context/NotificationContext';
-import { useLanguage } from '../../../context/LanguageContext';
+import { useNotify } from "../../../context/NotificationContext";
+import { useLanguage } from "../../../context/LanguageContext";
 
 /**
  * Conversación completa: lista de mensajes, responder a un mensaje concreto,
@@ -39,7 +39,7 @@ export const ChatThread = ({
   onDiscard,
   readOnly = false,
   readOnlyText,
-  emptyIcon = 'message-square',
+  emptyIcon = "message-square",
   emptyTitle,
   emptySubtitle,
   emptyText,
@@ -51,13 +51,27 @@ export const ChatThread = ({
   const { theme, colors, styles } = useThemeValues(getChatThreadTheme);
   const { t } = useLanguage();
 
-  const finalReadOnlyText = readOnlyText || t('messages.readonly_chat') || 'Chat en modo solo lectura.';
-  const finalEmptyText = emptyText || t('messages.no_messages') || 'No hay mensajes aún.';
+  const finalReadOnlyText =
+    readOnlyText || t("messages.readonly_chat") || "Chat en modo solo lectura.";
+  const finalEmptyText =
+    emptyText || t("messages.no_messages") || "No hay mensajes aún.";
 
-  const [textMessage, setTextMessage] = useState('');
-  // El texto también vive en una ref: Enter y el botón pueden disparar dos envíos
-  // en el mismo instante, y ambos leerían el mismo estado antes de que se vacíe.
-  const textRef = useRef('');
+  // La caja de escribir NO va controlada por estado, a propósito.
+  //
+  // Con `value={estado}`, cada tecla da la vuelta por React y vuelve al campo.
+  // En Android eso corta la "región de composición" del teclado, y al meter un
+  // emoji teniendo ya texto escrito, la inserción se pierde: el emoji no sale.
+  // Un emoji solo sí entra, porque entonces no hay nada componiéndose; de ahí
+  // que pareciera que fallaba solo al mezclarlo con texto.
+  //
+  // El texto vive en una ref y el estado guarda únicamente SI hay algo escrito,
+  // para encender el botón de enviar. Así se repinta al pasar de vacío a lleno
+  // y no en cada tecla.
+  const [hayTexto, setHayTexto] = useState(false);
+  const entradaRef = useRef(null);
+  // La ref también evita el doble envío: Enter y el botón pueden dispararse en
+  // el mismo instante y ambos leerían el mismo estado antes de que se vacíe.
+  const textRef = useRef("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const chatListRef = useRef(null);
@@ -74,24 +88,31 @@ export const ChatThread = ({
   // repintaría el resaltado al saltar a un mensaje citado.
   const extraData = useMemo(
     () => ({ highlightedMessageId, currentUserId, showSenderName }),
-    [highlightedMessageId, currentUserId, showSenderName]
+    [highlightedMessageId, currentUserId, showSenderName],
   );
 
   useEffect(() => {
     if (!scrollToEndPendingRef.current) return;
     scrollToEndPendingRef.current = false;
-    requestAnimationFrame(() => chatListRef.current?.scrollToEnd({ animated: true }));
+    requestAnimationFrame(() =>
+      chatListRef.current?.scrollToEnd({ animated: true }),
+    );
   }, [orderedMessages]);
 
-  useEffect(() => () => {
-    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (highlightTimeoutRef.current)
+        clearTimeout(highlightTimeoutRef.current);
+    },
+    [],
+  );
 
-  const alert = (msg) => notify(msg, { type: 'warning', title: 'Aviso' });
+  const alert = (msg) => notify(msg, { type: "warning", title: "Aviso" });
 
   const handleChangeText = (text) => {
     textRef.current = text;
-    setTextMessage(text);
+    const lleno = text.trim().length > 0;
+    setHayTexto((previo) => (previo === lleno ? previo : lleno));
   };
 
   // No se espera al servidor: el mensaje aparece al momento en la lista (envío
@@ -100,8 +121,13 @@ export const ChatThread = ({
   const handleSendText = () => {
     const content = textRef.current;
     if (!content.trim() || readOnly) return;
-    textRef.current = '';
-    setTextMessage('');
+    textRef.current = "";
+    // Se vacía el campo por la ref, no por el estado: el campo no va controlado.
+    // El clear va en el siguiente frame: si se hace en el mismo ciclo del envío,
+    // Android interrumpe la composición del teclado y la última inserción (típico
+    // un emoji) puede perderse antes de salir del campo.
+    requestAnimationFrame(() => entradaRef.current?.clear());
+    setHayTexto(false);
     setReplyingTo(null);
     scrollToEndPendingRef.current = true;
     onSend(content, replyingTo);
@@ -110,20 +136,27 @@ export const ChatThread = ({
   const handleJumpToMessage = (messageId) => {
     const index = orderedMessages.findIndex((m) => m.id === messageId);
     if (index === -1) {
-      alert('No se encontró el mensaje original. Desplázate hacia arriba para buscarlo.');
+      alert(
+        "No se encontró el mensaje original. Desplázate hacia arriba para buscarlo.",
+      );
       return;
     }
 
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
     setHighlightedMessageId(messageId);
-    chatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })?.catch?.(() => {});
-    highlightTimeoutRef.current = setTimeout(() => setHighlightedMessageId(null), 1500);
+    chatListRef.current
+      ?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
+      ?.catch?.(() => {});
+    highlightTimeoutRef.current = setTimeout(
+      () => setHighlightedMessageId(null),
+      1500,
+    );
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.chatContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
       {orderedMessages.length === 0 ? (
@@ -152,10 +185,12 @@ export const ChatThread = ({
         <FlashList
           ref={chatListRef}
           data={orderedMessages}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           // Las fotos de avance y los textos miden muy distinto: reciclar cada uno
           // con los de su tipo evita saltos al hacer scroll.
-          getItemType={item => (item.message_type === 'EVIDENCE' ? 'evidence' : 'text')}
+          getItemType={(item) =>
+            item.message_type === "EVIDENCE" ? "evidence" : "text"
+          }
           extraData={extraData}
           contentContainerStyle={styles.chatListContent}
           onStartReached={onLoadOlder}
@@ -166,7 +201,14 @@ export const ChatThread = ({
             // Si estás a menos de un 20% del final, baja sola con cada mensaje nuevo.
             autoscrollToBottomThreshold: 0.2,
           }}
-          ListHeaderComponent={loading ? <ActivityIndicator color={colors.primary} style={{ margin: 20 }} /> : null}
+          ListHeaderComponent={
+            loading ? (
+              <ActivityIndicator
+                color={colors.primary}
+                style={{ margin: 20 }}
+              />
+            ) : null
+          }
           renderItem={({ item }) => (
             <RoomMessageBubble
               message={item}
@@ -188,13 +230,17 @@ export const ChatThread = ({
               <View style={styles.replyPreviewAccent} />
               <View style={styles.replyPreviewBody}>
                 <Text style={styles.replyPreviewAuthor}>
-                  {replyingTo.sender?.username || 'Usuario'}
+                  {replyingTo.sender?.username || "Usuario"}
                 </Text>
-                {replyingTo.message_type === 'EVIDENCE' ? (
+                {replyingTo.message_type === "EVIDENCE" ? (
                   <View style={styles.replyPreviewEvidenceRow}>
-                    <Camera size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Camera
+                      size={12}
+                      color={colors.textMuted}
+                      style={{ marginRight: 4 }}
+                    />
                     <Text style={styles.replyPreviewText} numberOfLines={1}>
-                      {t('messages.recorded_advance') || 'Registró un avance'}
+                      {t("messages.recorded_advance") || "Registró un avance"}
                     </Text>
                   </View>
                 ) : (
@@ -213,18 +259,22 @@ export const ChatThread = ({
           )}
 
           <View style={styles.chatInputContainer}>
-            <TextInput {...theme.textInputProps}
+            <TextInput
+              {...theme.textInputProps}
+              ref={entradaRef}
               style={styles.chatInput}
-              placeholder={t('messages.type_message') || "Escribe un mensaje..."}
-              value={textMessage}
+              placeholder={
+                t("messages.type_message") || "Escribe un mensaje..."
+              }
+              defaultValue=""
               onChangeText={handleChangeText}
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={handleSendText}
             />
             <TouchableOpacity
-              style={[styles.sendBtn, !textMessage.trim() && { opacity: 0.5 }]}
+              style={[styles.sendBtn, !hayTexto && { opacity: 0.5 }]}
               onPress={handleSendText}
-              disabled={!textMessage.trim()}
+              disabled={!hayTexto}
             >
               <Feather name="send" size={20} color={colors.onPrimary} />
             </TouchableOpacity>
@@ -239,117 +289,117 @@ export const ChatThread = ({
   );
 };
 
-
-
 // Los valores claros originales se conservan; solo se resuelven colores según el tema.
 export const getChatThreadTheme = createThemeStyles((theme) => {
-const { colors } = theme;
-const styles = StyleSheet.create({
-  chatContainer: {
-    flex: 1,
-  },
-  chatListContent: {
-    padding: spacing.md,
-  },
-  emptyChatContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  emptyIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.round,
-    backgroundColor: colors.primarySoft,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  emptyChatTitle: {
-    fontSize: 15,
-    fontFamily: fonts.heading,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  emptyChatSubtitle: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  emptyChatText: {
-    color: colors.textMuted,
-  },
-  replyPreviewBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
-  },
-  replyPreviewAccent: {
-    width: 3,
-    alignSelf: 'stretch',
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-    marginRight: spacing.sm,
-  },
-  replyPreviewBody: {
-    flex: 1,
-  },
-  replyPreviewAuthor: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  replyPreviewText: {
-    fontSize: 12.5,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  replyPreviewEvidenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 1,
-  },
-  chatInputContainer: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    backgroundColor: theme.color(colors.surface, 'secondary'),
-    borderTopWidth: 1,
-    borderTopColor: theme.color(colors.surfaceMuted, 'border'),
-    alignItems: 'center',
-  },
-  chatInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: theme.color(colors.surfaceMuted, 'secondary'),
-    borderRadius: 22,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.sm,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chatClosedBanner: {
-    padding: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: theme.color(colors.textFaint, 'border'),
-  },
-  chatClosedText: {
-    color: colors.textFaint,
-    fontWeight: '600',
-  },
-});
+  const { colors } = theme;
+  const styles = StyleSheet.create({
+    chatContainer: {
+      flex: 1,
+    },
+    chatListContent: {
+      padding: spacing.md,
+    },
+    emptyChatContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: spacing.xl,
+    },
+    emptyIconCircle: {
+      width: 56,
+      height: 56,
+      borderRadius: radii.round,
+      backgroundColor: colors.primarySoft,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    emptyChatTitle: {
+      fontSize: 15,
+      fontFamily: fonts.heading,
+      color: colors.text,
+      textAlign: "center",
+    },
+    emptyChatSubtitle: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: "center",
+      marginTop: spacing.xs,
+    },
+    emptyChatText: {
+      color: colors.textMuted,
+    },
+    replyPreviewBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.surfaceMuted,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.color(colors.surfaceMuted, "border"),
+    },
+    replyPreviewAccent: {
+      width: 3,
+      alignSelf: "stretch",
+      backgroundColor: colors.primary,
+      borderRadius: 2,
+      marginRight: spacing.sm,
+    },
+    replyPreviewBody: {
+      flex: 1,
+    },
+    replyPreviewAuthor: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.primaryDark,
+    },
+    replyPreviewText: {
+      fontSize: 12.5,
+      color: colors.textMuted,
+      marginTop: 1,
+    },
+    replyPreviewEvidenceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 1,
+    },
+    chatInputContainer: {
+      flexDirection: "row",
+      padding: spacing.md,
+      backgroundColor: theme.color(colors.surface, "secondary"),
+      borderTopWidth: 1,
+      borderTopColor: theme.color(colors.surfaceMuted, "border"),
+      alignItems: "center",
+    },
+    chatInput: {
+      flex: 1,
+      height: 44,
+      // Sin esto, en oscuro se escribe en casi negro sobre fondo oscuro.
+      color: colors.text,
+      backgroundColor: theme.color(colors.surfaceMuted, "secondary"),
+      borderRadius: 22,
+      paddingHorizontal: spacing.md,
+      marginRight: spacing.sm,
+    },
+    sendBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    chatClosedBanner: {
+      padding: spacing.md,
+      backgroundColor: colors.surfaceMuted,
+      alignItems: "center",
+      borderTopWidth: 1,
+      borderTopColor: theme.color(colors.textFaint, "border"),
+    },
+    chatClosedText: {
+      color: colors.textFaint,
+      fontWeight: "600",
+    },
+  });
   return { theme, colors, styles };
 });

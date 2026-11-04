@@ -19,7 +19,10 @@
     "search": "Search",
     "back": "Back",
     "available": "available",
-    "retry": "Retry"
+    "retry": "Retry",
+    "delete": "Delete",
+    "friend": "a friend",
+    "got_it": "Got it"
   },
   "nav": {
     "discover": "Discover",
@@ -87,7 +90,8 @@
     "inspired_by": "Inspired by {author}'s achievement",
     "add_to_missions": "Add to my missions",
     "stay_in_feed": "Stay in feed",
-    "no_posts_yet": "No posts yet"
+    "no_posts_yet": "No posts yet",
+    "someone": "someone"
   },
   "recommendations": {
     "title": "Discover",
@@ -440,12 +444,12 @@
     "catalog_error": "We couldn't load the options."
   },
   "rooms": {
-    "title": "Challenge Rooms",
+    "title": "Challenge Challenge Rooms",
     "loading": "Loading rooms...",
     "error_load": "Could not load the room.",
-    "retry": "Retry",
+    "retry": "Try again",
     "create_room": "Create my first room",
-    "no_rooms": "No group rooms",
+    "no_rooms": "No group rooms yet",
     "create_first_room": "Create my first room",
     "pending_invitations": "Pending Invitations",
     "invited_by": "@{username} invited you",
@@ -492,14 +496,14 @@
     "status_closed": "Challenge ended",
     "status_no_deadline": "Active challenge · No deadline",
     "status_ends_at": "Active challenge · Ends on {date}",
-    "close_room_title": "Close room",
-    "close_room_msg": "Are you sure you want to close the room? Members won't be able to submit advances or chat.",
-    "close_room_btn": "Close room",
-    "delete_room_title": "Delete room",
-    "delete_room_msg": "Delete the room? This action cannot be undone.",
-    "leave_room_title": "Leave room",
+    "close_room_title": "End this challenge?",
+    "close_room_msg": "The room stays, with its chat and ranking, but no one will be able to upload progress or write any more.",
+    "close_room_btn": "End challenge",
+    "delete_room_title": "Delete this room?",
+    "delete_room_msg": "It will be deleted for every member, along with the chat, the progress and the ranking. This cannot be undone.",
+    "leave_room_title": "Leave this room?",
     "leave_room_msg": "The challenge is over. If you leave, the room disappears from your list and you stop seeing its chat and ranking.",
-    "leave_room_btn": "Leave and remove",
+    "leave_room_btn": "Leave room",
     "host": "Host",
     "hobbiers_in_room": "Hobbiers in room",
     "invite": "Invite",
@@ -513,7 +517,11 @@
     "room_admin": "Room Administration",
     "close_challenge": "Close Challenge",
     "leave_room": "Leave room",
-    "group_challenge": "Group challenge"
+    "group_challenge": "Group challenge",
+    "expired_invite": "invited you to this room, but it has already ended: the invitation expired.",
+    "leave_room_msg_active": "You'll stop seeing its chat and ranking, and your progress will no longer count. You would need a new invitation to come back.",
+    "leave_room_msg_closed": "The challenge has already ended. If you leave, the room disappears from your list; for everyone else it stays the same.",
+    "leave_room_btn_active": "Leave room"
   },
   "messages": {
     "title": "Messages",
@@ -535,7 +543,8 @@
     "no_friends_chat": "You don't have friends to chat with yet.",
     "add_friends_start": "Add friends from the Friends tab to get started.",
     "readonly_chat": "Chat in read-only mode.",
-    "recorded_advance": "Logged an advance"
+    "recorded_advance": "Logged an advance",
+    "open_error": "The conversation could not be opened."
   },
   "admin": {
     "title": "Admin Panel",
@@ -763,7 +772,8 @@
     "reject": "Reject",
     "confirm_rejection": "Confirm rejection",
     "reject_placeholder": "Reason for rejection (optional)",
-    "messages": "Messages"
+    "messages": "Messages",
+    "error_change_ad_status": "The ad status could not be changed."
   },
   "report": {
     "title": "Report post",

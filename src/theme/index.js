@@ -90,6 +90,12 @@ export const sectionTitle = {
 export const input = {
   flexDirection: 'row',
   alignItems: 'center',
+  // El color de lo que se escribe va aquí a propósito. En TextInput el color
+  // del texto es un ESTILO, no una prop, así que `theme.textInputProps` —que
+  // sí arregla el marcador de posición y el cursor— no puede ponerlo. Sin esto,
+  // en modo oscuro Android usa su color por defecto, casi negro, sobre un fondo
+  // oscuro: lo que escribes no se lee.
+  color: colors.text,
   backgroundColor: colors.surfaceMuted,
   borderWidth: 1,
   borderColor: colors.surfaceMuted,

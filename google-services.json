@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "28804072920",
+    "project_id": "hobbier-c0808",
+    "storage_bucket": "hobbier-c0808.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28804072920:android:5e8df5f85cbd0522739ead",
+        "android_client_info": {
+          "package_name": "com.angeortizsteam.hobbierapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvwEAQE16KPUpIOdMvjoQABVzyDs_uP_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

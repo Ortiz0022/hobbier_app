@@ -23,38 +23,31 @@
 --
 -- Se puede volver a ejecutar las veces que haga falta.
 -- ============================================================
-
-CREATE OR REPLACE FUNCTION public.leave_room(
-  p_room_id UUID
-) RETURNS BOOLEAN AS $$
-DECLARE
-  v_room RECORD;
+CREATE OR REPLACE FUNCTION public.leave_room(p_room_id UUID) RETURNS BOOLEAN AS $$
+DECLARE v_room RECORD;
 BEGIN
-  SELECT * INTO v_room FROM public.rooms WHERE id = p_room_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'La sala no existe';
-  END IF;
-
-  IF v_room.owner_id = auth.uid() THEN
-    RAISE EXCEPTION 'El anfitrión no puede salirse de su propia sala. Elimínala en su lugar.';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM public.room_members
-    WHERE room_id = p_room_id AND user_id = auth.uid()
-  ) THEN
-    RAISE EXCEPTION 'No eres miembro de esta sala';
-  END IF;
-
-  DELETE FROM public.room_members
-  WHERE room_id = p_room_id AND user_id = auth.uid();
-
-  RETURN TRUE;
+SELECT * INTO v_room
+FROM public.rooms
+WHERE id = p_room_id;
+IF NOT FOUND THEN RAISE EXCEPTION 'La sala no existe';
+END IF;
+IF v_room.owner_id = auth.uid() THEN RAISE EXCEPTION 'El anfitrión no puede salirse de su propia sala. Elimínala en su lugar.';
+END IF;
+IF NOT EXISTS (
+  SELECT 1
+  FROM public.room_members
+  WHERE room_id = p_room_id
+    AND user_id = auth.uid()
+) THEN RAISE EXCEPTION 'No eres miembro de esta sala';
+END IF;
+DELETE FROM public.room_members
+WHERE room_id = p_room_id
+  AND user_id = auth.uid();
+RETURN TRUE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public;
 GRANT EXECUTE ON FUNCTION public.leave_room TO authenticated;
-
 -- Para que la API vea la función nueva sin esperar a que caduque la caché.
-NOTIFY pgrst, 'reload schema';
+NOTIFY pgrst,
+'reload schema';

@@ -19,7 +19,10 @@
     "search": "Buscar",
     "back": "Volver",
     "available": "disponibles",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "delete": "Eliminar",
+    "friend": "un amigo",
+    "got_it": "Entendido"
   },
   "nav": {
     "discover": "Descubre",
@@ -87,7 +90,8 @@
     "inspired_by": "Inspirado por el logro de {author}",
     "add_to_missions": "Añadir a mis misiones",
     "stay_in_feed": "Seguir en el feed",
-    "no_posts_yet": "Aún no hay publicaciones"
+    "no_posts_yet": "Aún no hay publicaciones",
+    "someone": "alguien"
   },
   "recommendations": {
     "title": "Descubre",
@@ -492,14 +496,14 @@
     "status_closed": "Reto finalizado",
     "status_no_deadline": "Reto activo · Sin fecha límite",
     "status_ends_at": "Reto activo · Finaliza el {date}",
-    "close_room_title": "Cerrar sala",
-    "close_room_msg": "¿Estás seguro de cerrar la sala? Ya no se podrán subir avances ni chatear.",
-    "close_room_btn": "Cerrar sala",
-    "delete_room_title": "Eliminar sala",
-    "delete_room_msg": "¿Eliminar la sala? Esta acción no se puede deshacer.",
-    "leave_room_title": "Salir de la sala",
+    "close_room_title": "¿Dar por terminado el reto?",
+    "close_room_msg": "La sala se queda, con su chat y su ranking, pero nadie podrá subir más avances ni escribir.",
+    "close_room_btn": "Terminar reto",
+    "delete_room_title": "¿Eliminar la sala?",
+    "delete_room_msg": "Se borrará para todos sus miembros, junto con el chat, los avances y el ranking. Esto no se puede deshacer.",
+    "leave_room_title": "¿Salir de la sala?",
     "leave_room_msg": "El reto ya terminó. Si sales, la sala desaparece de tu lista y dejas de ver su chat y su ranking.",
-    "leave_room_btn": "Salir y borrar",
+    "leave_room_btn": "Salir de la sala",
     "host": "Anfitrión",
     "hobbiers_in_room": "Hobbiers en sala",
     "invite": "Invitar",
@@ -513,7 +517,11 @@
     "room_admin": "Administración de Sala",
     "close_challenge": "Cerrar Reto",
     "leave_room": "Salir de la sala",
-    "group_challenge": "Reto grupal"
+    "group_challenge": "Reto grupal",
+    "expired_invite": "te invitó a esta sala, pero ya finalizó: la invitación venció.",
+    "leave_room_msg_active": "Dejarás de ver su chat y su ranking, y tus avances dejarán de contar. Para volver tendrían que invitarte otra vez.",
+    "leave_room_msg_closed": "El reto ya terminó. Al salir, la sala desaparece de tu lista; para los demás se queda igual.",
+    "leave_room_btn_active": "Salir de la sala"
   },
   "messages": {
     "title": "Mensajes",
@@ -535,7 +543,8 @@
     "no_friends_chat": "Aún no tienes amigos con quien chatear.",
     "add_friends_start": "Agrega amigos desde la pestaña Amigos para empezar.",
     "readonly_chat": "Chat en modo solo lectura.",
-    "recorded_advance": "Registró un avance"
+    "recorded_advance": "Registró un avance",
+    "open_error": "No se pudo abrir la conversación."
   },
   "admin": {
     "title": "Panel de Administración",
@@ -763,7 +772,8 @@
     "reject": "Rechazar",
     "confirm_rejection": "Confirmar rechazo",
     "reject_placeholder": "Motivo del rechazo (opcional)",
-    "messages": "Mensajes"
+    "messages": "Mensajes",
+    "error_change_ad_status": "No se pudo cambiar el estado del anuncio."
   },
   "report": {
     "title": "Reportar publicación",
