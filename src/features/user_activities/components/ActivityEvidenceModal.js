@@ -82,7 +82,7 @@ export const ActivityEvidenceModal = ({
         <AjustarFotoModal
           visible={!!fotoPorAjustar}
           uri={fotoPorAjustar}
-          aspecto={4 / 3}
+          aspecto={4 / 5}
           onCancelar={onAjusteCancelado}
           onListo={onAjusteListo}
         />

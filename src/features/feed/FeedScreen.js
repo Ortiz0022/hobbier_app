@@ -1047,7 +1047,7 @@ export const getFeedScreenTheme = createThemeStyles((theme) => {
     },
     postImage: {
       width: '100%',
-      height: 460,
+      aspectRatio: 4 / 5,
       backgroundColor: theme.color('#f1f5f9', 'background'),
     },
     postFooter: {

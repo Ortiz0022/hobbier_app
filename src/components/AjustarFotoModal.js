@@ -40,7 +40,7 @@ const acotar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), maxi
  * foto, y el resultado es el mismo en Android, iOS y web.
  *
  * `aspecto` es ancho/alto del marco: 1 para una foto de perfil (se ve en
- * círculo) y 4/3 para la evidencia de una actividad.
+ * círculo) y 4/5 para una publicación vertical de una actividad.
  */
 export const AjustarFotoModal = ({
   visible,
