@@ -110,6 +110,16 @@ CREATE TABLE IF NOT EXISTS public.posts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Cada foto conserva los puntos que realmente otorgó, aunque cambie el catálogo.
+-- Solo las funciones del servidor pueden escribir este registro contable.
+CREATE TABLE IF NOT EXISTS public.post_point_awards (
+  post_id UUID PRIMARY KEY REFERENCES public.posts(id) ON DELETE CASCADE,
+  points_awarded INT NOT NULL CHECK (points_awarded >= 0),
+  counted BOOLEAN NOT NULL DEFAULT TRUE
+);
+ALTER TABLE public.post_point_awards ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.post_point_awards FROM PUBLIC, anon, authenticated;
+
 CREATE TABLE IF NOT EXISTS public.post_reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
@@ -307,13 +317,16 @@ BEGIN
   VALUES (auth.uid(), p_user_activity_id, p_image_url, 'ACTIVE', NOW())
   RETURNING id INTO v_post_id;
 
+  INSERT INTO public.post_point_awards (post_id, points_awarded)
+  VALUES (v_post_id, v_points);
+
   RETURN jsonb_build_object(
     'success', true,
     'points_awarded', v_points,
     'post_id', v_post_id
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE OR REPLACE FUNCTION public.complete_activity(
   p_user_activity_id UUID,
@@ -324,6 +337,63 @@ BEGIN
   RETURN public.log_activity_progress(p_user_activity_id, p_image_url);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- El estado del registro contable impide descontar dos veces y permite restaurar.
+-- BEFORE DELETE también cubre un borrado físico y las eliminaciones en cascada.
+CREATE OR REPLACE FUNCTION public.sync_post_points()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_points INT;
+  v_delta INT;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    UPDATE public.post_point_awards
+    SET counted = FALSE
+    WHERE post_id = OLD.id AND counted
+    RETURNING points_awarded INTO v_points;
+    v_delta := -COALESCE(v_points, 0);
+  ELSIF NEW.status = 'DELETED' AND OLD.status != 'DELETED' THEN
+    UPDATE public.post_point_awards
+    SET counted = FALSE
+    WHERE post_id = OLD.id AND counted
+    RETURNING points_awarded INTO v_points;
+    v_delta := -COALESCE(v_points, 0);
+  ELSIF OLD.status = 'DELETED' AND NEW.status != 'DELETED' THEN
+    UPDATE public.post_point_awards
+    SET counted = TRUE
+    WHERE post_id = OLD.id AND NOT counted
+    RETURNING points_awarded INTO v_points;
+    v_delta := COALESCE(v_points, 0);
+  ELSE
+    RETURN NEW;
+  END IF;
+
+  IF v_delta != 0 THEN
+    -- Mismo orden de actualización que log_activity_progress.
+    UPDATE public.user_activities
+    SET points_awarded = GREATEST(0, COALESCE(points_awarded, 0) + v_delta)
+    WHERE id = OLD.user_activity_id AND user_id = OLD.user_id;
+
+    UPDATE public.profiles
+    SET points = GREATEST(0, COALESCE(points, 0) + v_delta), updated_at = NOW()
+    WHERE id = OLD.user_id;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+REVOKE ALL ON FUNCTION public.sync_post_points() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_post_points_status ON public.posts;
+CREATE TRIGGER trg_post_points_status
+AFTER UPDATE OF status ON public.posts
+FOR EACH ROW EXECUTE FUNCTION public.sync_post_points();
+
+DROP TRIGGER IF EXISTS trg_post_points_delete ON public.posts;
+CREATE TRIGGER trg_post_points_delete
+BEFORE DELETE ON public.posts
+FOR EACH ROW EXECUTE FUNCTION public.sync_post_points();
 
 CREATE OR REPLACE FUNCTION public.report_post(
   p_post_id UUID,

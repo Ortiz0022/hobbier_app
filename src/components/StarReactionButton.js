@@ -15,7 +15,7 @@ import Svg, { Path } from 'react-native-svg';
 // Path de la estrella/chispita idéntica a la de Sorpréndeme (HeroBanner)
 const SPARKLE_PATH = 'M10,0 Q10,10 20,10 Q10,10 10,20 Q10,10 0,10 Q10,10 10,0 Z';
 
-const StarSvg = ({ size = 26, color }) => {
+export const ReactionStarIcon = ({ size = 26, color }) => {
   const { theme } = useThemeValues(getStarReactionButtonTheme);
   return (<Svg width={size} height={size} viewBox="0 0 20 20">
     <Path d={SPARKLE_PATH} fill={color ?? theme.color('#FF8F21', 'accent')} />
@@ -78,7 +78,7 @@ const FloatingStarParticle = ({ particle, onComplete }) => {
         },
       ]}
     >
-      <StarSvg size={particle.size} color={particle.color} />
+      <ReactionStarIcon size={particle.size} color={particle.color} />
     </Animated.View>
   );
 };
@@ -172,7 +172,7 @@ export const StarReactionButton = ({ initialCount = 0, initialReacted = false, o
             { transform: [{ scale: buttonScale }] },
           ]}
         >
-          <StarSvg size={26} color={reacted ? theme.color('#FF8F21', 'accent') : theme.color('#94A3B8', "muted")} />
+          <ReactionStarIcon size={26} color={reacted ? theme.color('#FF8F21', 'accent') : theme.color('#94A3B8', "muted")} />
           <Text style={[styles.countText, reacted && styles.countTextReacted]}>
             {count}
           </Text>

@@ -11,7 +11,8 @@
 -- Es un borrado lógico (status = 'DELETED'), igual que cuando el admin elimina
 -- un post reportado: desaparece del feed y del perfil (todas las consultas
 -- filtran por ACTIVE) pero se conservan los reportes que tuviera asociados.
--- Los puntos ganados por la actividad NO se restan: la actividad se hizo igual.
+-- Desde 20261104_post_points_on_delete.sql, un trigger descuenta los puntos
+-- asociados al cambiar el estado a DELETED; esta RPC no los descuenta otra vez.
 --
 -- Es seguro ejecutarla más de una vez.
 

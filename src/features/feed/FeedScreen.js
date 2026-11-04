@@ -39,7 +39,8 @@ import { formatTimeAgo } from '../../utils/dateFormat';
 import { getFriendsFeed, reportPost, togglePostReaction, deleteOwnPost } from '../../services/socialService';
 import { acceptActivity } from '../../services/activityService';
 import { ReportModal } from '../../components/ReportModal';
-import { StarReactionButton } from '../../components/StarReactionButton';
+import { StarReactionButton, ReactionStarIcon } from '../../components/StarReactionButton';
+import { ReceivedLikesScreen } from './ReceivedLikesScreen';
 import { UserProfileModal } from '../../components/UserProfileModal';
 import { DoAlsoModal } from './components/DoAlsoModal';
 import { MessagesInboxScreen } from '../messages/screens/MessagesInboxScreen';
@@ -92,7 +93,7 @@ const intercalarAnuncios = (posts, ads) => {
 export const FeedScreen = ({ onActivityAccepted }) => {
   const { theme, colors, getPillStyle, styles } = useThemeValues(getFeedScreenTheme);
 
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { notify, confirm } = useNotify();
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(() => !peekQuery(queryKeys.feed(user?.id, FEED_PAGE_SIZE, 0)));
@@ -193,6 +194,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   // Mensajes directos: navegación interna, igual que las salas dentro de Amigos.
   // null = feed | { screen: 'INBOX' } | { screen: 'CHAT', conversationId, friend }
   const [messagesView, setMessagesView] = useState(null);
+  const [showReceivedLikes, setShowReceivedLikes] = useState(false);
   const { unreadCount, refetch: refetchUnreadCount } = useDirectUnreadCount();
 
   // Retroceso físico / gestual en pantalla de Feed
@@ -210,6 +212,10 @@ export const FeedScreen = ({ onActivityAccepted }) => {
         setSelectedUserProfile(null);
         return true;
       }
+      if (showReceivedLikes) {
+        setShowReceivedLikes(false);
+        return true;
+      }
       if (messagesView) {
         if (messagesView.screen === 'CHAT') {
           setMessagesView({ screen: 'INBOX' });
@@ -222,7 +228,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [reportModalVisible, doAlsoModalVisible, selectedUserProfile, messagesView]);
+  }, [reportModalVisible, doAlsoModalVisible, selectedUserProfile, showReceivedLikes, messagesView]);
 
   useEffect(() => {
     loadFeed();
@@ -419,7 +425,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const handleDeletePost = async (post) => {
     const ok = await confirm({
       title: 'Eliminar publicación',
-      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil.',
+      message: '¿Seguro que quieres eliminar esta publicación? Dejará de verse en el feed y en tu perfil, y se descontarán los puntos que otorgó.',
       confirmLabel: 'Eliminar',
       destructive: true,
     });
@@ -431,6 +437,7 @@ export const FeedScreen = ({ onActivityAccepted }) => {
       return;
     }
     setPosts((prev) => prev.filter((p) => p.id !== post.id));
+    await refreshProfile();
     notify('Publicación eliminada.', { type: 'success', title: 'Listo' });
   };
 
@@ -487,6 +494,18 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   const handleAdInfo = (ad) => {
     setAdInfo(ad);
   };
+
+  if (showReceivedLikes) {
+    return (
+      <ReceivedLikesScreen
+        onBack={() => setShowReceivedLikes(false)}
+        onOpenChat={(friend) => {
+          setShowReceivedLikes(false);
+          setMessagesView({ screen: 'CHAT', friend });
+        }}
+      />
+    );
+  }
 
   if (messagesView?.screen === 'CHAT') {
     return (
@@ -680,6 +699,16 @@ export const FeedScreen = ({ onActivityAccepted }) => {
   // NAVBAR CON LOGO HOBBIER AL CENTRO (SE ESCONDE AL HACER SCROLL)
   const listHeader = (
     <View style={styles.navHeader}>
+      <TouchableOpacity
+        style={styles.likesBtn}
+        onPress={() => setShowReceivedLikes(true)}
+        activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={t('received_likes.title')}
+      >
+        <ReactionStarIcon size={24} color={theme.color('#121B22', 'text')} />
+      </TouchableOpacity>
       <Text style={styles.logoTitle}>Hobbier</Text>
 
       {/* MENSAJES DIRECTOS (ESQUINA SUPERIOR DERECHA, COMO EN INSTAGRAM) */}
@@ -867,6 +896,13 @@ export const getFeedScreenTheme = createThemeStyles((theme) => {
       textAlign: 'center',
     },
     // Absoluto para que el logo siga centrado en la pantalla
+    likesBtn: {
+      position: 'absolute',
+      left: 20,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
+    },
     messagesBtn: {
       position: 'absolute',
       right: 20,
