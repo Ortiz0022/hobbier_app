@@ -256,12 +256,11 @@ export const AdminAdRequests = ({ onAdCreated }) => {
 
       {!!aprobando && (
         <AdFormModal
-          // Sin id: es un anuncio nuevo. Las fechas son las que pidió el
-          // anunciante, pero el admin puede cambiarlas antes de guardar.
+          fromRequest
           ad={{
             advertiser_name: aprobando.advertiser_name,
-            // Las solicitudes nuevas no traen contacto: se habla por el chat.
             advertiser_contact: aprobando.contact || '',
+            city: aprobando.event_place || '',
             title: aprobando.title,
             body: aprobando.body,
             link_url: aprobando.link_url,

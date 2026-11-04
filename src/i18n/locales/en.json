@@ -784,7 +784,10 @@
     "confirm_rejection": "Confirm rejection",
     "reject_placeholder": "Reason for rejection (optional)",
     "messages": "Messages",
-    "error_change_ad_status": "The ad status could not be changed."
+    "error_change_ad_status": "The ad status could not be changed.",
+    "locked_ad_banner_title": "Contracted and billed data (read-only)",
+    "locked_ad_banner_desc": "The content, link, location, dates, and paid amount were already billed to the advertiser and cannot be modified. You can only assign target tastes and internal notes.",
+    "locked_field_note": "Locked by advertiser payment receipt"
   },
   "report": {
     "title": "Report post",
@@ -890,7 +893,8 @@
     "why_reason_nearby": "It is from your area, based on your phone's location permission.",
     "why_privacy": "From your location we only store the name of your canton or city. The advertiser never receives any of your data.",
     "why_ok": "Got it",
-    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free."
+    "why_generic": "This ad is shown to all users; it was not chosen using your data. Ads help keep Hobbier free.",
+    "featured_badge": "Featured for you"
   },
   "location_ask": {
     "title": "Discover what is happening near you",

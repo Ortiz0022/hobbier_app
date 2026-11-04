@@ -784,7 +784,10 @@
     "confirm_rejection": "Confirmar rechazo",
     "reject_placeholder": "Motivo del rechazo (opcional)",
     "messages": "Mensajes",
-    "error_change_ad_status": "No se pudo cambiar el estado del anuncio."
+    "error_change_ad_status": "No se pudo cambiar el estado del anuncio.",
+    "locked_ad_banner_title": "Datos contratados y facturados (solo lectura)",
+    "locked_ad_banner_desc": "El contenido, enlace, ubicación, vigencia y monto pagado ya fueron facturados al anunciante y no pueden modificarse. Solo puedes asignar los gustos de segmentación y notas internas.",
+    "locked_field_note": "Bloqueado por comprobante de pago del anunciante"
   },
   "report": {
     "title": "Reportar publicación",
@@ -890,7 +893,8 @@
     "why_reason_nearby": "Es de tu zona, según el permiso de ubicación del teléfono.",
     "why_privacy": "De tu ubicación solo guardamos el nombre de tu cantón o ciudad. El anunciante nunca recibe ningún dato tuyo.",
     "why_ok": "Entendido",
-    "why_generic": "Es un anuncio dirigido a todos los usuarios, no se eligió por tus datos. Gracias a los anuncios Hobbier sigue siendo gratis."
+    "why_generic": "Es un anuncio dirigido a todos los usuarios, no se eligió por tus datos. Gracias a los anuncios Hobbier sigue siendo gratis.",
+    "featured_badge": "Destacado para ti"
   },
   "location_ask": {
     "title": "Descubre lo que pasa cerca de ti",

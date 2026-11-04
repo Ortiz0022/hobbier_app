@@ -8,6 +8,72 @@ Hobbier es una aplicación móvil diseñada para combatir el sedentarismo y el a
 
 **Tecnologías:** Expo SDK 58 · React Native 0.88 · React 19.3 · Supabase (Postgres, Auth, Storage, Realtime y Edge Functions) · Groq para la parte de IA. El código es JavaScript, con algunos archivos TypeScript sueltos (`designTokens.ts`, `SelectableCard.tsx`, `scaledText.tsx`).
 
+---
+
+## ▶️ Guía rápida: Cómo instalar y ejecutar la aplicación
+
+### 1. Requisitos previos
+- **Node.js** (versión 18 LTS o 20+ recomendada) y **npm**.
+- **Git** instalado.
+- **Para probar en Web:** Cualquier navegador moderno (Chrome, Edge, Firefox, Safari).
+- **Para probar en el teléfono:** Aplicación **Expo Go** instalada desde Google Play Store (Android) o App Store (iOS), o bien un emulador de Android Studio / simulador de Xcode.
+
+### 2. Instalación de dependencias
+Clona el repositorio, entra en la carpeta del proyecto e instala los paquetes con `npm`:
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd hobbier_app
+npm install
+```
+
+### 3. Configuración de variables de entorno (`.env`)
+Crea un archivo llamado `.env` en la raíz del proyecto con las variables de conexión a Supabase:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key-de-supabase
+EXPO_PUBLIC_APP_URL=http://localhost:8081
+EXPO_PUBLIC_ENABLE_WEB_EDGE_INVOICE=true
+```
+
+> **Nota:** La clave `GROQ_API_KEY` (para la IA de recomendaciones y moderación) **no** va en el `.env` del cliente; está configurada como secreto en las Edge Functions de Supabase para no exponerla.
+
+### 4. Ejecución de la aplicación
+
+Puedes iniciar el servidor de desarrollo de Expo limpiando la caché de Metro con:
+
+```bash
+npx expo start -c
+```
+
+O ejecutar directamente según la plataforma deseada:
+
+| Plataforma | Comando | Cómo abrirla |
+| --- | --- | --- |
+| **Web (Navegador)** | `npm run web` | Abre automáticamente `http://localhost:8081` (o presiona **`w`** en la terminal de `npx expo start`). Se adapta tanto a vista móvil como a pantalla completa de escritorio. |
+| **Teléfono físico (Expo Go)** | `npx expo start` | Conecta el teléfono y la computadora al mismo Wi-Fi y escanea el **código QR** con Expo Go (Android) o la cámara (iOS). Si la red bloquea la conexión local, usa `npx expo start --tunnel`. |
+| **Emulador Android** | `npm run android` | Con un emulador de Android Studio abierto, ejecuta el comando (o presiona **`a`** en la terminal de Expo). |
+| **Simulador iOS (macOS)** | `npm run ios` | Con Xcode instalado, ejecuta el comando (o presiona **`i`** en la terminal de Expo). |
+
+> **Nota sobre módulos nativos (Notificaciones Push):** Para recorrer y probar la aplicación basta con Web o Expo Go. Las notificaciones push remotas requieren una build de desarrollo (`npx expo run:android` o build con EAS), ya que desde Expo SDK 53 Expo Go no recibe push remotas en Android. En web el servicio las ignora de forma segura sin afectar el resto de la app.
+
+### 5. Ejecución de pruebas automatizadas
+El proyecto incluye pruebas unitarias y de integración (caché de consultas, orden de hooks en React, integridad de traducciones ES/EN, icono y enrutamiento de notificaciones):
+
+```bash
+npm test
+```
+
+### 6. Solución de problemas frecuentes (Troubleshooting)
+- **`UnableToResolveError` o `PluginError: Failed to resolve plugin for module "expo-splash-screen"` / `"expo-location"`:** Ocurre cuando se descargan cambios nuevos del repositorio sin actualizar `node_modules` o queda caché vieja en Metro. Solución:
+  ```bash
+  npm install
+  npx expo start -c
+  ```
+
+---
+
 ## 🔄 Evolución del proyecto (hitos)
 
 El desarrollo siguió una metodología iterativa, priorizando la experiencia del usuario (UX) y la escalabilidad técnica.
@@ -258,7 +324,7 @@ El recorte lo hace `expo-image-manipulator` sobre los píxeles de la foto origin
 
 ## 🔘 Orden de los botones
 
-En una fila de acciones va **primero lo que la persona vino a hacer** y después la salida: `Guardar` / `Cancelar`, `Siguiente` / `Atrás`, `Listo` / `Cancelar`. Es la regla en toda la app: en una fila, el botón que se escribe antes es el que se ve a la izquierda.
+En las filas de acciones de toda la app se sigue el estándar de diseño de interfaces (Apple HIG, Material Design 3 y ergonomía móvil): la acción secundaria o de salida (`Cancelar` / `Atrás`) se ubica a la **izquierda** y la **acción primaria o afirmativa** (`Guardar`, `Confirmar`, `Listo`, `Aceptar`) a la **derecha**.
 
 ## ↩️ Botón de retroceso en Android
 
@@ -355,25 +421,5 @@ supabase/
   migrations/           Cambios posteriores, por fecha
   functions/            Edge Functions: tres de Groq y send-push
   comprobar_push.mjs    Diagnóstico: ¿están desplegadas las piezas de las push?
+tests/                  Pruebas automatizadas (caché, orden de hooks, i18n, notificaciones)
 ```
-
-## ▶️ Cómo ejecutarlo
-
-```bash
-npm install
-npx expo start
-```
-
-Hace falta un `.env` en la raíz con:
-
-```
-EXPO_PUBLIC_SUPABASE_URL=...
-EXPO_PUBLIC_SUPABASE_ANON_KEY=...
-EXPO_PUBLIC_APP_URL=...
-```
-
-`GROQ_API_KEY` no va aquí: es un secreto de las Edge Functions, en Supabase.
-
-Para las pruebas rápidas basta con Expo Go, pero **los avisos push y el encuadre de fotos son módulos nativos**: solo aparecen en una build propia (`npx expo run:android` o EAS). Si acabas de añadir uno, hay que recompilar; no llega con reiniciar el bundler.
-
-> Si al arrancar aparece `PluginError: Failed to resolve plugin for module "expo-location"`, es que falta `npm install` después de traer cambios del repositorio.
