@@ -15,7 +15,23 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English' },
 ];
 
-const LanguageContext = createContext(null);
+/**
+ * @typedef {Object} LanguageContextType
+ * @property {'es' | 'en'} language
+ * @property {(newLang: string) => Promise<void>} setLanguage
+ * @property {(keyPath: string, params?: Record<string, any>) => string} t
+ * @property {typeof SUPPORTED_LANGUAGES} languages
+ * @property {boolean} isReady
+ */
+
+/** @type {React.Context<LanguageContextType>} */
+const LanguageContext = createContext(/** @type {any} */ ({
+  language: 'es',
+  setLanguage: async () => {},
+  t: (k) => k,
+  languages: SUPPORTED_LANGUAGES,
+  isReady: true,
+}));
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguageState] = useState('es');

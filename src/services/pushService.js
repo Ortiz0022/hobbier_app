@@ -166,6 +166,8 @@ export const AVISO = {
  * @param {object} contexto  { para, texto, salaId, salaNombre, motivo, ... }
  */
 export const avisar = (tipo, contexto = {}) => {
+  // En entorno web no se invocan notificaciones push remotas (evita errores CORS)
+  if (Platform.OS === 'web') return;
   try {
     supabase.functions
       .invoke('send-push', { body: { tipo, contexto } })

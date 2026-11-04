@@ -167,6 +167,13 @@ export const AdminAds = () => {
         visibles.map((ad) => {
           const ctr = ad.impressions ? ((ad.clicks / ad.impressions) * 100).toFixed(1) : '0.0';
           const infoEstado = estadosMap[ad.estado] || { label: ad.estado, tono: 'neutro' };
+
+          const esCpc = ad.billing_model === 'CPC';
+          const consumido = esCpc ? Number(ad.clicks || 0) : Number(ad.impressions || 0);
+          const meta = Number(ad.target_quota || 0);
+          const pct = meta > 0 ? Math.min(100, Math.round((consumido / meta) * 100)) : 0;
+          const agotado = meta > 0 && consumido >= meta;
+
           return (
             <View key={ad.id} style={adminStyles.card}>
               <View style={estilos.fila}>
@@ -196,6 +203,15 @@ export const AdminAds = () => {
               </View>
 
               <View style={adminStyles.badgeRow}>
+                <Insignia
+                  texto={
+                    esCpc
+                      ? `CPC · ${meta || 0} clics máx`
+                      : `CPM · ${(meta || 0).toLocaleString()} vistas máx`
+                  }
+                  tono={esCpc ? 'marca' : 'acento'}
+                />
+                {agotado && <Insignia texto="PRESUPUESTO AGOTADO" tono="alerta" />}
                 {ad.likes.length === 0 ? (
                   <Insignia texto={t('admin.for_everyone') || 'Para todos'} tono="neutro" />
                 ) : (
@@ -209,6 +225,28 @@ export const AdminAds = () => {
                 <Cifra valor={ad.clicks} etiqueta={t('admin.clicks') || 'Clics'} />
                 <Cifra valor={`${ctr}%`} etiqueta={t('admin.ctr') || 'CTR'} />
               </View>
+
+              {meta > 0 && (
+                <View style={estilos.progresoCont}>
+                  <View style={estilos.progresoHeader}>
+                    <Text style={estilos.progresoLabel}>
+                      {esCpc ? 'Consumo de Clics (Cap)' : 'Consumo de Visualizaciones (Cap)'}
+                    </Text>
+                    <Text style={[estilos.progresoValor, agotado && { color: colors.danger || '#DC2626' }]}>
+                      {consumido.toLocaleString()} / {meta.toLocaleString()} ({pct}%)
+                    </Text>
+                  </View>
+                  <View style={estilos.barraFondo}>
+                    <View
+                      style={[
+                        estilos.barraRelleno,
+                        { width: `${pct}%` },
+                        agotado && { backgroundColor: colors.danger || '#DC2626' },
+                      ]}
+                    />
+                  </View>
+                </View>
+              )}
 
               <View style={estilos.acciones}>
                 <BotonAccion texto={t('admin.edit') || 'Editar'} icono="create-outline" onPress={() => setEditando(ad)} />
@@ -311,6 +349,37 @@ const estilos = StyleSheet.create({
   cifraEtiqueta: {
     fontSize: 11,
     color: colors.textMuted,
+  },
+  progresoCont: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  progresoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  progresoLabel: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
+  },
+  progresoValor: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: colors.primary,
+  },
+  barraFondo: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  barraRelleno: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary,
   },
   acciones: {
     flexDirection: 'row',

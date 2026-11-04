@@ -55,6 +55,10 @@ export const submitAdRequest = async (userId, solicitud) => {
       image_url: solicitud.image_url || null,
       starts_on: solicitud.starts_on,
       ends_on: solicitud.ends_on,
+      billing_model: solicitud.billing_model || 'CPM',
+      target_quota: solicitud.target_quota ? Number(solicitud.target_quota) : null,
+      payment_status: solicitud.payment_status || 'PENDIENTE',
+      transaction_id: solicitud.transaction_id || null,
     });
     if (error) throw error;
     avisar(AVISO.ADMIN_SOLICITUD_ANUNCIO, {});
@@ -78,7 +82,7 @@ export const getMyAdRequests = async (userId) => {
     const { data, error } = await supabase
       .from('ad_requests')
       .select(
-        'id, advertiser_name, title, kind, image_url, starts_on, ends_on, status, reject_reason, created_at, reviewed_at, ' +
+        'id, advertiser_name, title, kind, image_url, starts_on, ends_on, status, reject_reason, created_at, reviewed_at, billing_model, target_quota, payment_status, transaction_id, ' +
           'messages:ad_request_messages(from_team, body, created_at)'
       )
       .eq('user_id', userId)
@@ -88,6 +92,21 @@ export const getMyAdRequests = async (userId) => {
   } catch (error) {
     console.warn('No se pudieron cargar tus solicitudes de anuncio:', error.message);
     return { requests: [], error };
+  }
+};
+
+export const contarSolicitudesPendientes = async (userId) => {
+  if (!userId) return 0;
+  try {
+    const { count, error } = await supabase
+      .from('ad_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'PENDIENTE');
+    if (error) return 0;
+    return count || 0;
+  } catch {
+    return 0;
   }
 };
 
@@ -176,10 +195,48 @@ export const uploadAdRequestImage = async (userId, imageUri) => {
   }
 };
 
-// ---------- Precio ----------
-// Tarifa única por día que el anuncio sale en el feed. Es solo la base del
-// precio sugerido: el admin puede cobrar otra cosa si lo acuerda con el negocio.
-export const PRECIO_POR_DIA = 500;
+// ---------- Precio y Tarifas (Estilo Meta Ads: CPM / CPC) ----------
+export const TARIFA_CPC = 50; // ₡50 por clic
+export const TARIFA_CPM = 2; // ₡2 por visualización (₡2.000 por 1.000 visualizaciones)
+export const PRECIO_POR_DIA = 500; // Conservado por compatibilidad
+
+/**
+ * Calcula el costo total sugerido según el modelo de cobro y la cantidad contratada.
+ * - CPC: cuota * ₡50
+ * - CPM: cuota * ₡2
+ */
+export const calcularPresupuesto = (billingModel, cuota) => {
+  const n = Number(cuota) || 0;
+  if (n <= 0) return 0;
+  if (billingModel === 'CPC') return Math.round(n * TARIFA_CPC);
+  return Math.round(n * TARIFA_CPM);
+};
+
+/**
+ * Calcula la cuota de clics o visualizaciones que cubre un presupuesto dado.
+ */
+export const calcularCuota = (billingModel, presupuesto) => {
+  const monto = Number(presupuesto) || 0;
+  if (monto <= 0) return 0;
+  if (billingModel === 'CPC') return Math.floor(monto / TARIFA_CPC);
+  return Math.floor(monto / TARIFA_CPM);
+};
+
+/**
+ * Paquetes o presets recomendados para selección rápida en el formulario de anuncios
+ */
+export const PRESETS_PRESUPUESTO = {
+  CPM: [
+    { label: 'Básico', views: 500, price: 1000 },
+    { label: 'Popular', views: 1000, price: 2000, popular: true },
+    { label: 'Destacado', views: 2500, price: 5000 },
+  ],
+  CPC: [
+    { label: 'Inicial', clicks: 20, price: 1000 },
+    { label: 'Recomendado', clicks: 50, price: 2500, popular: true },
+    { label: 'Impacto', clicks: 100, price: 5000 },
+  ],
+};
 
 const isoLocal = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -471,6 +528,10 @@ export const saveAdAdmin = async (ad, likeIds = [], createdBy = null) => {
       ends_on: ad.ends_on,
       is_active: ad.is_active ?? true,
       price_paid: ad.price_paid === '' || ad.price_paid == null ? null : Number(ad.price_paid),
+      billing_model: ad.billing_model || 'CPM',
+      target_quota: ad.target_quota === '' || ad.target_quota == null ? null : Number(ad.target_quota),
+      payment_status: ad.payment_status || 'PAGADO',
+      transaction_id: ad.transaction_id || null,
       notes: ad.notes?.trim() || null,
       updated_at: new Date().toISOString(),
     };

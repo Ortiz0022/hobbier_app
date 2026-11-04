@@ -1,6 +1,6 @@
 import { useThemeValues } from '../../../context/ThemeContext';
 import { createThemeStyles } from '../../../theme/themeRuntime';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Modal, Pressable, ScrollView, TouchableOpacity, Platform, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -15,10 +15,15 @@ import {
   ExternalLink,
   MapPin,
   Clock,
+  Eye,
+  MousePointerClick,
+  Lock,
+  TriangleAlert,
 } from 'lucide-react-native';
 import { Text, TextInput } from '../../../components/scaledText';
 import { CalendarDateField } from '../../../components/CalendarDateField';
 import { LegalDocumentModal } from '../../../legal/LegalDocumentModal';
+import { SimulatedPaymentModal } from '../../../components/SimulatedPaymentModal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotify } from '../../../context/NotificationContext';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -28,6 +33,12 @@ import {
   diasDeVigencia,
   precioSugerido,
   PRECIO_POR_DIA,
+  TARIFA_CPC,
+  TARIFA_CPM,
+  calcularPresupuesto,
+  calcularCuota,
+  PRESETS_PRESUPUESTO,
+  contarSolicitudesPendientes,
 } from '../../../services/adsService';
 import { radii, spacing, fonts } from '../../../theme';
 
@@ -60,7 +71,7 @@ const CampoBase = ({ etiqueta, ayuda, error, children }) => {
 const STEPS_INFO = [
   { key: 'info', label: 'Datos del anunciante' },
   { key: 'content', label: 'Contenido del anuncio' },
-  { key: 'duration', label: 'Vigencia y confirmación' },
+  { key: 'duration', label: 'Objetivo y presupuesto' },
 ];
 
 /**
@@ -72,9 +83,18 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
   const { theme, colors, estilos } = useThemeValues(getAdRequestModalTheme);
   const { user } = useAuth();
   const { notify } = useNotify();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [step, setStep] = useState(1); // 1 | 2 | 3
+
+  const stepsInfo = useMemo(
+    () => [
+      { key: 'info', label: t('ad_request.step_advertiser') || 'Datos del anunciante' },
+      { key: 'content', label: t('ad_request.step_content') || 'Contenido del anuncio' },
+      { key: 'duration', label: t('ad_request.step_pricing') || 'Objetivo y presupuesto' },
+    ],
+    [t]
+  );
 
   const vacio = () => ({
     advertiser_name: '',
@@ -94,6 +114,19 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
   const [verCondiciones, setVerCondiciones] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erroresPaso, setErroresPaso] = useState({});
+
+  // Modelo de cobro estilo Meta Ads (CPM / CPC) y pasarela simulada
+  const [billingModel, setBillingModel] = useState('CPM'); // 'CPM' | 'CPC'
+  const [targetQuota, setTargetQuota] = useState(1000);
+  const [cuotaManual, setCuotaManual] = useState('');
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
+  const [pendientesCount, setPendientesCount] = useState(0);
+
+  useEffect(() => {
+    if (visible && user?.id) {
+      contarSolicitudesPendientes(user.id).then(setPendientesCount);
+    }
+  }, [visible, user?.id]);
 
   const set = (campo) => (valor) => {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -115,6 +148,10 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
     setImagenLocal(null);
     setAcepta(false);
     setErroresPaso({});
+    setBillingModel('CPM');
+    setTargetQuota(1000);
+    setCuotaManual('');
+    setModalPagoVisible(false);
     onClose?.();
   };
 
@@ -144,9 +181,47 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
   const hastaIso = campoAIso(hasta);
   const eventoIso = esEvento ? campoAIso(fechaEvento) : null;
   const dias = diasDeVigencia(desdeIso, hastaIso);
-  const total = precioSugerido(desdeIso, hastaIso);
+  const total = calcularPresupuesto(billingModel, targetQuota);
 
   const enlaceValido = !form.link_url.trim() || /^https?:\/\/\S+\.\S+/i.test(form.link_url.trim());
+
+  const elegirPreset = (cantidad) => {
+    setTargetQuota(cantidad);
+    setCuotaManual('');
+    if (erroresPaso.cuota) {
+      setErroresPaso((prev) => {
+        const next = { ...prev };
+        delete next.cuota;
+        return next;
+      });
+    }
+  };
+
+  const cambiarModelo = (modelo) => {
+    setBillingModel(modelo);
+    if (modelo === 'CPC') {
+      setTargetQuota(50);
+    } else {
+      setTargetQuota(1000);
+    }
+    setCuotaManual('');
+  };
+
+  const cambiarCuotaManual = (texto) => {
+    const num = texto.replace(/\D/g, '');
+    setCuotaManual(num);
+    const n = Number(num);
+    if (n > 0) {
+      setTargetQuota(n);
+      if (erroresPaso.cuota) {
+        setErroresPaso((prev) => {
+          const next = { ...prev };
+          delete next.cuota;
+          return next;
+        });
+      }
+    }
+  };
 
   // Navegación hacia adelante con validación por paso
   const avanzarPaso = () => {
@@ -181,7 +256,8 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
     }
   };
 
-  const enviar = async () => {
+  // Valida los datos del paso 3 y abre la pasarela de pago falsa
+  const abrirPasarela = async () => {
     const errs = {};
     if (!desdeIso || !hastaIso) {
       errs.fechas = t('ad_request.error_dates_missing') || 'Selecciona las fechas de vigencia';
@@ -192,8 +268,20 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
         t('ad_request.error_dates_after_event') || 'El anuncio no puede durar después de la fecha del evento';
     }
 
-    if (!enlaceValido) {
+    if (billingModel === 'CPC' && !form.link_url.trim()) {
+      errs.link_url =
+        language === 'en'
+          ? 'To charge per click, you must provide a destination link (Web or WhatsApp)'
+          : 'Para cobrar por clic debes indicar el enlace de destino (Web o WhatsApp)';
+    } else if (!enlaceValido) {
       errs.link_url = t('ad_request.error_link') || 'El enlace debe comenzar con http:// o https://';
+    }
+
+    if (!targetQuota || targetQuota <= 0) {
+      errs.cuota =
+        language === 'en'
+          ? 'Enter a views or clicks target greater than 0'
+          : 'Indica una meta de visualizaciones o clics mayor a 0';
     }
 
     if (!acepta) {
@@ -205,6 +293,24 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
       return;
     }
 
+    // Verificar si ya alcanzó el límite máximo de solicitudes pendientes
+    const pendientes = await contarSolicitudesPendientes(user?.id);
+    setPendientesCount(pendientes);
+    if (pendientes >= 3) {
+      notify(
+        'Has alcanzado el límite máximo de 3 solicitudes pendientes. Por favor espera a que el administrador las revise y apruebe antes de enviar una nueva.',
+        { type: 'warning', title: 'Límite de solicitudes alcanzado', duration: 7000 }
+      );
+      return;
+    }
+
+    setErroresPaso({});
+    setModalPagoVisible(true);
+  };
+
+  // Callback cuando la pasarela simulada aprueba la tarjeta
+  const handlePaymentSuccess = async (paymentData) => {
+    setModalPagoVisible(false);
     setEnviando(true);
     let image_url = null;
     if (imagenLocal) {
@@ -223,14 +329,28 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
       event_date: eventoIso,
       starts_on: desdeIso,
       ends_on: hastaIso,
+      billing_model: billingModel,
+      target_quota: Number(targetQuota),
+      payment_status: 'PAGADO',
+      transaction_id: paymentData.transactionId,
     });
     setEnviando(false);
 
     if (error) {
-      notify(limite ? t('ad_request.error_limit') : t('ad_request.error_send'), { type: 'error' });
+      if (limite) {
+        notify(
+          'Has alcanzado el límite máximo de 3 solicitudes pendientes. Por favor espera a que el administrador las revise y apruebe antes de enviar una nueva.',
+          { type: 'warning', title: 'Límite de solicitudes alcanzado', duration: 7000 }
+        );
+      } else {
+        notify(t('ad_request.error_send'), { type: 'error' });
+      }
       return;
     }
-    notify(t('ad_request.sent'), { type: 'success', title: t('ad_request.sent_title') });
+    notify('Solicitud pagada y registrada con éxito', {
+      type: 'success',
+      title: `Comprobante: ${paymentData.transactionId}`,
+    });
     onSent?.();
     cerrar();
   };
@@ -278,7 +398,9 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
             <View style={estilos.tituloCentro}>
               <Text style={estilos.titulo}>{t('ad_request.form_title')}</Text>
               <Text style={estilos.subtituloPaso}>
-                Paso {step} de 3 • {STEPS_INFO[step - 1].label}
+                {language === 'en'
+                  ? `Step ${step} of 3 • ${stepsInfo[step - 1].label}`
+                  : `Paso ${step} de 3 • ${stepsInfo[step - 1].label}`}
               </Text>
             </View>
 
@@ -294,7 +416,7 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
 
           {/* BARRA DE PROGRESO DE LOS PASOS */}
           <View style={estilos.barraProgreso}>
-            {STEPS_INFO.map((st, i) => {
+            {stepsInfo.map((st, i) => {
               const num = i + 1;
               const completado = step > num;
               const actual = step === num;
@@ -431,10 +553,217 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
             {/* ===================== PASO 3 ===================== */}
             {step === 3 && (
               <View style={estilos.stepContainer}>
+                {/* AVISO DE LÍMITE DE SOLICITUDES PENDIENTES */}
+                {pendientesCount >= 3 && (
+                  <View style={estilos.limiteAvisoBanner}>
+                    <TriangleAlert size={18} color="#D97706" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={estilos.limiteAvisoTitulo}>
+                        {t('ad_request.limit_reached_title') || 'Límite de solicitudes alcanzado'}
+                      </Text>
+                      <Text style={estilos.limiteAvisoTexto}>
+                        {t('ad_request.limit_reached_banner') ||
+                          'Ya tienes 3 solicitudes en revisión. Por favor espera a que el administrador las apruebe o rechace antes de enviar una nueva.'}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* OBJETIVO DE CAMPAÑA (ESTILO META ADS) */}
+                <CampoBase
+                  etiqueta={t('ad_request.campaign_objective') || 'Objetivo de la campaña'}
+                  ayuda={
+                    t('ad_request.campaign_objective_help') ||
+                    'Elige la forma en que deseas optimizar y pagar tu anuncio.'
+                  }
+                >
+                  <View style={estilos.modelosGrid}>
+                    <TouchableOpacity
+                      style={[
+                        estilos.tarjetaModelo,
+                        billingModel === 'CPM' && estilos.tarjetaModeloActiva,
+                      ]}
+                      onPress={() => cambiarModelo('CPM')}
+                      activeOpacity={0.8}
+                    >
+                      <View style={estilos.tarjetaModeloHeader}>
+                        <View
+                          style={[
+                            estilos.iconoModeloWrap,
+                            billingModel === 'CPM' && estilos.iconoModeloWrapActivo,
+                          ]}
+                        >
+                          <Eye
+                            size={18}
+                            color={billingModel === 'CPM' ? '#FFFFFF' : colors.primary}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            estilos.tarjetaModeloTitulo,
+                            billingModel === 'CPM' && estilos.tarjetaModeloTituloActivo,
+                          ]}
+                        >
+                          {t('ad_request.objective_cpm_title') || 'Reconocimiento (Visualizaciones CPM)'}
+                        </Text>
+                      </View>
+                      <Text style={estilos.tarjetaModeloDesc}>
+                        {t('ad_request.objective_cpm_desc') ||
+                          `Ideal para eventos y alcance de marca. Pagas ₡${TARIFA_CPM} por visualización en el feed.`}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        estilos.tarjetaModelo,
+                        billingModel === 'CPC' && estilos.tarjetaModeloActiva,
+                      ]}
+                      onPress={() => cambiarModelo('CPC')}
+                      activeOpacity={0.8}
+                    >
+                      <View style={estilos.tarjetaModeloHeader}>
+                        <View
+                          style={[
+                            estilos.iconoModeloWrap,
+                            billingModel === 'CPC' && estilos.iconoModeloWrapActivo,
+                          ]}
+                        >
+                          <MousePointerClick
+                            size={18}
+                            color={billingModel === 'CPC' ? '#FFFFFF' : colors.primary}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            estilos.tarjetaModeloTitulo,
+                            billingModel === 'CPC' && estilos.tarjetaModeloTituloActivo,
+                          ]}
+                        >
+                          {t('ad_request.objective_cpc_title') || 'Tráfico / Clics (CPC)'}
+                        </Text>
+                      </View>
+                      <Text style={estilos.tarjetaModeloDesc}>
+                        {t('ad_request.objective_cpc_desc') ||
+                          `Ideal para captar clientes en tu web o WhatsApp. Pagas ₡${TARIFA_CPC} por cada clic garantizado.`}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </CampoBase>
+
+                {/* PAQUETES Y PRESUPUESTO */}
+                <CampoBase
+                  etiqueta={
+                    billingModel === 'CPC'
+                      ? t('ad_request.quota_cpc_title') || 'Meta de clics contratados'
+                      : t('ad_request.quota_cpm_title') || 'Meta de visualizaciones contratadas'
+                  }
+                  ayuda={
+                    billingModel === 'CPC'
+                      ? t('ad_request.quota_cpc_help') ||
+                        'El anuncio se detiene automáticamente en el feed al completar los clics.'
+                      : t('ad_request.quota_cpm_help') ||
+                        'El anuncio se entrega hasta alcanzar el volumen contratado de visualizaciones.'
+                  }
+                  error={erroresPaso.cuota}
+                >
+                  <View style={estilos.presetsGrid}>
+                    {(billingModel === 'CPC' ? PRESETS_PRESUPUESTO.CPC : PRESETS_PRESUPUESTO.CPM).map(
+                      (preset) => {
+                        const cantidad = preset.clicks || preset.views;
+                        const esSeleccionado = targetQuota === cantidad && !cuotaManual;
+                        return (
+                          <TouchableOpacity
+                            key={preset.label}
+                            style={[
+                              estilos.presetPill,
+                              esSeleccionado && estilos.presetPillActivo,
+                            ]}
+                            onPress={() => elegirPreset(cantidad)}
+                            activeOpacity={0.8}
+                          >
+                            {preset.popular && (
+                              <View style={estilos.popularBadge}>
+                                <Text style={estilos.popularBadgeText}>
+                                  {t('ad_request.recommended') || 'Recomendado'}
+                                </Text>
+                              </View>
+                            )}
+                            <Text
+                              style={[
+                                estilos.presetPillTitulo,
+                                esSeleccionado && estilos.presetPillTituloActivo,
+                              ]}
+                            >
+                              {billingModel === 'CPC'
+                                ? t('ad_request.clicks_count', { count: cantidad }) || `${cantidad} clics`
+                                : t('ad_request.views_count', {
+                                    count: cantidad.toLocaleString(
+                                      language === 'en' ? 'en-US' : 'es-CR'
+                                    ),
+                                  }) || `${cantidad.toLocaleString()} vistas`}
+                            </Text>
+                            <Text
+                              style={[
+                                estilos.presetPillPrecio,
+                                esSeleccionado && estilos.presetPillPrecioActivo,
+                              ]}
+                            >
+                              {colones(preset.price)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      }
+                    )}
+                  </View>
+
+                  <View style={estilos.customQuotaRow}>
+                    <Text style={estilos.customQuotaLabel}>
+                      {t('ad_request.custom_quota_label') || 'O ingresa otra meta:'}
+                    </Text>
+                    <TextInput
+                      {...theme.textInputProps}
+                      style={estilos.customQuotaInput}
+                      placeholder={
+                        billingModel === 'CPC'
+                          ? t('ad_request.custom_quota_placeholder_cpc') || 'Ej. 75'
+                          : t('ad_request.custom_quota_placeholder_cpm') || 'Ej. 3000'
+                      }
+                      keyboardType="numeric"
+                      value={cuotaManual}
+                      onChangeText={cambiarCuotaManual}
+                    />
+                  </View>
+                </CampoBase>
+
+                {/* RESUMEN DE INVERSIÓN */}
+                <View style={estilos.costo}>
+                  <Text style={estilos.costoEtiqueta}>
+                    {t('ad_request.total_investment') || 'Inversión total a cancelar'}
+                  </Text>
+                  <Text style={estilos.costoTotal}>{colones(total)}</Text>
+                  <Text style={estilos.costoDetalle}>
+                    {billingModel === 'CPC'
+                      ? t('ad_request.total_investment_detail_cpc', {
+                          count: targetQuota,
+                          rate: TARIFA_CPC,
+                        }) || `${targetQuota} clics garantizados a ₡${TARIFA_CPC} c/u`
+                      : t('ad_request.total_investment_detail_cpm', {
+                          count: (targetQuota || 0).toLocaleString(
+                            language === 'en' ? 'en-US' : 'es-CR'
+                          ),
+                          rate: TARIFA_CPM,
+                        }) || `${(targetQuota || 0).toLocaleString()} visualizaciones a ₡${TARIFA_CPM} c/u`}
+                  </Text>
+                  <Text style={estilos.costoNota}>
+                    {t('ad_request.total_investment_note') ||
+                      'Pago único simulado mediante tarjeta en la siguiente ventana de cobro.'}
+                  </Text>
+                </View>
+
                 {/* FECHAS DE VIGENCIA */}
                 <CampoBase
                   etiqueta={t('ad_request.field_dates')}
-                  ayuda={t('ad_request.help_dates', { rate: colones(PRECIO_POR_DIA) })}
+                  ayuda={t('ad_request.dates_help') || 'Rango de fechas en el que tu campaña estará activa en el feed.'}
                   error={erroresPaso.fechas}
                 >
                   <View style={estilos.fechasGrid}>
@@ -457,25 +786,24 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
                       />
                     </View>
                   </View>
-
-                  {/* CÁLCULO DE COSTO ESTIMADO */}
-                  {dias > 0 && (
-                    <View style={estilos.costo}>
-                      <Text style={estilos.costoEtiqueta}>{t('ad_request.total_label')}</Text>
-                      <Text style={estilos.costoTotal}>{colones(total)}</Text>
-                      <Text style={estilos.costoDetalle}>
-                        {t(dias === 1 ? 'ad_request.total_detail_one' : 'ad_request.total_detail', {
-                          days: dias,
-                          rate: colones(PRECIO_POR_DIA),
-                        })}
-                      </Text>
-                      <Text style={estilos.costoNota}>{t('ad_request.total_note')}</Text>
-                    </View>
-                  )}
                 </CampoBase>
 
                 {/* ENLACE DESTINO */}
-                <CampoBase etiqueta={t('ad_request.field_link')} error={erroresPaso.link_url}>
+                <CampoBase
+                  etiqueta={
+                    billingModel === 'CPC'
+                      ? t('ad_request.link_required_cpc') || 'Enlace destino (Requerido para Clics)'
+                      : t('ad_request.link_optional_cpm') || t('ad_request.field_link')
+                  }
+                  ayuda={
+                    billingModel === 'CPC'
+                      ? t('ad_request.link_required_cpc_help') ||
+                        'Dirección web o link de WhatsApp a donde irán los usuarios al hacer clic.'
+                      : t('ad_request.link_optional_cpm_help') ||
+                        'Opcional si tu anuncio es meramente informativo.'
+                  }
+                  error={erroresPaso.link_url}
+                >
                   {entrada('link_url', {
                     placeholder: 'https://',
                     autoCapitalize: 'none',
@@ -522,39 +850,56 @@ export const AdRequestModal = ({ visible, onClose, onSent }) => {
 
           {/* PIE DE NAVEGACIÓN ENTRE PASOS */}
           <View style={estilos.pie}>
-            {step < 3 ? (
-              <TouchableOpacity
-                style={estilos.btnEnviar}
-                onPress={avanzarPaso}
-                activeOpacity={0.85}
-              >
-                <Text style={estilos.btnEnviarTexto}>Siguiente</Text>
-                <ChevronRight size={16} color={theme.color(colors.onPrimary, 'onAccent')} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[estilos.btnEnviar, enviando && { opacity: 0.6 }]}
-                onPress={enviar}
-                disabled={enviando}
-                activeOpacity={0.85}
-              >
-                <Text style={estilos.btnEnviarTexto}>
-                  {enviando ? t('ad_request.sending') : t('ad_request.send')}
-                </Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={estilos.btnCancelar}
               onPress={retrocederPaso}
               activeOpacity={0.85}
             >
               <Text style={estilos.btnCancelarTexto}>
-                {step === 1 ? t('ad_request.cancel') : 'Atrás'}
+                {step === 1 ? t('ad_request.cancel') : t('ad_request.back')}
               </Text>
             </TouchableOpacity>
+
+            {step < 3 ? (
+              <TouchableOpacity
+                style={estilos.btnEnviar}
+                onPress={avanzarPaso}
+                activeOpacity={0.85}
+              >
+                <Text style={estilos.btnEnviarTexto}>{t('ad_request.next')}</Text>
+                <ChevronRight size={16} color={theme.color(colors.onPrimary, 'onAccent')} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[estilos.btnEnviar, enviando && { opacity: 0.6 }]}
+                onPress={abrirPasarela}
+                disabled={enviando}
+                activeOpacity={0.85}
+              >
+                <Lock size={15} color={theme.color(colors.onPrimary, 'onAccent')} style={{ marginRight: 4 }} />
+                <Text style={estilos.btnEnviarTexto}>
+                  {enviando
+                    ? t('ad_request.sending')
+                    : t('ad_request.pay_and_submit', { amount: colones(total) })}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Pressable>
       </Pressable>
+
+      <SimulatedPaymentModal
+        visible={modalPagoVisible}
+        orderSummary={{
+          title: form.title || 'Anuncio en Hobbier',
+          advertiserName: form.advertiser_name,
+          billingModel,
+          targetQuota,
+          amount: total,
+        }}
+        onClose={() => setModalPagoVisible(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
 
       <LegalDocumentModal doc={verCondiciones ? 'ads' : null} onClose={() => setVerCondiciones(false)} />
     </Modal>
@@ -774,6 +1119,151 @@ export const getAdRequestModalTheme = createThemeStyles((theme) => {
     },
     fechaCol: {
       flex: 1,
+    },
+    // Modelos de Cobro (CPM / CPC) y Presets
+    modelosGrid: {
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    tarjetaModelo: {
+      backgroundColor: theme.color(colors.surfaceMuted, 'card'),
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: theme.color(colors.border || '#E2E8F0', 'border'),
+      padding: spacing.sm + 2,
+      gap: 4,
+    },
+    tarjetaModeloActiva: {
+      borderColor: colors.primary,
+      backgroundColor: theme.color(colors.primarySoft || '#EAF7FA', 'card'),
+    },
+    tarjetaModeloHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    iconoModeloWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      backgroundColor: theme.color(colors.surface, 'card'),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconoModeloWrapActivo: {
+      backgroundColor: colors.primary,
+    },
+    tarjetaModeloTitulo: {
+      fontFamily: fonts.bold,
+      fontSize: 13,
+      color: colors.text,
+    },
+    tarjetaModeloTituloActivo: {
+      color: colors.primary,
+    },
+    tarjetaModeloDesc: {
+      fontFamily: fonts.regular,
+      fontSize: 12,
+      color: colors.textMuted,
+      lineHeight: 16,
+    },
+    presetsGrid: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    presetPill: {
+      flex: 1,
+      backgroundColor: theme.color(colors.surfaceMuted, 'card'),
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 4,
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: theme.color(colors.border || '#E2E8F0', 'border'),
+      position: 'relative',
+    },
+    presetPillActivo: {
+      borderColor: colors.primary,
+      backgroundColor: theme.color(colors.primarySoft || '#EAF7FA', 'card'),
+    },
+    popularBadge: {
+      position: 'absolute',
+      top: -8,
+      backgroundColor: colors.accentDark || '#E67A15',
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: 999,
+    },
+    popularBadgeText: {
+      fontSize: 8,
+      fontFamily: fonts.bold,
+      color: '#FFFFFF',
+    },
+    presetPillTitulo: {
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    presetPillTituloActivo: {
+      color: colors.primary,
+    },
+    presetPillPrecio: {
+      fontFamily: fonts.medium,
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    presetPillPrecioActivo: {
+      color: colors.primary,
+      fontFamily: fonts.bold,
+    },
+    customQuotaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    customQuotaLabel: {
+      fontFamily: fonts.medium,
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    customQuotaInput: {
+      flex: 1,
+      height: 38,
+      backgroundColor: theme.color(colors.surfaceMuted, 'card'),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.color(colors.border || '#E2E8F0', 'border'),
+      paddingHorizontal: spacing.sm,
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: colors.text,
+    },
+    limiteAvisoBanner: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      backgroundColor: theme.color('#FEF3C7', 'card'),
+      borderWidth: 1,
+      borderColor: '#F59E0B',
+      borderRadius: 12,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    limiteAvisoTitulo: {
+      fontFamily: fonts.bold,
+      fontSize: 13,
+      color: '#92400E',
+      marginBottom: 2,
+    },
+    limiteAvisoTexto: {
+      fontFamily: fonts.regular,
+      fontSize: 12,
+      color: '#B45309',
+      lineHeight: 16,
     },
     costo: {
       marginTop: spacing.sm,

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../../components/scaledText';
 import { AdRequestChatModal } from '../../../components/AdRequestChatModal';
 import { useLanguage } from '../../../context/LanguageContext';
-import { diasDeVigencia, precioSugerido } from '../../../services/adsService';
+import { diasDeVigencia, precioSugerido, calcularPresupuesto } from '../../../services/adsService';
 import { radii, spacing, fonts } from '../../../theme';
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
@@ -65,11 +65,18 @@ export const MyAdRequestsModal = ({ visible, requests = [], onClose, onNewReques
                     <View style={{ flex: 1 }}>
                       <Text style={estilos.anunciante} numberOfLines={1}>{sol.advertiser_name}</Text>
                       <Text style={estilos.tituloSolicitud} numberOfLines={2}>{sol.title}</Text>
-                      {dias > 0 && (
-                        <Text style={estilos.meta}>
-                          {fecha(sol.starts_on)} → {fecha(sol.ends_on)} · {colones(precioSugerido(sol.starts_on, sol.ends_on))}
-                        </Text>
-                      )}
+                      <Text style={estilos.meta}>
+                        {sol.billing_model === 'CPC'
+                          ? `${sol.target_quota || 0} clics (CPC)`
+                          : `${(sol.target_quota || 0).toLocaleString()} vistas (CPM)`}
+                        {' · '}
+                        {colones(
+                          sol.target_quota
+                            ? calcularPresupuesto(sol.billing_model, sol.target_quota)
+                            : precioSugerido(sol.starts_on, sol.ends_on)
+                        )}
+                        {sol.payment_status === 'PAGADO' ? ' · Pagado' : ''}
+                      </Text>
                     </View>
                   </View>
 

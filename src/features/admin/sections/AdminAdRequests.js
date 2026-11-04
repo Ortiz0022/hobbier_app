@@ -17,6 +17,7 @@ import {
   vigenciaSugerida,
   diasDeVigencia,
   precioSugerido,
+  calcularPresupuesto,
 } from '../../../services/adsService';
 
 const colones = (n) => `₡${Number(n || 0).toLocaleString('es-CR', { maximumFractionDigits: 0 })}`;
@@ -158,19 +159,29 @@ export const AdminAdRequests = ({ onAdCreated }) => {
                   texto={sol.kind === 'EVENTO' ? (t('admin.kind_event') || 'Evento') : (t('admin.kind_service') || 'Servicio')}
                   tono="neutro"
                 />
+                <Insignia
+                  texto={
+                    sol.billing_model === 'CPC'
+                      ? `CPC · ${sol.target_quota || 0} clics`
+                      : `CPM · ${(sol.target_quota || 0).toLocaleString()} vistas`
+                  }
+                  tono={sol.billing_model === 'CPC' ? 'marca' : 'acento'}
+                />
+                <Insignia
+                  texto={sol.payment_status === 'PAGADO' ? 'PAGADO' : 'PAGO PENDIENTE'}
+                  tono={sol.payment_status === 'PAGADO' ? 'marca' : 'alerta'}
+                />
                 {!!sol.event_date && <Insignia texto={fechaLegible(sol.event_date, language)} tono="neutro" />}
                 {!!sol.event_place && <Insignia texto={sol.event_place} tono="neutro" />}
               </View>
 
               {!!sol.starts_on && !!sol.ends_on && (
                 <Text style={estilos.pedido}>
-                  {t('admin.asks_dates', {
-                    from: fechaLegible(sol.starts_on, language),
-                    to: fechaLegible(sol.ends_on, language),
-                    days: dias,
-                    cost: colones(precioSugerido(sol.starts_on, sol.ends_on)),
-                  }) ||
-                    `Pide ${fechaLegible(sol.starts_on, language)} → ${fechaLegible(sol.ends_on, language)} · ${dias} días · ${colones(precioSugerido(sol.starts_on, sol.ends_on))}`}
+                  {`Pide ${fechaLegible(sol.starts_on, language)} → ${fechaLegible(sol.ends_on, language)} · ${dias} días · Total: ${colones(
+                    sol.target_quota
+                      ? calcularPresupuesto(sol.billing_model, sol.target_quota)
+                      : precioSugerido(sol.starts_on, sol.ends_on)
+                  )}${sol.transaction_id ? ` · ${sol.transaction_id}` : ''}`}
                 </Text>
               )}
 
@@ -255,8 +266,15 @@ export const AdminAdRequests = ({ onAdCreated }) => {
             body: aprobando.body,
             link_url: aprobando.link_url,
             image_url: aprobando.image_url,
+            billing_model: aprobando.billing_model || 'CPM',
+            target_quota: aprobando.target_quota,
+            payment_status: aprobando.payment_status || 'PAGADO',
+            transaction_id: aprobando.transaction_id,
+            price_paid: aprobando.target_quota
+              ? calcularPresupuesto(aprobando.billing_model, aprobando.target_quota)
+              : precioSugerido(aprobando.starts_on, aprobando.ends_on),
             ...vigenciaSugerida(aprobando),
-            notes: `Solicitud enviada desde la app por @${aprobando.requester?.username || 'usuario'}.`,
+            notes: `Solicitud enviada desde la app por @${aprobando.requester?.username || 'usuario'}.${aprobando.transaction_id ? ` Comprobante: ${aprobando.transaction_id}` : ''}`,
           }}
           onClose={() => setAprobando(null)}
           onSaved={alGuardarAnuncio}

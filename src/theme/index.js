@@ -36,6 +36,7 @@ export const colors = {
   danger: '#A94403',
   dangerSoft: '#F1C2B8',
   success: '#2A6347',
+  border: '#E2E8F0',
 };
 
 export const radii = {
@@ -58,6 +59,10 @@ export const fonts = {
   // Cargadas en App.js con useFonts
   heading: 'Poppins_700Bold',
   display: 'DynaPuff',
+  bold: 'Poppins_700Bold',
+  semiBold: 'Poppins_700Bold',
+  medium: undefined,
+  regular: undefined,
 };
 
 /**

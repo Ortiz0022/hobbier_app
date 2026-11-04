@@ -25,6 +25,9 @@ import {
   diasDeVigencia,
   precioSugerido,
   PRECIO_POR_DIA,
+  TARIFA_CPC,
+  TARIFA_CPM,
+  calcularPresupuesto,
 } from '../../../services/adsService';
 
 import { radii, spacing, fonts } from '../../../theme';
@@ -99,6 +102,10 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
     link_url: ad?.link_url || '',
     cta_label: ad?.cta_label || '',
     city: ad?.city || '',
+    billing_model: ad?.billing_model || 'CPM',
+    target_quota: ad?.target_quota != null ? String(ad.target_quota) : (ad?.billing_model === 'CPC' ? '50' : '1000'),
+    payment_status: ad?.payment_status || 'PAGADO',
+    transaction_id: ad?.transaction_id || '',
     price_paid: precioInicial,
     notes: ad?.notes || '',
   });
@@ -510,6 +517,124 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                 </CampoBase>
 
                 <CampoBase
+                  etiqueta="Modelo publicitario (Meta Ads)"
+                  ayuda="Objetivo de cobro y límite de entrega (Delivery Cap)."
+                >
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs }}>
+                    <TouchableOpacity
+                      style={[
+                        estilos.btnSecundario,
+                        { flex: 1, paddingVertical: 10, alignItems: 'center' },
+                        form.billing_model === 'CPM' && {
+                          backgroundColor: colors.primary,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => set('billing_model')('CPM')}
+                    >
+                      <Text
+                        style={[
+                          estilos.btnSecundarioTexto,
+                          form.billing_model === 'CPM' && { color: '#FFFFFF', fontWeight: '700' },
+                        ]}
+                      >
+                        Visualizaciones (CPM)
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        estilos.btnSecundario,
+                        { flex: 1, paddingVertical: 10, alignItems: 'center' },
+                        form.billing_model === 'CPC' && {
+                          backgroundColor: colors.primary,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => set('billing_model')('CPC')}
+                    >
+                      <Text
+                        style={[
+                          estilos.btnSecundarioTexto,
+                          form.billing_model === 'CPC' && { color: '#FFFFFF', fontWeight: '700' },
+                        ]}
+                      >
+                        Clics / Tráfico (CPC)
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </CampoBase>
+
+                <CampoBase
+                  etiqueta={
+                    form.billing_model === 'CPC'
+                      ? 'Límite de clics contratados (Delivery Cap)'
+                      : 'Límite de visualizaciones contratadas (Delivery Cap)'
+                  }
+                  ayuda="El anuncio se detendrá automáticamente cuando alcance esta cifra."
+                >
+                  {entrada('target_quota', {
+                    placeholder: form.billing_model === 'CPC' ? '50' : '1000',
+                    keyboardType: 'numeric',
+                  })}
+                </CampoBase>
+
+                <CampoBase
+                  etiqueta="Estado y Comprobante de Pago"
+                  ayuda="Detalles emitidos por la pasarela de pagos simulada."
+                >
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <TouchableOpacity
+                      style={[
+                        estilos.btnSecundario,
+                        { flex: 1, paddingVertical: 8, alignItems: 'center' },
+                        form.payment_status === 'PAGADO' && {
+                          backgroundColor: '#DCFCE7',
+                          borderColor: '#16A34A',
+                        },
+                      ]}
+                      onPress={() => set('payment_status')('PAGADO')}
+                    >
+                      <Text
+                        style={[
+                          estilos.btnSecundarioTexto,
+                          form.payment_status === 'PAGADO' && { color: '#166534', fontWeight: '700' },
+                        ]}
+                      >
+                        PAGADO
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        estilos.btnSecundario,
+                        { flex: 1, paddingVertical: 8, alignItems: 'center' },
+                        form.payment_status === 'PENDIENTE' && {
+                          backgroundColor: '#FEF3C7',
+                          borderColor: '#D97706',
+                        },
+                      ]}
+                      onPress={() => set('payment_status')('PENDIENTE')}
+                    >
+                      <Text
+                        style={[
+                          estilos.btnSecundarioTexto,
+                          form.payment_status === 'PENDIENTE' && { color: '#B45309', fontWeight: '700' },
+                        ]}
+                      >
+                        PENDIENTE
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ marginTop: spacing.xs }}>
+                    {entrada('transaction_id', {
+                      placeholder: 'ID Transacción (ej. TXN-HBR-849204)',
+                      autoCapitalize: 'characters',
+                    })}
+                  </View>
+                </CampoBase>
+
+                <CampoBase
                   etiqueta={t('admin.field_price_paid') || 'Precio cobrado (₡)'}
                   ayuda={
                     precioManual
@@ -557,6 +682,18 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
 
           {/* PIE DE NAVEGACIÓN ENTRE PASOS */}
           <View style={estilos.pie}>
+            <TouchableOpacity
+              style={estilos.btnCancelar}
+              onPress={retrocederPaso}
+              activeOpacity={0.85}
+            >
+              <Text style={estilos.btnCancelarTexto}>
+                {step === 1
+                  ? t('common.cancel') || 'Cancelar'
+                  : t('admin.back') || 'Atrás'}
+              </Text>
+            </TouchableOpacity>
+
             {step < 3 ? (
               <TouchableOpacity
                 style={estilos.btnSiguiente}
@@ -584,17 +721,6 @@ export const AdFormModal = ({ ad, onClose, onSaved }) => {
                 </Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={estilos.btnCancelar}
-              onPress={retrocederPaso}
-              activeOpacity={0.85}
-            >
-              <Text style={estilos.btnCancelarTexto}>
-                {step === 1
-                  ? t('common.cancel') || 'Cancelar'
-                  : t('admin.back') || 'Atrás'}
-              </Text>
-            </TouchableOpacity>
           </View>
         </Pressable>
       </Pressable>
