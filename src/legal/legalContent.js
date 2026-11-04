@@ -16,7 +16,7 @@
 import { MIN_AGE } from '../features/auth/validation';
 
 // Versión de los documentos. Se guarda junto con la aceptación en el registro.
-export const LEGAL_VERSION = '2026-10-28';
+export const LEGAL_VERSION = '2026-11-04';
 
 // TODO: sustituir por el correo real de contacto del proyecto antes de publicar.
 export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
@@ -24,7 +24,7 @@ export const LEGAL_CONTACT_EMAIL = 'privacidad@hobbier.app';
 const es = {
   privacy: {
     title: 'Política de Privacidad',
-    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 4 de noviembre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Quiénes somos',
@@ -40,16 +40,20 @@ const es = {
           '• Perfil y preferencias: foto de perfil, gustos, intereses y los objetos que indicas tener disponibles.\n' +
           '• Contenido que publicas: fotos de tus actividades, reacciones, salas de reto, mensajes de sala y mensajes directos.\n' +
           '• Actividad social: tus amistades, solicitudes e invitaciones.\n' +
-          '• Reportes: si reportas una publicación, el motivo y el texto que escribas.\n' +
+          '• Reportes: si reportas una publicación o un perfil, el motivo y el texto que escribas.\n' +
           '• Estado de conexión: mientras usas la app, otros usuarios con sesión iniciada pueden saber que estás en línea.\n' +
           '• Anuncios: tu cantón o ciudad, solo si das permiso de ubicación en el teléfono, y qué anuncios ves o tocas.\n' +
-          '• Solicitudes de anuncio: si pides anunciarte desde Descubre, el nombre del negocio o persona, la ' +
-          'descripción, la foto que adjuntes, las fechas que pides, los datos del evento (fecha y lugar), qué cuenta ' +
-          'envió la solicitud y los mensajes que intercambies con el equipo sobre ella.\n\n' +
+          '• Solicitudes de anuncio: si pides anunciarte desde Descubre, guardamos en la solicitud el nombre del negocio o persona, ' +
+          'el tipo de anuncio, el título, la descripción, la foto que adjuntes, el enlace de destino, las fechas que pides, ' +
+          'los datos del evento (fecha y lugar), qué cuenta envió la solicitud, el modelo de cobro elegido (CPM o CPC), ' +
+          'la meta de visualizaciones o clics (`target_quota`), el estado del pago simulado (`PENDIENTE` o `PAGADO`), ' +
+          'el código de referencia de la transacción simulada (`transaction_id`) y los mensajes que intercambies con el equipo. ' +
+          'Si el anuncio se aprueba, en la tabla de anuncios se guarda además el monto calculado (`price_paid`).\n\n' +
           'De la ubicación solo guardamos el nombre de tu cantón o ciudad: nunca tus coordenadas ni tu recorrido. ' +
           'Si usas Hobbier desde el navegador, para saber el nombre del lugar enviamos tus coordenadas aproximadas ' +
           '(redondeadas a cerca de 1 km) a OpenStreetMap (Nominatim), que no las asocia a tu cuenta. ' +
-          'No recogemos tus contactos del teléfono ni datos de pago.',
+          'El pago dentro de la app es simulado con fines académicos: no realizamos cobros reales ni enviamos o guardamos ' +
+          'los datos de tarjeta que escribas en el formulario de prueba.',
       },
       {
         heading: '3. Para qué los usamos',
@@ -57,25 +61,25 @@ const es = {
           '• Crear y proteger tu cuenta.\n' +
           '• Recomendarte actividades según tus gustos, intereses y edad.\n' +
           '• Mostrar tus publicaciones a tus amigos y permitir el chat y las salas de reto.\n' +
-          '• Moderar el contenido y atender los reportes.\n' +
+          '• Moderar el contenido (incluyendo moderación automática con IA) y atender los reportes.\n' +
           '• Mostrarte anuncios discretos de negocios y actividades relacionados con tus gustos y tu ciudad. ' +
           'El cruce se hace en nuestros servidores: el anunciante nunca recibe tus datos, solo cifras totales ' +
           '(cuántas personas vieron o tocaron su anuncio). Los anuncios para todo el país se muestran siempre; ' +
           'si das permiso de ubicación, además verás primero los de tu zona. Puedes quitar ese permiso cuando ' +
           'quieras en los ajustes del teléfono o del navegador y borraremos tu ciudad guardada.\n' +
-          '• Si pides un anuncio: revisar tu solicitud, escribirte por los mensajes de la app para acordar el ' +
-          'precio y el pago y, si se aprueba, crear el anuncio. Esos mensajes solo los ven tú y el equipo de ' +
-          'administración; en el anuncio publicado solo aparecen el nombre del negocio, el texto, la foto y el ' +
-          'enlace que aprobemos.\n\n' +
+          '• Si pides un anuncio: registrar tu solicitud y su pago simulado, enviarte un comprobante simulado por correo ' +
+          'cuando el servicio de correo está disponible en el servidor, revisar la solicitud, comunicarnos contigo por ' +
+          'los mensajes de la app y, si se aprueba, publicar el anuncio. Esos mensajes solo los ven tú y el equipo de ' +
+          'administración; en el anuncio publicado solo aparecen el nombre del negocio, el texto, la foto y el enlace.\n\n' +
           'No vendemos tus datos.',
       },
       {
         heading: '4. Con quién los compartimos',
         body:
-          '• Supabase: aloja la base de datos, los archivos y el inicio de sesión de la app.\n' +
+          '• Supabase: aloja la base de datos, los archivos, las funciones de servidor (incluyendo el envío del comprobante simulado cuando el servicio de correo está configurado) y el inicio de sesión de la app.\n' +
           '• Groq (inteligencia artificial): para generar recomendaciones enviamos SOLO los nombres de tus gustos, ' +
-          'intereses y objetos disponibles, y para moderar actividades creadas por usuarios, su título y descripción. ' +
-          'Nunca enviamos tu nombre, correo, fotos ni mensajes.\n' +
+          'intereses y objetos disponibles; y para moderar actividades y mensajes de chat o salas, únicamente el texto necesario para verificar que no sea dañino. ' +
+          'Nunca enviamos tu nombre, correo ni fotos a Groq.\n' +
           '• Otros usuarios: tu nombre, usuario, foto de perfil y publicaciones son visibles para tus amigos; ' +
           'tu nombre de usuario puede aparecer en búsquedas.\n\n' +
           'Estos proveedores pueden procesar los datos fuera de Costa Rica.',
@@ -86,8 +90,8 @@ const es = {
           'Mientras tu cuenta exista. Las publicaciones que eliminas dejan de mostrarse de inmediato a todo el mundo, ' +
           'pero se conserva un registro interno marcado como eliminado (por ejemplo, para poder atender reportes). ' +
           'Si eliminamos tu cuenta, se borran tus datos.\n\n' +
-          'Las solicitudes de anuncio y sus mensajes se guardan mientras exista tu cuenta, como registro de lo que ' +
-          'se pidió y se acordó. Si una solicitud se rechaza, borramos la foto que adjuntaste en ese momento. Puedes pedirnos ' +
+          'Las solicitudes de anuncio, su código de transacción simulada y sus mensajes se guardan mientras exista tu cuenta, como registro ' +
+          'de lo solicitado. Si una solicitud se rechaza, borramos la foto que adjuntaste en ese momento. Puedes pedirnos ' +
           'que borremos tus solicitudes escribiéndonos.',
       },
       {
@@ -111,7 +115,7 @@ const es = {
         heading: '8. Almacenamiento local y cookies',
         body:
           'La app guarda en tu dispositivo (o en el navegador, en la versión web) solo lo necesario para funcionar: ' +
-          'tu sesión iniciada y el idioma elegido. No usamos cookies de publicidad ni de analítica.',
+          'tu sesión iniciada, el tema visual y el idioma elegido. No usamos cookies de publicidad ni de analítica.',
       },
       {
         heading: '9. Seguridad',
@@ -128,13 +132,13 @@ const es = {
   },
   terms: {
     title: 'Términos de Uso',
-    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 4 de noviembre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Aceptación',
         body:
-          'Al crear una cuenta en Hobbier aceptas estos Términos de Uso y la Política de Privacidad. ' +
-          'Si no estás de acuerdo, no utilices la app.',
+          'Al crear una cuenta en Hobbier aceptas estos Términos de Uso, la Política de Privacidad y, si solicitas un anuncio, ' +
+          'las Condiciones de Publicidad. Si no estás de acuerdo, no utilices la app.',
       },
       {
         heading: '2. Requisitos',
@@ -150,31 +154,44 @@ const es = {
           'publicaciones cuando quieras.',
       },
       {
-        heading: '4. Normas de convivencia',
+        heading: '4. Normas de convivencia y moderación',
         body:
           'No está permitido publicar contenido ofensivo, violento, sexual, de acoso o spam; suplantar a otra ' +
-          'persona; ni publicar fotos de terceros sin su permiso. Cualquier usuario puede reportar una publicación ' +
-          'y el equipo de moderación puede ocultarla.',
+          'persona; ni publicar fotos de terceros sin su permiso. Las actividades personalizadas y los mensajes ' +
+          'pasan por un filtro automático de moderación y cualquier usuario puede reportar una publicación o un perfil.',
       },
       {
         heading: '5. Retos y actividades',
         body:
-          'Las actividades sugeridas son ideas de ocio. Realízalas con sentido común y bajo tu propia ' +
+          'Las actividades sugeridas o creadas en salas grupales son ideas de ocio. Realízalas con sentido común y bajo tu propia ' +
           'responsabilidad, respetando tus límites físicos y las normas del lugar donde estés.',
       },
       {
-        heading: '6. Suspensión de cuentas',
+        heading: '6. Publicidad patrocinada y pago simulado',
         body:
-          'Podemos suspender o eliminar cuentas que incumplan estas normas de forma grave o repetida.',
+          'Los usuarios pueden solicitar espacios de publicidad patrocinada desde la sección Descubre eligiendo un modelo ' +
+          'de cobro por visualizaciones (CPM: ₡2 por impresión) o por clics (CPC: ₡50 por clic) y completando un pago simulado ' +
+          'con fines académicos antes de enviar la solicitud:\n' +
+          '• No se realiza ningún cobro bancario real ni se guardan datos de tarjeta; solo se genera un código de referencia (`transaction_id`) ' +
+          'y, cuando el servicio de correo está disponible en el servidor, se envía un comprobante simulado al correo del usuario.\n' +
+          '• En la pantalla de aprobación del panel de administración, los datos enviados en la solicitud se muestran en modo de solo lectura ' +
+          'para que el administrador solo asigne los gustos afines y notas internas.\n' +
+          '• El anuncio pasa por revisión de contenido antes de publicarse y se rige por las Condiciones de Publicidad.',
       },
       {
-        heading: '7. Disponibilidad',
+        heading: '7. Suspensión de cuentas',
+        body:
+          'Podemos suspender cuentas que incumplan estas normas indicando siempre el motivo de la sanción. ' +
+          'La persona sancionada dispone de un chat de soporte dentro de la app para presentar su apelación.',
+      },
+      {
+        heading: '8. Disponibilidad',
         body:
           'Hobbier es un proyecto académico y se ofrece "tal cual", sin garantía de que esté siempre disponible ' +
           'o libre de errores.',
       },
       {
-        heading: '8. Ley aplicable y contacto',
+        heading: '9. Ley aplicable y contacto',
         body:
           `Estos términos se rigen por las leyes de la República de Costa Rica. Para cualquier consulta: ${LEGAL_CONTACT_EMAIL}.`,
       },
@@ -182,23 +199,29 @@ const es = {
   },
   ads: {
     title: 'Condiciones de Publicidad',
-    updated: `Última actualización: 28 de octubre de 2026 · Versión ${LEGAL_VERSION}`,
+    updated: `Última actualización: 4 de noviembre de 2026 · Versión ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Cómo funciona',
         body:
-          'Cualquier persona con cuenta puede pedir un anuncio desde Descubre. Enviar la solicitud no publica nada: ' +
-          'el equipo de Hobbier la revisa, le escribe al anunciante por los mensajes de la app para acordar el ' +
-          'precio y el pago, y solo entonces decide si la aprueba. Toda la comunicación sobre el anuncio se hace ' +
-          'por esos mensajes, en Perfil → Mis solicitudes de anuncio. Los anuncios aprobados aparecen en el feed marcados como "Patrocinado".',
+          'Cualquier persona con cuenta puede solicitar un anuncio patrocinado desde Descubre completando los datos ' +
+          'del anuncio (negocio o evento, título, descripción, imagen, enlace de destino, ubicación y fechas de vigencia), ' +
+          'eligiendo su modelo de cobro (CPM o CPC) y completando el paso de pago simulado. ' +
+          'Cuando el servicio de correo está disponible en el servidor, se envía un comprobante simulado al correo registrado y la solicitud ' +
+          'queda pendiente de revisión por el equipo de Hobbier. Toda la comunicación sobre la solicitud se hace en Perfil → Mis solicitudes de anuncio. ' +
+          'Los anuncios aprobados aparecen en el feed marcados como "Patrocinado" con el botón "Más información".',
       },
       {
-        heading: '2. Precio y pago',
+        heading: '2. Modelos de cobro, tarifas y pago simulado',
         body:
-          'La tarifa de referencia es de ₡500 por cada día que el anuncio aparece en el feed. El total que muestra ' +
-          'el formulario es una estimación: el precio final, las fechas y la forma de pago se acuerdan con el equipo ' +
-          'antes de publicar, y el anuncio no se publica hasta que el pago esté confirmado. Hobbier no cobra nada ' +
-          'dentro de la app ni guarda datos de tarjetas.',
+          'El formulario calcula el presupuesto estimado según el modelo y la meta que elija el anunciante:\n' +
+          '• Modelo CPM (Costo por Visualización): tarifa de ₡2 por cada visualización en el feed (con paquetes predefinidos de 500 vistas por ₡1.000, 1.000 vistas por ₡2.000, 2.500 vistas por ₡5.000, o una meta personalizada).\n' +
+          '• Modelo CPC (Costo por Clic): tarifa de ₡50 por cada clic en el botón "Más información" (con paquetes predefinidos de 20 clics por ₡1.000, 50 clics por ₡2.500, 100 clics por ₡5.000, o una meta personalizada).\n\n' +
+          'Al tratarse de un proyecto académico, el pago con tarjeta es completamente simulado: no se efectúa ningún cargo real, ' +
+          'no se almacenan datos de tarjeta y no se emite factura electrónica fiscal. Solo se registra el estado (`PAGADO`), ' +
+          'la meta elegida (`target_quota`) y un código de referencia (`transaction_id`), y se envía un comprobante simulado cuando el servicio de correo está disponible.\n\n' +
+          'Al revisar y aprobar una solicitud desde el formulario del panel, los datos enviados por el anunciante se muestran bloqueados en pantalla ' +
+          'para que el administrador solo elija las etiquetas de gustos afines y añada notas internas.',
       },
       {
         heading: '3. Qué no se puede anunciar',
@@ -213,19 +236,16 @@ const es = {
           `Hobbier tiene usuarios desde los ${MIN_AGE} años, así que los anuncios deben ser adecuados para ese público.`,
       },
       {
-        heading: '4. Revisión y retiro',
+        heading: '4. Revisión, vigencia y retiro',
         body:
-          'Hobbier puede rechazar cualquier solicitud, o retirar un anuncio ya publicado, sin tener que dar ' +
-          'explicaciones, sobre todo si incumple estas condiciones, recibe reportes o la información resulta falsa.',
+          'El anuncio aprobado se muestra en el feed durante las fechas indicadas mientras esté activo y no haya alcanzado su meta de visualizaciones (CPM) o clics (CPC). ' +
+          'Hobbier puede rechazar cualquier solicitud, o pausar o retirar un anuncio ya publicado, si incumple estas condiciones, recibe reportes o la información resulta falsa.',
       },
       {
-        heading: '5. Devoluciones',
+        heading: '5. Reembolsos',
         body:
-          '• Si Hobbier retira el anuncio porque incumple estas condiciones o la información era falsa, no se devuelve el dinero.\n' +
-          '• Si Hobbier lo retira por cualquier otro motivo, se devuelve la parte proporcional de los días que no llegó a mostrarse.\n' +
-          '• Si el evento se cancela o el anunciante quiere detener el anuncio, debe avisar al equipo por los ' +
-          'mensajes de la solicitud: se retira y se devuelve la parte proporcional de los días que faltaban desde el aviso.\n' +
-          '• Una solicitud rechazada no genera ningún cobro.',
+          'Como el flujo de pago es una simulación académica y no existe ningún cobro real de dinero en la aplicación, ' +
+          'no aplica ningún proceso de devolución o reembolso monetario en caso de rechazo, pausa o retiro de un anuncio.',
       },
       {
         heading: '6. Responsabilidad del anunciante',
@@ -239,12 +259,12 @@ const es = {
         heading: '7. Datos personales',
         body:
           'Los datos de la solicitud se tratan como explica la Política de Privacidad. El anunciante nunca recibe ' +
-          'datos de los usuarios que ven su anuncio, solo cifras totales de impresiones y clics.',
+          'datos personales de los usuarios que ven su anuncio, solo cifras totales de impresiones y clics.',
       },
       {
         heading: '8. Contacto',
         body:
-          'Cualquier consulta sobre un anuncio se hace por los mensajes de la solicitud, en Perfil → ' +
+          'Cualquier consulta sobre un anuncio o su estado se hace por los mensajes de la solicitud, en Perfil → ' +
           'Mis solicitudes de anuncio.',
       },
     ],
@@ -254,7 +274,7 @@ const es = {
 const en = {
   privacy: {
     title: 'Privacy Policy',
-    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: November 4, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Who we are',
@@ -270,16 +290,18 @@ const en = {
           '• Profile and preferences: profile photo, likes, interests and the items you say you have available.\n' +
           '• Content you post: activity photos, reactions, challenge rooms, room messages and direct messages.\n' +
           '• Social activity: your friendships, requests and invitations.\n' +
-          '• Reports: if you report a post, the reason and any text you write.\n' +
+          '• Reports: if you report a post or profile, the reason and any text you write.\n' +
           '• Online status: while you use the app, other signed-in users can tell that you are online.\n' +
           '• Ads: your canton or city, only if you grant location permission on your phone, and which ads you see or tap.\n' +
-          '• Ad requests: if you ask to advertise from Discover, the business or person name, the description, ' +
-          'the photo you attach, the dates you request, the event details (date and place), which account sent the ' +
-          'request and the messages you exchange with the team about it.\n\n' +
+          '• Ad requests: if you ask to advertise from Discover, we store on the request the business or person name, ' +
+          'the ad type, title, description, attached photo, destination link, requested dates, event details (date and place), ' +
+          'which account sent the request, the chosen billing model (CPM or CPC), the target view or click quota (`target_quota`), ' +
+          'the simulated payment status (`PENDIENTE` or `PAGADO`), the simulated transaction reference ID (`transaction_id`) ' +
+          'and the messages you exchange with the team. If the ad is approved, the calculated amount (`price_paid`) is stored on the published ad record.\n\n' +
           'From your location we only store the name of your canton or city: never your coordinates or movements. ' +
           'If you use Hobbier in a web browser, to find the place name we send your approximate coordinates ' +
           '(rounded to about 1 km) to OpenStreetMap (Nominatim), which does not link them to your account. ' +
-          'We do not collect your phone contacts or payment data.',
+          'In-app payment is simulated for academic purposes: we do not process real charges or send or store any card details typed into the test form.',
       },
       {
         heading: '3. How we use it',
@@ -287,24 +309,25 @@ const en = {
           '• To create and protect your account.\n' +
           '• To recommend activities based on your likes, interests and age.\n' +
           '• To show your posts to your friends and enable chat and challenge rooms.\n' +
-          '• To moderate content and handle reports.\n' +
+          '• To moderate content (including automated AI moderation) and handle reports.\n' +
           '• To show you discreet ads from businesses and activities related to your likes and your city. ' +
           'The matching happens on our servers: advertisers never receive your data, only totals ' +
           '(how many people saw or tapped their ad). Nationwide ads are always shown; if you grant ' +
           'location permission, ads from your area are shown first. You can remove that permission at any ' +
           'time in your phone or browser settings and we will delete your stored city.\n' +
-          '• If you request an ad: to review your request, message you in the app to agree on the price and ' +
-          'payment and, if approved, create the ad. Only you and the admin team can see those messages; the ' +
-          'published ad only shows the business name, text, photo and link that we approve.\n\n' +
+          '• If you request an ad: to record your request and simulated payment, send you a simulated receipt by email ' +
+          'when the email service is available on the server, review the request, message you in the app and, ' +
+          'if approved, publish the ad. Only you and the admin team can see those messages; the published ad only shows ' +
+          'the business name, text, photo and link.\n\n' +
           'We do not sell your data.',
       },
       {
         heading: '4. Who we share it with',
         body:
-          '• Supabase: hosts the app’s database, files and sign-in.\n' +
+          '• Supabase: hosts the app’s database, files, server functions (including sending the simulated receipt when the email service is configured) and sign-in.\n' +
           '• Groq (artificial intelligence): to generate recommendations we send ONLY the names of your likes, ' +
-          'interests and available items, and to moderate user-created activities, their title and description. ' +
-          'We never send your name, email, photos or messages.\n' +
+          'interests and available items; and to moderate user-created activities and chat/room messages, only the text needed to check for harmful content. ' +
+          'We never send your name, email or photos to Groq.\n' +
           '• Other users: your name, username, profile photo and posts are visible to your friends; ' +
           'your username may appear in searches.\n\n' +
           'These providers may process data outside Costa Rica.',
@@ -315,9 +338,8 @@ const en = {
           'For as long as your account exists. Posts you delete stop being shown to everyone immediately, ' +
           'but an internal record marked as deleted is kept (for example, to handle reports). ' +
           'If we delete your account, your data is erased.\n\n' +
-          'Ad requests and their messages are kept for as long as your account exists, as a record of what was ' +
-          'requested and agreed. ' +
-          'If a request is rejected, we delete the photo you attached at that moment. You can ask us to delete ' +
+          'Ad requests, their simulated transaction ID and their messages are kept for as long as your account exists, as a record of what was ' +
+          'requested. If a request is rejected, we delete the photo you attached at that moment. You can ask us to delete ' +
           'your requests by writing to us.',
       },
       {
@@ -341,7 +363,7 @@ const en = {
         heading: '8. Local storage and cookies',
         body:
           'The app stores on your device (or in your browser, on the web version) only what it needs to work: ' +
-          'your signed-in session and your chosen language. We do not use advertising or analytics cookies.',
+          'your signed-in session, visual theme and your chosen language. We do not use advertising or analytics cookies.',
       },
       {
         heading: '9. Security',
@@ -358,13 +380,13 @@ const en = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: November 4, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. Acceptance',
         body:
-          'By creating a Hobbier account you accept these Terms of Use and the Privacy Policy. ' +
-          'If you do not agree, do not use the app.',
+          'By creating a Hobbier account you accept these Terms of Use, the Privacy Policy and, if you request an ad, ' +
+          'the Advertising Terms. If you do not agree, do not use the app.',
       },
       {
         heading: '2. Requirements',
@@ -380,31 +402,44 @@ const en = {
           'at any time.',
       },
       {
-        heading: '4. Community rules',
+        heading: '4. Community rules and moderation',
         body:
           'You may not post offensive, violent, sexual, harassing or spam content; impersonate someone else; ' +
-          'or post photos of other people without their permission. Any user can report a post and the ' +
-          'moderation team may hide it.',
+          'or post photos of other people without their permission. Custom activities and chat messages pass ' +
+          'through an automated moderation filter, and any user can report a post or profile.',
       },
       {
         heading: '5. Challenges and activities',
         body:
-          'Suggested activities are leisure ideas. Do them with common sense and at your own risk, respecting ' +
+          'Suggested activities or challenges created in group rooms are leisure ideas. Do them with common sense and at your own risk, respecting ' +
           'your physical limits and the rules of wherever you are.',
       },
       {
-        heading: '6. Account suspension',
+        heading: '6. Sponsored advertising and simulated payment',
         body:
-          'We may suspend or delete accounts that seriously or repeatedly break these rules.',
+          'Users can request sponsored ad placements from the Discover section by selecting an impression-based ' +
+          '(CPM: ₡2 per view) or click-based (CPC: ₡50 per click) billing model and completing a simulated payment ' +
+          'for academic purposes before submitting the request:\n' +
+          '• No real bank charge is made and no card details are stored; only a reference code (`transaction_id`) is generated ' +
+          'and, when the email service is available on the server, a simulated receipt is sent to the user’s email.\n' +
+          '• On the admin panel approval screen, the fields submitted in the request are shown as read-only ' +
+          'so the administrator only assigns matching interest tags and internal notes.\n' +
+          '• The ad undergoes content review prior to publication and is governed by the Advertising Terms.',
       },
       {
-        heading: '7. Availability',
+        heading: '7. Account suspension',
+        body:
+          'We may suspend accounts that break these rules, always stating the reason for the sanction. ' +
+          'Suspended users have access to an in-app support chat to submit an appeal.',
+      },
+      {
+        heading: '8. Availability',
         body:
           'Hobbier is an academic project and is provided "as is", with no guarantee that it will always be ' +
           'available or error-free.',
       },
       {
-        heading: '8. Governing law and contact',
+        heading: '9. Governing law and contact',
         body:
           `These terms are governed by the laws of the Republic of Costa Rica. For any questions: ${LEGAL_CONTACT_EMAIL}.`,
       },
@@ -412,23 +447,29 @@ const en = {
   },
   ads: {
     title: 'Advertising Terms',
-    updated: `Last updated: October 28, 2026 · Version ${LEGAL_VERSION}`,
+    updated: `Last updated: November 4, 2026 · Version ${LEGAL_VERSION}`,
     sections: [
       {
         heading: '1. How it works',
         body:
-          'Anyone with an account can request an ad from Discover. Sending the request does not publish anything: ' +
-          'the Hobbier team reviews it, messages the advertiser in the app to agree on the price and payment, and ' +
-          'only then decides whether to approve it. All communication about the ad happens through those messages, ' +
-          'in Profile → My ad requests. Approved ads appear in the feed marked as "Sponsored".',
+          'Anyone with an account can request a sponsored ad from Discover by filling in the ad details ' +
+          '(business or event, title, description, image, destination link, location and active dates), choosing ' +
+          'a billing model (CPM or CPC) and completing the simulated payment step. When the email service is available ' +
+          'on the server, a simulated receipt is sent to the registered email and the request awaits review by the ' +
+          'Hobbier team. All communication about the request takes place in Profile → My ad requests. ' +
+          'Approved ads appear in the feed marked as "Sponsored" with the "Learn more" button.',
       },
       {
-        heading: '2. Price and payment',
+        heading: '2. Billing models, rates and simulated payment',
         body:
-          'The reference rate is ₡500 for each day the ad appears in the feed. The total shown in the form is an ' +
-          'estimate: the final price, dates and payment method are agreed with the team before publishing, and the ' +
-          'ad is not published until payment is confirmed. Hobbier does not charge anything inside the app or store ' +
-          'card details.',
+          'The form calculates the estimated budget based on the model and target quota chosen by the advertiser:\n' +
+          '• CPM Model (Cost per Impression): rate of ₡2 per feed view (with preset packages of 500 views for ₡1,000, 1,000 views for ₡2,000, 2,500 views for ₡5,000, or a custom target quota).\n' +
+          '• CPC Model (Cost per Click): rate of ₡50 per click on the "Learn more" button (with preset packages of 20 clicks for ₡1,000, 50 clicks for ₡2,500, 100 clicks for ₡5,000, or a custom target quota).\n\n' +
+          'Because Hobbier is an academic project, card payment is completely simulated: no real charge is made, ' +
+          'no card details are stored and no fiscal electronic invoice is issued. Only the status (`PAGADO`), ' +
+          'chosen quota (`target_quota`) and a reference code (`transaction_id`) are recorded, and a simulated receipt is sent when the email service is available.\n\n' +
+          'When reviewing and approving a request in the admin panel form, the details submitted by the advertiser are shown locked on screen ' +
+          'so the administrator only selects matching interest tags and adds internal notes.',
       },
       {
         heading: '3. What cannot be advertised',
@@ -443,19 +484,16 @@ const en = {
           `Hobbier has users from age ${MIN_AGE}, so ads must be suitable for that audience.`,
       },
       {
-        heading: '4. Review and removal',
+        heading: '4. Review, duration and removal',
         body:
-          'Hobbier may reject any request, or remove an ad that is already published, without having to give a ' +
-          'reason, especially if it breaks these terms, receives reports or the information turns out to be false.',
+          'Approved ads are displayed in the feed during the indicated dates while active and until reaching their view (CPM) or click (CPC) quota. ' +
+          'Hobbier may reject any request, or pause or remove a published ad, if it breaks these terms, receives reports or the information turns out to be false.',
       },
       {
         heading: '5. Refunds',
         body:
-          '• If Hobbier removes the ad because it breaks these terms or the information was false, no money is refunded.\n' +
-          '• If Hobbier removes it for any other reason, the proportional part of the days it was not shown is refunded.\n' +
-          '• If the event is cancelled or the advertiser wants to stop the ad, they must tell the team through the ' +
-          'request messages: it is removed and the proportional part of the remaining days from that notice is refunded.\n' +
-          '• A rejected request is never charged.',
+          'Because the payment flow is an academic simulation and no real money is charged in the app, ' +
+          'no monetary refund or reimbursement applies if an ad is rejected, paused or removed.',
       },
       {
         heading: '6. Advertiser responsibility',
@@ -469,12 +507,12 @@ const en = {
       {
         heading: '7. Personal data',
         body:
-          'Request data is handled as explained in the Privacy Policy. The advertiser never receives data about ' +
+          'Request data is handled as explained in the Privacy Policy. The advertiser never receives personal data about ' +
           'the users who see their ad, only total impressions and clicks.',
       },
       {
         heading: '8. Contact',
-        body: 'Any question about an ad is handled through the request messages, in Profile → My ad requests.',
+        body: 'Any question about an ad or its status is handled through the request messages, in Profile → My ad requests.',
       },
     ],
   },
