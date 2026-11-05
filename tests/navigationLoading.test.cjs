@@ -31,7 +31,7 @@ function loader(screen, name, bindings, effect = false) {
     },
   });
   assert(fn, `${screen}: ${name} exists`);
-  return vm.runInNewContext('(' + source.slice(fn.start, fn.end) + ')', { console, ...bindings });
+  return vm.runInNewContext('(' + source.slice(fn.start, fn.end) + ')', { console, profileId: bindings.profile?.id || bindings.user?.id, ...bindings });
 }
 
 test('profile starts all three requests together and displays photos before slow activities', async () => {
@@ -201,4 +201,48 @@ test('feed deletion refreshes the server points without subtracting client-side 
     assert.equal(updated, error ? 0 : 1);
     assert.equal(refreshed, error ? 0 : 1);
   }
+});
+
+test('profile can load photos using the session id when its profile row failed to load', async () => {
+  const ids = [];
+  let statsLoading = true, postsLoading = true;
+  const load = loader('profile', 'loadExtras', {
+    user: { id: 'alice' }, profile: null, extrasRequest: { current: 0 },
+    getUserActivities: async (id) => { ids.push(id); return { activities: [] }; },
+    getUserPosts: async (id) => { ids.push(id); return { posts: [] }; },
+    getFriendsList: async (id) => { ids.push(id); return { friends: [] }; },
+    setCompletedActivities() {}, setPosts() {}, setFriendsCount() {},
+    setLoadingStats: (v) => { statsLoading = v; }, setLoadingPosts: (v) => { postsLoading = v; },
+  });
+  await load();
+  assert.deepEqual(ids, ['alice','alice','alice']);
+  assert.equal(statsLoading,false); assert.equal(postsLoading,false);
+});
+
+test('profile cannot stay in loading when no account id is available', async () => {
+  let statsLoading = true, postsLoading = true;
+  const load = loader('profile', 'loadExtras', {
+    profile: null, extrasRequest: { current: 0 },
+    setLoadingStats: (v) => { statsLoading = v; }, setLoadingPosts: (v) => { postsLoading = v; },
+  });
+  await load();
+  assert.equal(statsLoading,false); assert.equal(postsLoading,false);
+});
+
+test('unexpected profile loader errors release loading indicators and refresh controls', async () => {
+  let statsLoading = true, postsLoading = true;
+  const load = loader('profile', 'loadExtras', {
+    profile: { id: 'alice' }, extrasRequest: { current: 0 }, console: { error() {} },
+    getUserActivities: async () => { throw Error('request failed'); },
+    getUserPosts: async () => ({ posts: [] }), getFriendsList: async () => ({ friends: [] }),
+    setCompletedActivities() {}, setPosts() {}, setFriendsCount() {},
+    setLoadingStats: (v) => { statsLoading = v; }, setLoadingPosts: (v) => { postsLoading = v; },
+  });
+  await load(); assert.equal(statsLoading,false); assert.equal(postsLoading,false);
+  let refreshing = true;
+  const refresh = loader('profile', 'onRefresh', {
+    setRefreshing: (v) => { refreshing = v; }, refreshProfile: async () => {},
+    loadExtras: async () => { throw Error('request failed'); },
+  });
+  await assert.rejects(refresh(), /request failed/); assert.equal(refreshing,false);
 });

@@ -120,7 +120,7 @@ export const PresenceProvider = ({ children }) => {
         channelRef.current = null;
       }
     };
-  }, [user]);
+  }, [user?.id]);
 
   const isUserOnline = (userId) => onlineUsers.has(userId);
 

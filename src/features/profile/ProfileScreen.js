@@ -45,7 +45,8 @@ import { AjustarFotoModal } from '../../components/AjustarFotoModal';
 export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNavigateToAdmin }) => {
   const { theme, COLORS, styles } = useThemeValues(getProfileScreenTheme);
 
-  const { profile, refreshProfile, signOut, isAdmin } = useAuth();
+  const { user, profile, refreshProfile, signOut, isAdmin } = useAuth();
+  const profileId = profile?.id || user?.id;
   const { notify, confirm } = useNotify();
   const { t, language, setLanguage, languages } = useLanguage();
   const [editing, setEditing] = useState(false);
@@ -71,14 +72,14 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   };
 
   const [completedActivities, setCompletedActivities] = useState(() =>
-    (peekQuery(queryKeys.activities(profile?.id))?.activities || []).filter((a) => a.status === 'COMPLETED'));
+    (peekQuery(queryKeys.activities(profileId))?.activities || []).filter((a) => a.status === 'COMPLETED'));
   const extrasRequest = useRef(0);
-  const [loadingStats, setLoadingStats] = useState(() => !peekQuery(queryKeys.activities(profile?.id)));
+  const [loadingStats, setLoadingStats] = useState(() => !peekQuery(queryKeys.activities(profileId)));
 
-  const [posts, setPosts] = useState(() => peekQuery(queryKeys.posts(profile?.id))?.posts || []);
-  const [loadingPosts, setLoadingPosts] = useState(() => !peekQuery(queryKeys.posts(profile?.id)));
+  const [posts, setPosts] = useState(() => peekQuery(queryKeys.posts(profileId))?.posts || []);
+  const [loadingPosts, setLoadingPosts] = useState(() => !peekQuery(queryKeys.posts(profileId)));
 
-  const [friendsCount, setFriendsCount] = useState(() => peekQuery(queryKeys.friends(profile?.id))?.friends.length || 0);
+  const [friendsCount, setFriendsCount] = useState(() => peekQuery(queryKeys.friends(profileId))?.friends.length || 0);
 
   const [viewerImage, setViewerImage] = useState(null);
   // Documento legal abierto desde el menú: 'privacy' | 'terms' | null
@@ -136,37 +137,54 @@ export const ProfileScreen = ({ onGoToPreferences, onNavigateToFriends, onNaviga
   ];
 
   const loadExtras = useCallback(async (force = false) => {
-    if (!profile?.id) return;
+    if (!profileId) {
+      setLoadingStats(false);
+      setLoadingPosts(false);
+      return;
+    }
     const request = ++extrasRequest.current;
     const current = () => request === extrasRequest.current;
     // Cada sección se actualiza al llegar: las fotos no esperan al historial.
-    await Promise.all([
-      getUserActivities(profile.id, { force }).then(({ activities, error }) => {
-        if (!current()) return;
-        if (!error) setCompletedActivities((activities || []).filter((a) => a.status === 'COMPLETED'));
+    try {
+      await Promise.all([
+        getUserActivities(profileId, { force }).then(({ activities, error }) => {
+          if (!current()) return;
+          if (!error) setCompletedActivities((activities || []).filter((a) => a.status === 'COMPLETED'));
+          setLoadingStats(false);
+        }),
+        getUserPosts(profileId, { force }).then(({ posts: userPosts, error }) => {
+          if (!current()) return;
+          if (!error) setPosts(userPosts);
+          setLoadingPosts(false);
+        }),
+        getFriendsList(profileId, { force }).then(({ friends, error }) => {
+          if (current() && !error) setFriendsCount((friends || []).length);
+        }),
+      ]);
+    } catch (error) {
+      console.error('No se pudo cargar el perfil:', error);
+    } finally {
+      if (current()) {
         setLoadingStats(false);
-      }),
-      getUserPosts(profile.id, { force }).then(({ posts: userPosts, error }) => {
-        if (!current()) return;
-        if (!error) setPosts(userPosts);
         setLoadingPosts(false);
-      }),
-      getFriendsList(profile.id, { force }).then(({ friends, error }) => {
-        if (current() && !error) setFriendsCount((friends || []).length);
-      }),
-    ]);
-  }, [profile?.id]);
+      }
+    }
+  }, [profileId]);
 
   useEffect(() => {
-    refreshProfile();
+    // Consultar el saldo al entrar no invalida las fotos, amigos y feed ya cargados.
+    refreshProfile({ invalidate: false });
     loadExtras();
     return () => { extrasRequest.current += 1; };
   }, [loadExtras]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshProfile(), loadExtras(true)]);
-    setRefreshing(false);
+    try {
+      await Promise.all([refreshProfile(), loadExtras(true)]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Este perfil es siempre el propio, así que todas las fotos del visor se

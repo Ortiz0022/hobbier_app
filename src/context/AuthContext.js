@@ -14,6 +14,10 @@ const PROFILE_COLUMNS =
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const sessionUserRef = useRef(null);
+  const sessionVersion = useRef(0);
+  const profileRequest = useRef(0);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   // El enlace del correo de recuperación abre la app CON sesión iniciada. Sin esta
@@ -42,6 +46,8 @@ export const AuthProvider = ({ children }) => {
 
   // Obtener perfil del usuario desde Supabase PostgreSQL
   const fetchProfile = async (userId) => {
+    const request = ++profileRequest.current;
+    const version = sessionVersion.current;
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -53,7 +59,9 @@ export const AuthProvider = ({ children }) => {
         console.error('Error al obtener perfil:', error.message);
         return null;
       }
-      setProfile(data);
+      if (sessionUserRef.current === userId && version === sessionVersion.current && request === profileRequest.current) {
+        setProfile(data);
+      }
       return data;
     } catch (err) {
       console.error('Error inesperado obteniendo perfil:', err);
@@ -65,6 +73,10 @@ export const AuthProvider = ({ children }) => {
   // Usa la función get_my_suspension (SECURITY DEFINER) para no depender de las
   // políticas de lectura de profiles. Devuelve el objeto de suspensión o null.
   const checkSuspension = async (userId) => {
+    const version = sessionVersion.current;
+    const aplicarSiVigente = (fila) => {
+      if (sessionUserRef.current === userId && version === sessionVersion.current) aplicarSuspension(fila);
+    };
     try {
       const { data, error } = await supabase.rpc('get_my_suspension');
       if (error) {
@@ -110,7 +122,7 @@ export const AuthProvider = ({ children }) => {
                 ban_reason: prof.ban_reason || null,
                 banned_at: prof.banned_at || null,
               };
-              aplicarSuspension(row);
+              aplicarSiVigente(row);
               return row;
             }
           } catch (_fallbackErr) {
@@ -127,7 +139,7 @@ export const AuthProvider = ({ children }) => {
         row &&
         row.status === 'BANNED' &&
         (!row.suspended_until || new Date(row.suspended_until) > new Date());
-      aplicarSuspension(active ? row : null);
+      aplicarSiVigente(active ? row : null);
       return active ? row : null;
     } catch (err) {
       console.warn('Error comprobando suspensión:', err);
@@ -144,6 +156,7 @@ export const AuthProvider = ({ children }) => {
     if (!targetId) return false;
 
     const sus = await checkSuspension(targetId);
+    if (sessionUserRef.current !== targetId) return false;
     if (!sus) {
       aplicarSuspension(null);
       await fetchProfile(targetId);
@@ -152,53 +165,59 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
+  // El listener no consulta la base ni espera promesas: Supabase espera que
+  // termine antes de continuar con sus eventos y renovaciones de sesión.
   useEffect(() => {
-    // 1. Obtener la sesión inicial
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setQueryCacheUser(session?.user?.id);
-      setSession(session);
-      if (session?.user) {
-        const sus = await checkSuspension(session.user.id);
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-        if (sus) {
-          // La cuenta está sancionada. Mantenemos la sesión para que el usuario
-          // pueda acceder de forma autenticada al chat de soporte con el admin.
-          // App.js se encarga de mostrar exclusivamente SuspendedScreen.
-          aplicarSuspension(sus);
-        }
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const nextId = nextSession?.user?.id || null;
+      if (sessionUserRef.current !== nextId) sessionVersion.current += 1;
+      sessionUserRef.current = nextId;
+      setQueryCacheUser(nextId);
+      setSession(nextSession);
+      setSessionChecked(true);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (event === 'USER_UPDATED' && nextSession?.user) setUser(nextSession.user);
+      if (!nextId) {
         setUser(null);
-      }
-      setLoading(false);
-    });
-
-    // 2. Escuchar cambios de estado de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setQueryCacheUser(session?.user?.id);
-        if (event === 'PASSWORD_RECOVERY') {
-          setPasswordRecovery(true);
-        }
-        setSession(session);
-        if (session?.user) {
-          const sus = await checkSuspension(session.user.id);
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-          if (sus) {
-            aplicarSuspension(sus);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-          if (!suspensionRef.current) setSuspension(null);
-        }
+        setProfile(null);
+        setPasswordRecovery(false);
+        if (!suspensionRef.current) setSuspension(null);
         setLoading(false);
       }
-    );
-
-    return () => subscription.unsubscribe();
+    });
+    return () => {
+      sessionUserRef.current = null;
+      sessionVersion.current += 1;
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // INITIAL_SESSION ya restaura la sesión: otro getSession al arrancar repetía
+  // las consultas. Perfil y suspensión se cargan juntos, fuera del listener,
+  // solo al cambiar de cuenta; TOKEN_REFRESHED y SIGNED_IN repetidos no recargan.
+  useEffect(() => {
+    if (!sessionChecked || !session?.user?.id) return undefined;
+    let vigente = true;
+    const nextUser = session.user;
+    setLoading(true);
+    setUser(null);
+    setProfile(null);
+    aplicarSuspension(null);
+    const cargar = async () => {
+      try {
+        await Promise.all([checkSuspension(nextUser.id), fetchProfile(nextUser.id)]);
+        if (vigente && sessionUserRef.current === nextUser.id) {
+          setUser((current) => current?.id === nextUser.id ? current : nextUser);
+        }
+      } finally {
+        if (vigente) setLoading(false);
+      }
+    };
+    cargar();
+    return () => { vigente = false; };
+    // La renovación del token mantiene la misma cuenta y no debe desmontar la app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionChecked, session?.user?.id]);
 
   /**
    * Suspensión declarada a mitad de sesión.
@@ -208,9 +227,8 @@ export const AuthProvider = ({ children }) => {
    * la suspensión manteniendo la sesión para que pueda ingresar al chat de apelación.
    */
   const vigilarSuspension = useCallback(async (userId) => {
-    const sus = await checkSuspension(userId);
-    if (!sus) return;
-    aplicarSuspension(sus);
+    // checkSuspension aplica el resultado solo si la cuenta sigue siendo la misma.
+    await checkSuspension(userId);
   }, []);
 
   useEffect(() => {
@@ -256,10 +274,7 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw error;
 
-      if (data?.user) {
-        await fetchProfile(data.user.id);
-      }
-
+      // El evento de sesión carga el perfil si el registro inicia sesión.
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -279,22 +294,8 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw error;
 
-      // Cuenta suspendida: MANTENEMOS la sesión activa para que el usuario pueda
-      // acceder al chat de soporte/apelación (SuspendedScreen). App.js se encarga
-      // de mostrar exclusivamente SuspendedScreen mientras haya suspensión.
-      if (data?.user) {
-        const sus = await checkSuspension(data.user.id);
-        if (sus) {
-          setQueryCacheUser(data.user.id);
-          setUser(data.user);
-          setSession(data.session);
-          await fetchProfile(data.user.id);
-          aplicarSuspension(sus);
-          return { data, error: null, suspendida: true };
-        }
-        await fetchProfile(data.user.id);
-      }
-
+      // La comprobación de suspensión y el perfil se resuelven una sola vez
+      // en el efecto de sesión. Se conserva la sesión para el chat de apelación.
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -380,8 +381,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Refrescar el perfil manualmente
-  const refreshProfile = async () => {
-    invalidateQueries('social', 'feed');
+  const refreshProfile = async ({ invalidate = true } = {}) => {
+    if (invalidate) invalidateQueries('social', 'feed');
     if (user?.id) {
       return await fetchProfile(user.id);
     }
