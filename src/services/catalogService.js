@@ -41,25 +41,21 @@ export const fetchResourcesCatalog = async () => {
 // Obtener las selecciones actuales del usuario
 export const fetchUserPreferences = async (userId) => {
   try {
-    const [userLikesRes, userInterestsRes, userResourcesRes, profileRes] = await Promise.all([
+    const [userLikesRes, userInterestsRes, userResourcesRes] = await Promise.all([
       supabase.from('user_likes').select('like_id').eq('user_id', userId),
       supabase.from('user_interests').select('interest_id').eq('user_id', userId),
       supabase.from('user_resources').select('resource_id').eq('user_id', userId),
-      // La fecha decide qué metas son aptas por edad, así que se edita junto al
-      // resto de preferencias y no en una pantalla aparte.
-      supabase.from('profiles').select('birth_date').eq('id', userId).maybeSingle(),
     ]);
 
     return {
       userLikes: (userLikesRes.data || []).map((row) => row.like_id),
       userInterests: (userInterestsRes.data || []).map((row) => row.interest_id),
       userResources: (userResourcesRes.data || []).map((row) => row.resource_id),
-      birthDate: profileRes.data?.birth_date || null,
       error: null,
     };
   } catch (error) {
     console.error('Error al obtener preferencias del usuario:', error.message);
-    return { userLikes: [], userInterests: [], userResources: [], birthDate: null, error };
+    return { userLikes: [], userInterests: [], userResources: [], error };
   }
 };
 
@@ -120,25 +116,6 @@ export const hasCompletedOnboarding = async (userId) => {
   } catch (error) {
     console.error('Error comprobando si faltan preferencias:', error.message);
     return true;
-  }
-};
-
-// Guardar la fecha de nacimiento del perfil.
-// Se guarda la FECHA, no la edad: un número quedaría desactualizado en cada
-// cumpleaños, mientras que la fecha permite recalcular la edad siempre.
-// La columna `birth_date` ya existe en `profiles`; esto no altera el esquema.
-export const saveUserBirthDate = async (userId, isoBirthDate) => {
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ birth_date: isoBirthDate, updated_at: new Date().toISOString() })
-      .eq('id', userId);
-
-    if (error) throw error;
-    return { success: true, error: null };
-  } catch (error) {
-    console.error('Error al guardar la fecha de nacimiento:', error.message);
-    return { success: false, error };
   }
 };
 

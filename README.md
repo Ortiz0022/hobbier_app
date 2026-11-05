@@ -4,73 +4,40 @@
 **Semestre:** IIC 2026
 **Curso:** Aplicaciones Informáticas Globales
 
-Hobbier es una aplicación móvil diseñada para combatir el sedentarismo y el aburrimiento, especialmente entre jóvenes y adultos con limitaciones de movilidad. Su objetivo principal es recomendar actividades personalizadas basadas en las capacidades físicas del usuario, sus intereses y el contexto circundante (clima, ubicación, objetos disponibles), facilitando un estilo de vida más activo y conectado.
+Hobbier ayuda a las personas a decidir qué hacer con su tiempo libre. Recomienda actividades según su edad, gustos, objetivos y recursos disponibles, y permite aceptarlas, completarlas con una foto, ganar puntos y compartir el resultado con amigos o en salas con retos grupales. No usa datos del clima ni un modelo de capacidades físicas, y no es un tratamiento de salud.
 
-**Tecnologías:** Expo SDK 58 · React Native 0.88 · React 19.3 · Supabase (Postgres, Auth, Storage, Realtime y Edge Functions) · Groq para la parte de IA. El código es JavaScript, con algunos archivos TypeScript sueltos (`designTokens.ts`, `SelectableCard.tsx`, `scaledText.tsx`).
+**Tecnologías:** Expo SDK 58 · React Native 0.88 · React 19.3 · Supabase (Postgres, Auth, Storage, Realtime y Edge Functions) · Groq para la parte de IA · Vercel para la versión web publicada. El código es JavaScript, con algunos archivos TypeScript sueltos (`designTokens.ts`, `SelectableCard.tsx`, `scaledText.tsx`).
+
+**Repositorio:** https://github.com/Ortiz0022/hobbier_app
 
 ---
 
-## ▶️ Guía rápida: Cómo instalar y ejecutar la aplicación
+## ▶️ Cómo ejecutar la aplicación
 
-### 1. Requisitos previos
-- **Node.js** (versión 18 LTS o 20+ recomendada) y **npm**.
-- **Git** instalado.
-- **Para probar en Web:** Cualquier navegador moderno (Chrome, Edge, Firefox, Safari).
-- **Para probar en el teléfono:** Aplicación **Expo Go** instalada desde Google Play Store (Android) o App Store (iOS), o bien un emulador de Android Studio / simulador de Xcode.
+La aplicación se usa en su **versión publicada**, sin instalar nada:
 
-### 2. Instalación de dependencias
-Clona el repositorio, entra en la carpeta del proyecto e instala los paquetes con `npm`:
+### **https://hobbier-app.vercel.app**
+
+1. Abre el enlace en cualquier navegador moderno (Chrome, Edge, Firefox o Safari), en computadora o teléfono.
+2. Pulsa **Comenzar** y crea una cuenta o inicia sesión. Necesitas conexión a Internet: la autenticación, los datos y la IA están en la nube.
+3. Una cuenta nueva pasa por el asistente de preferencias antes de entrar a la app.
+
+El panel de administración aparece solo en cuentas con rol `ADMIN`.
+
+## 🧪 Pruebas automatizadas
+
+Requieren Node.js y una copia del repositorio:
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/Ortiz0022/hobbier_app.git
 cd hobbier_app
 npm install
-```
-
-### 3. Configuración de variables de entorno (`.env`)
-Crea un archivo llamado `.env` en la raíz del proyecto con las variables de conexión a Supabase:
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key-de-supabase
-EXPO_PUBLIC_APP_URL=http://localhost:8081
-EXPO_PUBLIC_ENABLE_WEB_EDGE_INVOICE=true
-```
-
-> **Nota:** La clave `GROQ_API_KEY` (para la IA de recomendaciones y moderación) **no** va en el `.env` del cliente; está configurada como secreto en las Edge Functions de Supabase para no exponerla.
-
-### 4. Ejecución de la aplicación
-
-Puedes iniciar el servidor de desarrollo de Expo limpiando la caché de Metro con:
-
-```bash
-npx expo start -c
-```
-
-O ejecutar directamente según la plataforma deseada:
-
-| Plataforma | Comando | Cómo abrirla |
-| --- | --- | --- |
-| **Web (Navegador)** | `npm run web` | Abre automáticamente `http://localhost:8081` (o presiona **`w`** en la terminal de `npx expo start`). Se adapta tanto a vista móvil como a pantalla completa de escritorio. |
-| **Teléfono físico (Expo Go)** | `npx expo start` | Conecta el teléfono y la computadora al mismo Wi-Fi y escanea el **código QR** con Expo Go (Android) o la cámara (iOS). Si la red bloquea la conexión local, usa `npx expo start --tunnel`. |
-| **Emulador Android** | `npm run android` | Con un emulador de Android Studio abierto, ejecuta el comando (o presiona **`a`** en la terminal de Expo). |
-| **Simulador iOS (macOS)** | `npm run ios` | Con Xcode instalado, ejecuta el comando (o presiona **`i`** en la terminal de Expo). |
-
-> **Nota sobre módulos nativos (Notificaciones Push):** Para recorrer y probar la aplicación basta con Web o Expo Go. Las notificaciones push remotas requieren una build de desarrollo (`npx expo run:android` o build con EAS), ya que desde Expo SDK 53 Expo Go no recibe push remotas en Android. En web el servicio las ignora de forma segura sin afectar el resto de la app.
-
-### 5. Ejecución de pruebas automatizadas
-El proyecto incluye pruebas unitarias y de integración (caché de consultas, orden de hooks en React, integridad de traducciones ES/EN, icono y enrutamiento de notificaciones):
-
-```bash
 npm test
 ```
 
-### 6. Solución de problemas frecuentes (Troubleshooting)
-- **`UnableToResolveError` o `PluginError: Failed to resolve plugin for module "expo-splash-screen"` / `"expo-location"`:** Ocurre cuando se descargan cambios nuevos del repositorio sin actualizar `node_modules` o queda caché vieja en Metro. Solución:
-  ```bash
-  npm install
-  npx expo start -c
-  ```
+`npm test` ejecuta **56 pruebas** en 7 archivos: caché de consultas, estados de carga, orden de hooks de React, integridad de traducciones ES/EN, icono y enrutamiento de notificaciones, y likes recibidos.
+
+Hay **2 archivos más** que comprueban SQL real en PostgreSQL en memoria: `postPoints.test.cjs` (puntos al eliminar o restaurar una publicación) y `profileSecurity.test.cjs` (permisos de perfiles). No forman parte de `npm test` para no añadir esa dependencia a la app; las instrucciones están al inicio de cada archivo.
 
 ---
 
@@ -87,6 +54,9 @@ El desarrollo siguió una metodología iterativa, priorizando la experiencia del
 | **5** | **Comunidad**                             | Feed con reacciones, amistades, mensajes directos, salas grupales con retos y evidencias, y anuncios patrocinados segmentados por gustos y ciudad.                                                           |
 | **6** | **Moderación y administración**           | Panel de administración con seis secciones, sanciones con motivo obligatorio, chat de apelación con soporte y tema claro/oscuro.                                                                             |
 | **7** | **Avisos y pulido para el teléfono**      | Notificaciones push para todo lo que la app ya avisaba dentro, más las del panel. Encuadre de fotos propio, salida de salas y botón de retroceso de Android.                                                  |
+| **8** | **Publicidad con pago simulado**          | Solicitud de anuncios con modelos CPC y CPM, pago de prueba, comprobante por correo, entrega hasta la meta contratada y creación de retos propios dentro de las salas. |
+| **9** | **Likes recibidos y puntos coherentes**   | Pantalla "Tus likes" y descuento o devolución de puntos al eliminar o restaurar una publicación. |
+| **10** | **Refuerzo de seguridad**                | Protección de columnas del perfil, comprobante solo al correo de la cuenta y fecha de nacimiento oculta a otras cuentas. |
 
 ## 🎨 Paleta de colores
 
@@ -153,13 +123,14 @@ El cambio es seco a propósito: la app se repinta de una vez y ya está. Hubo un
 2. **Preferencias**: gustos, objetivos y recursos con buscador contra Postgres, más la fecha de nacimiento. Una cuenta nueva pasa por el asistente **antes** de entrar a la app.
 3. **Recomendaciones**: "Sorpréndeme" resuelve en el servidor (ver más abajo), con sistema de puntos por actividad (`points_awarded`).
 4. **Actividades y evidencias**: aceptar un reto, completarlo con una foto y acumular puntos. La foto se encuadra dentro de la app antes de subirla (ver más abajo). Se puede repetir una actividad: el historial guarda cada vuelta.
-5. **Feed y comunidad**: publicaciones con reacciones, amistades con solicitudes, perfiles visibles solo entre amigos y mensajes directos con respuesta a un mensaje concreto.
-6. **Salas grupales**: retos compartidos con invitaciones, chat propio, evidencias y ranking. Las invitaciones a salas ya terminadas se muestran como aviso, no como solicitud. Quien no es anfitrión puede salirse de una sala y quitársela de la lista; el anfitrión la elimina para todos.
-7. **Anuncios patrocinados**: tarjetas en el feed segmentadas por gustos y ciudad, con solicitudes de anuncio gestionadas desde el panel.
-8. **Panel de administración**: barra inferior propia con seis secciones — Resumen, Soporte, Usuarios, Posts, Catálogo y Anuncios — paginación en todas las listas y salida a la app en cada pantalla.
+5. **Feed y comunidad**: publicaciones con reacciones de estrella, traducción del título entre español e inglés, pantalla "Tus likes", amistades con solicitudes, perfiles completos visibles solo entre amigos y mensajes directos con respuesta a un mensaje concreto.
+6. **Salas grupales**: retos del catálogo o propios (moderados con IA) con invitaciones, chat propio, evidencias y ranking. Las invitaciones a salas ya terminadas se muestran como aviso, no como solicitud. Quien no es anfitrión puede salirse de una sala y quitársela de la lista; el anfitrión la elimina para todos.
+7. **Anuncios patrocinados**: tarjetas en el feed segmentadas por gustos y ciudad. El anunciante elige CPC (₡50 por clic) o CPM (₡2 por visualización), completa un pago simulado, recibe un comprobante en el correo de su cuenta y la solicitud se revisa desde el panel. La entrega se detiene al alcanzar la meta contratada.
+8. **Panel de administración**: barra inferior propia con seis secciones — Resumen, Soporte, Usuarios, Publicaciones, Actividades y Anuncios — paginación en todas las listas y salida a la app en cada pantalla.
 9. **Moderación**: reportes de publicaciones y de perfiles, sanciones con motivo obligatorio y chat de apelación.
-10. **Notificaciones push**: trece tipos de aviso, redactados en el servidor (ver más abajo).
-11. **Interfaz**: tema claro y oscuro, español e inglés (`src/i18n/locales/`), tope de escalado de texto para accesibilidad y botón de retroceso de Android en todas las pantallas.
+10. **Notificaciones push**: trece tipos de aviso, redactados en el servidor (ver más abajo). Solo existen en la app de teléfono: en la versión web no aplican.
+11. **Interfaz**: tema claro y oscuro, español e inglés (`src/i18n/locales/`, 928 claves por idioma; algunos módulos conservan textos fijos en español), tope de escalado de texto para accesibilidad y botón de retroceso de Android en todas las pantallas.
+12. **Documentos legales**: Términos de Uso, Política de Privacidad y Condiciones de Publicidad dentro de la app, con aceptación en el registro y en la solicitud de anuncios.
 
 ## 🎯 Cómo se eligen las recomendaciones
 
@@ -198,23 +169,42 @@ Las completadas no se excluyen del todo **a propósito**: repetir una actividad 
 
 ## 🤖 Qué hace la IA (Groq)
 
-Tres de las cuatro Edge Functions de `supabase/functions/` hablan con la API de Groq, todas con tiempo límite de 8 segundos (la cuarta, `send-push`, es la de los avisos):
+Tres de las cinco Edge Functions de `supabase/functions/` hablan con la API de Groq, todas con tiempo límite de 8 segundos (las otras dos son `send-push`, para los avisos, y `send-invoice`, para el comprobante simulado):
 
 | Función | Para qué |
 | --- | --- |
-| `recommend-activity` | La cascada de recomendación de arriba: elegir entre candidatos o inventar una actividad nueva. |
-| `moderate-activity` | Revisa el texto de las actividades que crea un usuario antes de guardarlas. |
-| `moderate-message` | Revisa los mensajes directos y los de las salas antes de enviarlos. |
+| `recommend-activity` | La cascada de recomendación de arriba: elegir entre candidatos o inventar una actividad nueva, con un máximo de tres generadas por usuario y día. |
+| `moderate-activity` | Revisa el texto de las actividades y los retos de sala que crea un usuario antes de guardarlos. |
+| `moderate-message` | Revisa los mensajes directos y los de las salas. Un mensaje tóxico se guarda marcado y se oculta a quien lo recibe, que puede decidir mostrarlo. |
 
 La clave vive en `GROQ_API_KEY`, como secreto de la función; nunca en el cliente.
 
 ## 🛡️ Moderación, sanciones y soporte
 
-- Cualquiera puede **reportar** una publicación o un perfil. Un reporte de perfil sanciona la cuenta automáticamente.
+- Cualquiera puede **reportar** una publicación o un perfil. Una publicación reportada sale del feed hasta su revisión. Un reporte de perfil sanciona la cuenta automáticamente, salvo que sea de un administrador o de la propia cuenta.
 - **Sancionar exige un motivo** (mínimo 10 caracteres). Lo exige la propia base en `admin_suspend_account`, no solo la pantalla: una comprobación que vive solo en el cliente se salta con una llamada directa a la API.
 - La sanción es **permanente** hasta que un administrador reactive la cuenta.
 - La persona sancionada ve el motivo en su pantalla y lo recibe escrito en su **chat de apelación**, donde puede responder. El administrador lo atiende desde la sección Soporte del panel.
 - La cuenta sancionada **conserva la sesión** a propósito: sin ella no podría apelar. La app la bloquea mostrando solo la pantalla de sanción.
+
+## ⭐ Likes recibidos y puntos
+
+El icono de estrella del Feed abre **"Tus likes"**: las reacciones que recibieron tus publicaciones activas, de la más reciente a la más antigua y paginadas de 20 en 20 (`src/features/feed/ReceivedLikesScreen.js`). Desde ahí se puede abrir el chat con esa persona o ver la publicación. Se consulta al abrir o recargar, así que quitar una reacción no deja un aviso obsoleto.
+
+Los puntos ahora siguen a la publicación (`supabase/migrations/20261104_post_points_on_delete.sql`):
+
+- Cada foto guarda en `post_point_awards` los puntos que otorgó, aunque después cambie el catálogo.
+- **Eliminarla** —desde el perfil, el panel o SQL— descuenta esos puntos; **restaurarla** los devuelve. El saldo nunca baja de cero y un fallo revierte toda la operación.
+- Esa tabla solo la escriben las funciones del servidor.
+- Las eliminaciones anteriores a la migración no se descuentan de forma retroactiva.
+
+## 🔒 Seguridad
+
+- **Perfiles:** ninguna cuenta puede cambiar su rol, sus puntos, sus sanciones ni su fecha de nacimiento con una llamada directa a la API. Rol y sanciones solo los cambia un administrador; los puntos, solo el servidor. El registro siempre crea cuentas con rol `USER` (`20261104b_profile_security.sql`).
+- **Sin sesión** solo se puede comprobar si un nombre de usuario está libre.
+- **Fecha de nacimiento:** no la pueden leer otras cuentas (`20261104c_hide_birth_date.sql`). La edad se calcula en el servidor.
+- **Comprobante:** `send-invoice` exige sesión y solo envía al correo de la cuenta que lo pide.
+- **Pago:** es una simulación académica: no hay cargo real, no se guardan datos de tarjeta y el comprobante no tiene validez fiscal.
 
 ## 🔔 Notificaciones push
 
@@ -247,9 +237,8 @@ Cada aparato guarda su token de Expo en `user_push_tokens` al iniciar sesión
 (`pushService.registrarDispositivo`). Los tokens que Expo devuelve como
 `DeviceNotRegistered` —apps desinstaladas— se borran solos.
 
-> **Para probarlo hace falta una build de desarrollo.** Desde el SDK 53 las push
-> remotas no funcionan en Expo Go en Android: `npx expo run:android` o una build
-> de EAS. En web no existen y el servicio se queda callado, sin romper nada.
+> **Solo en la app de teléfono.** En la versión web publicada no existen y el
+> servicio se queda callado, sin romper nada.
 
 > ⚠️ **`send-push` hay que desplegarla a mano, y sin eso no llega ni un aviso.**
 > Este fallo no se ve desde la app: `avisar()` nunca lanza —un aviso que falla no
@@ -270,10 +259,10 @@ Cada aparato guarda su token de Expo en `user_push_tokens` al iniciar sesión
 
 ## 🗄️ Base de datos y despliegues
 
-Los despliegues de Supabase de este proyecto son **manuales**: no hay CLI enlazada. Para aplicar un cambio hay que pegar el archivo correspondiente en el **SQL Editor** de Supabase y ejecutarlo.
+Los cambios de base de datos de este proyecto se aplican **a mano**: hay que pegar el archivo correspondiente en el **SQL Editor** de Supabase y ejecutarlo. La versión web se publica en **Vercel**.
 
 - **Esquema base:** `supabase/schema.sql`.
-- **Migraciones:** `supabase/migrations/`, por fecha. La más reciente es `20261028e_ad_request_messages.sql`.
+- **Migraciones:** `supabase/migrations/`, por fecha. Las más recientes son `20261104_post_points_on_delete.sql`, `20261104b_profile_security.sql` y `20261104c_hide_birth_date.sql`. Esta última se ejecuta **después** de publicar la app, porque las versiones anteriores piden todas las columnas del perfil.
 - **Scripts sueltos** (se pegan igual, y son idempotentes):
 
 | Archivo | Para qué |
@@ -402,24 +391,26 @@ Recorre login, registro, preferencias, el panel de administración y el modal de
 ```
 App.js                  Navegación: pestañas de usuario y, en modo admin, las del panel
 src/
-  components/           Piezas compartidas (scaledText, AjustarFotoModal, refrescoArrastrando)
+  components/           Piezas compartidas (scaledText, AjustarFotoModal, SimulatedPaymentModal)
   context/              Auth, idioma, tema, notificaciones y presencia
   features/
     admin/              Panel: secciones, modales y estilos propios
     auth/               Entrada, registro, recuperación y pantalla de sanción
-    feed/ friends/      Publicaciones, amistades y comunidad
+    feed/ friends/      Publicaciones, likes recibidos, amistades y comunidad
     messages/ rooms/    Mensajes directos y salas grupales
     onboarding/         Asistente y edición de preferencias
     profile/            Perfil, ajustes y tema
     recommendations/    "Sorpréndeme" y pantalla de inicio
     user_activities/    Retos aceptados y evidencias
   i18n/locales/         es.json y en.json
-  services/             Todo lo que habla con Supabase
+  services/             Todo lo que habla con Supabase y otros servicios externos
+  legal/                Términos, privacidad y condiciones de publicidad
   theme/                Paleta, tokens y runtime del tema oscuro
+  utils/                Fechas, categorías y ayudas compartidas
 supabase/
   schema.sql            Esquema base, políticas RLS y funciones
   migrations/           Cambios posteriores, por fecha
-  functions/            Edge Functions: tres de Groq y send-push
+  functions/            Edge Functions: tres de Groq, send-push y send-invoice
   comprobar_push.mjs    Diagnóstico: ¿están desplegadas las piezas de las push?
-tests/                  Pruebas automatizadas (caché, orden de hooks, i18n, notificaciones)
+tests/                  Pruebas automatizadas (caché, hooks, i18n, notificaciones, likes, puntos y permisos)
 ```

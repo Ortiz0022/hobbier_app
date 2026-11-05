@@ -19,7 +19,8 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/send-push/index.ts"
 
+# El comprobante solo se envía al correo de la sesión que lo pide.
 [functions.send-invoice]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 entrypoint = "./functions/send-invoice/index.ts"

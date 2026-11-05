@@ -258,7 +258,7 @@
     "payment_cardholder_placeholder": "Como aparece en la tarjeta",
     "payment_expiry": "Expiración",
     "payment_cvv": "CVV / CVC",
-    "payment_ssl_note": "Pago protegido con cifrado SSL de 256 bits · Simulación de entorno seguro",
+    "payment_ssl_note": "Pago simulado: no se realiza ningún cargo real",
     "payment_pay_btn": "Pagar {amount}",
     "payment_processing_title": "Procesando transacción",
     "payment_processing_note": "Por favor, no cierres esta ventana.",

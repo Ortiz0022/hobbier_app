@@ -6,6 +6,11 @@ import { LEGAL_VERSION } from '../legal/legalContent';
 
 const AuthContext = createContext();
 
+// Lista explícita: `birth_date` no se puede leer desde el cliente
+// (20261104c_hide_birth_date.sql) y un select('*') fallaría entero.
+const PROFILE_COLUMNS =
+  'id, full_name, username, avatar_url, points, role, status, created_at, updated_at, suspended_until, ban_reason, banned_at, ads_personalized, ads_city';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
@@ -40,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .eq('id', userId)
         .single();
 

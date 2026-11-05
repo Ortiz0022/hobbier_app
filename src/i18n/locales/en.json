@@ -258,7 +258,7 @@
     "payment_cardholder_placeholder": "As shown on card",
     "payment_expiry": "Expiration",
     "payment_cvv": "CVV / CVC",
-    "payment_ssl_note": "Protected with 256-bit SSL encryption · Safe simulated environment",
+    "payment_ssl_note": "Simulated payment: no real charge is made",
     "payment_pay_btn": "Pay {amount}",
     "payment_processing_title": "Processing transaction",
     "payment_processing_note": "Please do not close this window.",
