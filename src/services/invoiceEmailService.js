@@ -67,7 +67,7 @@ export const generarHtmlFacturaHobbier = ({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${isEn ? 'Payment Invoice' : 'Factura Electrónica de Pago'} · ${invoiceNumber}</title>
+  <title>${isEn ? 'Simulated payment receipt' : 'Comprobante de pago simulado'} · ${invoiceNumber}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#F1F5F9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F172A;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#F1F5F9;padding:36px 16px;">
@@ -118,7 +118,7 @@ export const generarHtmlFacturaHobbier = ({
                   </td>
                   <td align="right" valign="bottom">
                     <div style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">
-                      ${isEn ? 'Invoice' : 'Factura'} #${invoiceNumber}
+                      ${isEn ? 'Simulated receipt' : 'Comprobante simulado'} #${invoiceNumber}
                     </div>
                     <div style="font-size:11px;color:rgba(255,255,255,0.68);margin-top:3px;">
                       ${fechaFormateada}
@@ -138,7 +138,7 @@ export const generarHtmlFacturaHobbier = ({
                 <tr>
                   <td width="50%" valign="top" style="padding-right:12px;">
                     <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">
-                      ${isEn ? 'Billed To' : 'Facturado a'}
+                      ${isEn ? 'Issued to' : 'Emitido a'}
                     </div>
                     <div style="font-size:14px;font-weight:600;color:#0F172A;">
                       ${advertiserName || (isEn ? 'Hobbier Advertiser' : 'Anunciante Hobbier')}
@@ -301,8 +301,8 @@ export const enviarFacturaPorCorreo = async (datosFactura) => {
 
   const subject =
     datosFactura.language === 'en'
-      ? `Payment Invoice ${invoiceNumber} · Hobbier Ads`
-      : `Factura de Pago ${invoiceNumber} · Hobbier Ads`;
+      ? `Simulated receipt ${invoiceNumber} · Hobbier Ads`
+      : `Comprobante simulado ${invoiceNumber} · Hobbier Ads`;
 
   // 1. Si hay credenciales de EmailJS en variables públicas (.env), permite envío directo desde cliente/web
   const emailJsServiceId = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID;

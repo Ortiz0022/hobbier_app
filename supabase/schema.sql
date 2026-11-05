@@ -176,7 +176,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || SUBSTRING(NEW.id::text, 1, 8)),
     COALESCE((NEW.raw_user_meta_data->>'birth_date')::DATE, '2000-01-01'::DATE),
     NEW.raw_user_meta_data->>'avatar_url',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'USER')
+    'USER'
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;

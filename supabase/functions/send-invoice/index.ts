@@ -1,12 +1,13 @@
 // ==================================================
 // HOBBIER - Edge Function: send-invoice
 //
-// Envía por correo electrónico el comprobante / factura ejecutiva de pago
+// Envía por correo electrónico el comprobante de pago simulado
 // cuando un anunciante contrata una campaña publicitaria (CPM o CPC).
 // Soporta envío mediante Gmail SMTP (SMTP_USER / SMTP_PASS) o Resend API (RESEND_API_KEY).
 // Incluye el logo oficial de Hobbier como recurso inline CID (`cid:hobbier-logo`).
 // ==================================================
 
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import nodemailer from "npm:nodemailer@6.9.13";
 
 const CORS_HEADERS = {
@@ -31,6 +32,23 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // El HTML lo escribe el cliente, así que sin estas dos comprobaciones la
+    // función serviría para mandar correos arbitrarios a nombre de Hobbier.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json({ error: "No autorizado" }, 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Faltan variables de entorno en Supabase (URL o ANON KEY).");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user?.email) return json({ error: "No autorizado" }, 401);
+
     const payload = await req.json();
     const {
       to,
@@ -41,8 +59,13 @@ Deno.serve(async (req: Request) => {
       transactionId,
     } = payload || {};
 
-    if (!to || !html) {
+    if (typeof to !== "string" || !to || !html) {
       return json({ error: "Missing recipient email (to) or HTML body" }, 400);
+    }
+
+    // El comprobante solo se envía al correo de la cuenta que lo pide.
+    if (to.trim().toLowerCase() !== user.email.toLowerCase()) {
+      return json({ error: "El comprobante solo se envía al correo de tu cuenta" }, 403);
     }
 
     const emailSubject =

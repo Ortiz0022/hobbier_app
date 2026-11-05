@@ -182,8 +182,8 @@ export const SimulatedPaymentModal = ({
     setTimeout(() => {
       setMensajeProceso(
         language === 'en'
-          ? 'Generating electronic invoice & receipt...'
-          : 'Generando factura electrónica y comprobante...'
+          ? 'Generating simulated receipt...'
+          : 'Generando comprobante simulado...'
       );
     }, 1400);
 
@@ -532,8 +532,8 @@ export const SimulatedPaymentModal = ({
                   <View style={estilos.inputGroup}>
                     <Text style={estilos.inputLabel}>
                       {language === 'en'
-                        ? 'Email for electronic invoice'
-                        : 'Correo para envío de factura'}
+                        ? 'Account email for the receipt'
+                        : 'Correo de tu cuenta para el comprobante'}
                     </Text>
                     <View style={estilos.inputWrapper}>
                       <Mail size={17} color={colors.textMuted} style={estilos.inputIcon} />
@@ -548,7 +548,7 @@ export const SimulatedPaymentModal = ({
                         keyboardType="email-address"
                         autoCapitalize="none"
                         value={emailFactura}
-                        onChangeText={setEmailFactura}
+                        editable={false}
                       />
                     </View>
                   </View>
@@ -559,7 +559,7 @@ export const SimulatedPaymentModal = ({
                   <ShieldCheck size={15} color={colors.textMuted} />
                   <Text style={estilos.sslText}>
                     {t('ad_request.payment_ssl_note') ||
-                      'Pago protegido con cifrado SSL de 256 bits · Simulación de entorno seguro'}
+                      'Pago simulado: no se realiza ningún cargo real'}
                   </Text>
                 </View>
 
@@ -686,15 +686,15 @@ export const SimulatedPaymentModal = ({
                       <Text style={estilos.invoiceEmailStatusText} numberOfLines={2}>
                         {estadoCorreo === 'sending'
                           ? language === 'en'
-                            ? `Sending electronic invoice to ${emailFactura.trim()}...`
-                            : `Enviando factura electrónica a ${emailFactura.trim()}...`
+                            ? `Sending receipt to ${emailFactura.trim()}...`
+                            : `Enviando comprobante a ${emailFactura.trim()}...`
                           : estadoCorreo === 'sent'
                             ? language === 'en'
-                              ? `Electronic invoice sent to ${emailFactura.trim()}`
-                              : `Factura electrónica enviada a ${emailFactura.trim()}`
+                              ? `Receipt sent to ${emailFactura.trim()}`
+                              : `Comprobante enviado a ${emailFactura.trim()}`
                             : language === 'en'
-                              ? `Electronic invoice generated for ${emailFactura.trim()}`
-                              : `Factura electrónica generada para ${emailFactura.trim()}`}
+                              ? `Receipt generated for ${emailFactura.trim()}`
+                              : `Comprobante generado para ${emailFactura.trim()}`}
                       </Text>
                     </View>
                   )}
@@ -716,8 +716,8 @@ export const SimulatedPaymentModal = ({
                       <FileText size={16} color={colors.primary} />
                       <Text style={estilos.viewInvoiceBtnText}>
                         {language === 'en'
-                          ? 'View / Download Official Invoice (PDF)'
-                          : 'Ver / Descargar Factura Ejecutiva (PDF)'}
+                          ? 'View / Download receipt (PDF)'
+                          : 'Ver / Descargar comprobante (PDF)'}
                       </Text>
                     </TouchableOpacity>
                   )}

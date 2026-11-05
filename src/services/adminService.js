@@ -525,7 +525,7 @@ export const setProfileRoleAdmin = async (profileId, newRole) => {
       .from('profiles')
       .update({ role: newRole })
       .eq('id', profileId)
-      .select()
+      .select('id, full_name, username, avatar_url, points, role, status, created_at')
       .single();
 
     if (error) throw error;
